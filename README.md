@@ -46,9 +46,9 @@ The target deployment profile is cheap shared hosting with cron support, not Red
 
 Production URL target for this repo:
 
-- app URL: `https://ahmaddalao.com/athlete`
-- app-relative base path: `/athlete`
-- API base URL: `https://ahmaddalao.com/athlete/api/v1`
+- app URL: `https://athlete.ahmaddalao.com`
+- app-relative base path: `/`
+- API base URL: `https://athlete.ahmaddalao.com/api/v1`
 
 Important:
 
@@ -64,16 +64,16 @@ Recommended cron jobs:
 * * * * * /opt/alt/php85/usr/bin/php /home/USER/domains/DOMAIN/throughline-athlete-app/artisan queue:work --stop-when-empty --tries=3 --max-time=50 >> /dev/null 2>&1
 ```
 
-The production subdirectory is not optional here. Build and deploy for `/athlete`, or your assets and callback URLs will be wrong.
+The canonical production host is the athlete subdomain, not the main domain subfolder.
 
 Use these production env values:
 
 ```dotenv
-APP_URL=https://ahmaddalao.com/athlete
-ASSET_URL=/athlete
-VITE_ASSET_BASE=/athlete/build/
-GOOGLE_REDIRECT_URI=https://ahmaddalao.com/athlete/auth/google/callback
-WHOOP_REDIRECT_URI=https://ahmaddalao.com/athlete/wearables/whoop/callback
+APP_URL=https://athlete.ahmaddalao.com
+ASSET_URL=
+VITE_ASSET_BASE=/build/
+GOOGLE_REDIRECT_URI=https://athlete.ahmaddalao.com/auth/google/callback
+WHOOP_REDIRECT_URI=https://athlete.ahmaddalao.com/wearables/whoop/callback
 ```
 
 Use this production frontend build:
@@ -113,7 +113,7 @@ Header: X-Throughline-Key: {ingest_key}
 Production absolute URL:
 
 ```text
-https://ahmaddalao.com/athlete/api/device-connections/{public_id}/ingest
+https://athlete.ahmaddalao.com/api/device-connections/{public_id}/ingest
 ```
 
 Example JSON body:

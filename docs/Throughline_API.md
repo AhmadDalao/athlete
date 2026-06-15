@@ -13,9 +13,9 @@ This is not an OpenAPI dump yet. It is the developer doc for what is actually im
 
 ## Base rules
 
-- Production API base URL: `https://ahmaddalao.com/athlete/api/v1`
+- Production API base URL: `https://athlete.ahmaddalao.com/api/v1`
 - App-relative API base path: `/api/v1`
-- All endpoint paths below are app-relative. In production they are served under `/athlete`.
+- All endpoint paths below are app-relative. In production they are served from the athlete subdomain root.
 - Auth for app endpoints: Laravel Sanctum bearer tokens
 - Auth for ingest: `X-Throughline-Key` header tied to a device connection
 - Dates use `YYYY-MM-DD`
@@ -66,7 +66,7 @@ Paginated collections use:
 
 Production absolute URL:
 
-`POST https://ahmaddalao.com/athlete/api/v1/auth/tokens`
+`POST https://athlete.ahmaddalao.com/api/v1/auth/tokens`
 
 Use this for mobile apps, admin tooling, cron jobs, or partner services that need user-scoped access.
 
@@ -153,7 +153,7 @@ That matters:
 
 Production absolute base for every route in this section:
 
-`https://ahmaddalao.com/athlete`
+`https://athlete.ahmaddalao.com`
 
 ### `GET /api/v1/dashboard`
 

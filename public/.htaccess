@@ -5,6 +5,11 @@
 
     RewriteEngine On
 
+    # Keep the main domain clean by sending the legacy /athlete path to the
+    # athlete subdomain, which is now the canonical production host.
+    RewriteCond %{HTTP_HOST} ^(www\.)?ahmaddalao\.com$ [NC]
+    RewriteRule ^(.*)$ https://athlete.ahmaddalao.com/$1 [R=301,L]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

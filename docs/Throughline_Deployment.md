@@ -4,33 +4,33 @@ Date: 2026-06-15
 
 ## Production target
 
-This app is deployed under a subdirectory:
+This app is deployed at the athlete subdomain root:
 
-- public URL: `https://ahmaddalao.com/athlete`
-- base path: `/athlete`
-- API base URL: `https://ahmaddalao.com/athlete/api/v1`
+- public URL: `https://athlete.ahmaddalao.com`
+- base path: `/`
+- API base URL: `https://athlete.ahmaddalao.com/api/v1`
 
-Do not treat the domain root `/` as the app root. If you do, assets, OAuth callbacks, and generated links will drift.
+The old `https://ahmaddalao.com/athlete` path is legacy. Redirect it to the subdomain so the main domain stays clean.
 
 ## Required production env values
 
 ```dotenv
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://ahmaddalao.com/athlete
-ASSET_URL=/athlete
-VITE_ASSET_BASE=/athlete/build/
+APP_URL=https://athlete.ahmaddalao.com
+ASSET_URL=
+VITE_ASSET_BASE=/build/
 
-GOOGLE_REDIRECT_URI=https://ahmaddalao.com/athlete/auth/google/callback
-WHOOP_REDIRECT_URI=https://ahmaddalao.com/athlete/wearables/whoop/callback
+GOOGLE_REDIRECT_URI=https://athlete.ahmaddalao.com/auth/google/callback
+WHOOP_REDIRECT_URI=https://athlete.ahmaddalao.com/wearables/whoop/callback
 ```
 
 Notes:
 
 - `APP_URL` is the source of truth for generated absolute URLs.
-- `ASSET_URL` keeps Laravel-generated asset URLs under `/athlete/...`.
-- `VITE_ASSET_BASE` must include `/build/` so Vite lazy chunks load from `/athlete/build/assets/...`.
-- Google and WHOOP callbacks should match the deployed subdirectory exactly.
+- Leave `ASSET_URL` empty on the subdomain root or you will reintroduce bad asset prefixes.
+- `VITE_ASSET_BASE` must include `/build/` so Vite lazy chunks load from `/build/assets/...`.
+- Google and WHOOP callbacks should match the deployed subdomain exactly.
 
 ## Frontend build
 
@@ -43,17 +43,17 @@ npm run build:athlete
 That expands to:
 
 ```bash
-VITE_ASSET_BASE=/athlete/build/ vite build
+VITE_ASSET_BASE=/build/ vite build
 ```
 
-If you use plain `npm run build` for this deployment target, expect broken asset paths sooner or later.
+If you use the old `/athlete/build/` base here, you will get broken asset paths. That bug already happened once. No need to repeat it.
 
 ## Hostinger layout
 
 Current deployment shape:
 
 - app code root: `/home/u867436826/domains/ahmaddalao.com/throughline-athlete-app`
-- public web root: `/home/u867436826/domains/ahmaddalao.com/public_html/athlete`
+- public web root for `athlete.ahmaddalao.com`: `/home/u867436826/domains/ahmaddalao.com/public_html/athlete`
 - database name: `u867436826_athlete`
 
 ## PHP requirement
@@ -76,24 +76,24 @@ Hostinger shared hosting does not expose `crontab` over SSH here, so add these i
 
 Use these exact production callbacks in provider dashboards:
 
-- Google: `https://ahmaddalao.com/athlete/auth/google/callback`
-- WHOOP: `https://ahmaddalao.com/athlete/wearables/whoop/callback`
+- Google: `https://athlete.ahmaddalao.com/auth/google/callback`
+- WHOOP: `https://athlete.ahmaddalao.com/wearables/whoop/callback`
 
 ## API URLs
 
 Absolute production examples:
 
-- token issue: `POST https://ahmaddalao.com/athlete/api/v1/auth/tokens`
-- current user: `GET https://ahmaddalao.com/athlete/api/v1/me`
-- dashboard: `GET https://ahmaddalao.com/athlete/api/v1/dashboard`
-- ingest: `POST https://ahmaddalao.com/athlete/api/device-connections/{public_id}/ingest`
+- token issue: `POST https://athlete.ahmaddalao.com/api/v1/auth/tokens`
+- current user: `GET https://athlete.ahmaddalao.com/api/v1/me`
+- dashboard: `GET https://athlete.ahmaddalao.com/api/v1/dashboard`
+- ingest: `POST https://athlete.ahmaddalao.com/api/device-connections/{public_id}/ingest`
 
-## Why the app code is safe for `/athlete`
+## Why the app code is safe for the subdomain root
 
-These pieces were locked to the subdirectory deployment model:
+These pieces are locked to the subdomain-root deployment model:
 
 - Laravel URL generation is forced from `APP_URL`.
-- Vite asset base is configurable and can be built for `/athlete/`.
+- Vite asset base is configurable and built for `/build/`.
 - public `index.php` normalizes shared-hosting subdirectory request paths.
 - Google OAuth redirect fallback now resolves from the real callback route.
 - WHOOP redirect fallback resolves from `APP_URL` or the callback route.

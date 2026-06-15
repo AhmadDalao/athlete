@@ -61,7 +61,7 @@ Optional defaults already exist in config for:
 
 Production callback URL for the current deployment target:
 
-- `https://ahmaddalao.com/athlete/wearables/whoop/callback`
+- `https://athlete.ahmaddalao.com/wearables/whoop/callback`
 
 ## Main files
 
@@ -82,7 +82,7 @@ Production callback URL for the current deployment target:
 2. App creates an OAuth `state` token and stores it in session
 3. User is redirected to WHOOP
 4. WHOOP redirects back to `/wearables/whoop/callback`
-   Production absolute URL: `https://ahmaddalao.com/athlete/wearables/whoop/callback`
+   Production absolute URL: `https://athlete.ahmaddalao.com/wearables/whoop/callback`
 5. App validates `state`
 6. App exchanges `code` for access and refresh tokens
 7. App fetches basic profile data
