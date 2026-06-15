@@ -71,7 +71,7 @@ Use these production env values:
 ```dotenv
 APP_URL=https://ahmaddalao.com/athlete
 ASSET_URL=/athlete
-VITE_ASSET_BASE=/athlete/
+VITE_ASSET_BASE=/athlete/build/
 GOOGLE_REDIRECT_URI=https://ahmaddalao.com/athlete/auth/google/callback
 WHOOP_REDIRECT_URI=https://ahmaddalao.com/athlete/wearables/whoop/callback
 ```

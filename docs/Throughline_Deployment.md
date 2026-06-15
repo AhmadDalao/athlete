@@ -19,7 +19,7 @@ APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://ahmaddalao.com/athlete
 ASSET_URL=/athlete
-VITE_ASSET_BASE=/athlete/
+VITE_ASSET_BASE=/athlete/build/
 
 GOOGLE_REDIRECT_URI=https://ahmaddalao.com/athlete/auth/google/callback
 WHOOP_REDIRECT_URI=https://ahmaddalao.com/athlete/wearables/whoop/callback
@@ -28,7 +28,8 @@ WHOOP_REDIRECT_URI=https://ahmaddalao.com/athlete/wearables/whoop/callback
 Notes:
 
 - `APP_URL` is the source of truth for generated absolute URLs.
-- `ASSET_URL` and `VITE_ASSET_BASE` keep built assets pointed at `/athlete/build/...`.
+- `ASSET_URL` keeps Laravel-generated asset URLs under `/athlete/...`.
+- `VITE_ASSET_BASE` must include `/build/` so Vite lazy chunks load from `/athlete/build/assets/...`.
 - Google and WHOOP callbacks should match the deployed subdirectory exactly.
 
 ## Frontend build
@@ -42,7 +43,7 @@ npm run build:athlete
 That expands to:
 
 ```bash
-VITE_ASSET_BASE=/athlete/ vite build
+VITE_ASSET_BASE=/athlete/build/ vite build
 ```
 
 If you use plain `npm run build` for this deployment target, expect broken asset paths sooner or later.
