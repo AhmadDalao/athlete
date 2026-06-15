@@ -35,7 +35,9 @@ class OAuthCallbackController extends Controller
         }
 
         try {
-            $providerUser = Socialite::driver($signupMethod->value)->user();
+            $providerUser = Socialite::driver($signupMethod->value)
+                ->redirectUrl($socialAuth->redirectUrlFor($signupMethod))
+                ->user();
             $user = $socialAuth->syncUserFromProvider($signupMethod, $providerUser, $intent, $accountType);
 
             Auth::login($user);

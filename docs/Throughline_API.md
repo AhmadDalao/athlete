@@ -13,7 +13,9 @@ This is not an OpenAPI dump yet. It is the developer doc for what is actually im
 
 ## Base rules
 
-- Base path for app endpoints: `/api/v1`
+- Production API base URL: `https://ahmaddalao.com/athlete/api/v1`
+- App-relative API base path: `/api/v1`
+- All endpoint paths below are app-relative. In production they are served under `/athlete`.
 - Auth for app endpoints: Laravel Sanctum bearer tokens
 - Auth for ingest: `X-Throughline-Key` header tied to a device connection
 - Dates use `YYYY-MM-DD`
@@ -61,6 +63,10 @@ Paginated collections use:
 ### 1. Issue a bearer token
 
 `POST /api/v1/auth/tokens`
+
+Production absolute URL:
+
+`POST https://ahmaddalao.com/athlete/api/v1/auth/tokens`
 
 Use this for mobile apps, admin tooling, cron jobs, or partner services that need user-scoped access.
 
@@ -144,6 +150,10 @@ That matters:
 - an athlete who somehow hits `/api/v1/roster` still gets blocked by role checks
 
 ## API v1 endpoints
+
+Production absolute base for every route in this section:
+
+`https://ahmaddalao.com/athlete`
 
 ### `GET /api/v1/dashboard`
 

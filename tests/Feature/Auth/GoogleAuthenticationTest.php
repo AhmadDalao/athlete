@@ -7,6 +7,7 @@ use App\Enums\SignupMethod;
 use App\Models\User;
 use App\Services\SocialAuthService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
@@ -30,6 +31,25 @@ class GoogleAuthenticationTest extends TestCase
                     route('auth.oauth.redirect', ['provider' => SignupMethod::Google->value, 'intent' => 'login'], absolute: false),
                 )
             );
+    }
+
+    public function test_google_redirect_url_falls_back_to_the_real_callback_route_for_subdirectory_deploys(): void
+    {
+        URL::forceRootUrl('https://ahmaddalao.com/athlete');
+        URL::forceScheme('https');
+
+        config()->set('throughline.auth.signup_methods.google.enabled', true);
+        config()->set('services.google.client_id', 'google-client-id');
+        config()->set('services.google.client_secret', 'google-client-secret');
+        config()->set('services.google.redirect', null);
+
+        $service = app(SocialAuthService::class);
+
+        $this->assertTrue($service->isProviderEnabled(SignupMethod::Google));
+        $this->assertSame(
+            'https://ahmaddalao.com/athlete/auth/google/callback',
+            $service->redirectUrlFor(SignupMethod::Google),
+        );
     }
 
     public function test_google_redirect_stores_register_context_and_redirects_to_provider(): void

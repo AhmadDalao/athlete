@@ -57,19 +57,24 @@ Optional defaults already exist in config for:
 - base API URL
 - auth URL
 - token URL
+- callback fallback from `APP_URL`
+
+Production callback URL for the current deployment target:
+
+- `https://ahmaddalao.com/athlete/wearables/whoop/callback`
 
 ## Main files
 
-| File | Purpose |
-| --- | --- |
-| `app/Http/Controllers/WhoopConnectController.php` | Starts the OAuth redirect flow. |
+| File                                               | Purpose                                                                                     |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `app/Http/Controllers/WhoopConnectController.php`  | Starts the OAuth redirect flow.                                                             |
 | `app/Http/Controllers/WhoopCallbackController.php` | Exchanges the auth code, stores tokens, saves profile payload, and triggers the first sync. |
-| `app/Services/Whoop/WhoopApiClient.php` | Thin WHOOP API wrapper for token exchange and collection fetches. |
-| `app/Services/Whoop/WhoopSyncService.php` | Pulls WHOOP collections, normalizes them by date, and persists snapshots. |
-| `app/Services/MetricAnalyticsService.php` | Builds dashboard and wearable trend summaries from stored snapshots. |
-| `app/Models/DeviceConnection.php` | Stores auth mode, encrypted OAuth tokens, scopes, and provider payloads. |
-| `app/Models/MetricSnapshot.php` | Stores normalized daily recovery and activity metrics. |
-| `routes/console.php` | Registers the cron-safe WHOOP sync command. |
+| `app/Services/Whoop/WhoopApiClient.php`            | Thin WHOOP API wrapper for token exchange and collection fetches.                           |
+| `app/Services/Whoop/WhoopSyncService.php`          | Pulls WHOOP collections, normalizes them by date, and persists snapshots.                   |
+| `app/Services/MetricAnalyticsService.php`          | Builds dashboard and wearable trend summaries from stored snapshots.                        |
+| `app/Models/DeviceConnection.php`                  | Stores auth mode, encrypted OAuth tokens, scopes, and provider payloads.                    |
+| `app/Models/MetricSnapshot.php`                    | Stores normalized daily recovery and activity metrics.                                      |
+| `routes/console.php`                               | Registers the cron-safe WHOOP sync command.                                                 |
 
 ## OAuth flow
 
@@ -77,6 +82,7 @@ Optional defaults already exist in config for:
 2. App creates an OAuth `state` token and stores it in session
 3. User is redirected to WHOOP
 4. WHOOP redirects back to `/wearables/whoop/callback`
+   Production absolute URL: `https://ahmaddalao.com/athlete/wearables/whoop/callback`
 5. App validates `state`
 6. App exchanges `code` for access and refresh tokens
 7. App fetches basic profile data
@@ -96,10 +102,10 @@ Flow:
 1. Query WHOOP OAuth connections
 2. Refresh access tokens when they are near expiry
 3. Pull these WHOOP collections:
-   - cycles
-   - recovery
-   - sleep activity
-   - workout activity
+    - cycles
+    - recovery
+    - sleep activity
+    - workout activity
 4. Normalize all collection data into daily buckets
 5. Upsert a `metric_snapshots` row per day
 6. Store raw source payloads inside `device_metric_ingests`
@@ -109,23 +115,23 @@ This is cron-safe and shared-hosting friendly.
 
 ## Normalized mapping
 
-| WHOOP source | Throughline field |
-| --- | --- |
-| `recovery_score` | `readiness_score` |
-| `resting_heart_rate` | `resting_heart_rate` |
-| `hrv_rmssd_milli` | `heart_rate_variability` |
-| `spo2_percentage` | `blood_oxygen_percent` |
-| `skin_temp_celsius` | `skin_temperature_celsius` |
-| sleep stage totals | `sleep_minutes`, `rem_sleep_minutes`, `slow_wave_sleep_minutes` |
-| sleep needed totals | `sleep_need_minutes` |
-| `sleep_performance_percentage` | `sleep_performance_percentage` |
-| `sleep_consistency_percentage` | `sleep_consistency_percentage` |
-| `sleep_efficiency_percentage` | `sleep_efficiency_percentage` |
-| `respiratory_rate` | `respiratory_rate` |
-| cycle `strain` | `strain_score` |
-| cycle `kilojoule` | `training_load` |
-| workout `distance_meter` | `distance_meters` |
-| workout duration | `active_minutes` |
+| WHOOP source                   | Throughline field                                               |
+| ------------------------------ | --------------------------------------------------------------- |
+| `recovery_score`               | `readiness_score`                                               |
+| `resting_heart_rate`           | `resting_heart_rate`                                            |
+| `hrv_rmssd_milli`              | `heart_rate_variability`                                        |
+| `spo2_percentage`              | `blood_oxygen_percent`                                          |
+| `skin_temp_celsius`            | `skin_temperature_celsius`                                      |
+| sleep stage totals             | `sleep_minutes`, `rem_sleep_minutes`, `slow_wave_sleep_minutes` |
+| sleep needed totals            | `sleep_need_minutes`                                            |
+| `sleep_performance_percentage` | `sleep_performance_percentage`                                  |
+| `sleep_consistency_percentage` | `sleep_consistency_percentage`                                  |
+| `sleep_efficiency_percentage`  | `sleep_efficiency_percentage`                                   |
+| `respiratory_rate`             | `respiratory_rate`                                              |
+| cycle `strain`                 | `strain_score`                                                  |
+| cycle `kilojoule`              | `training_load`                                                 |
+| workout `distance_meter`       | `distance_meters`                                               |
+| workout duration               | `active_minutes`                                                |
 
 ## Why metrics are split this way
 

@@ -31,7 +31,7 @@ return [
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/auth/google/callback'),
         'scopes' => array_values(array_filter(array_map(
             static fn (string $scope): string => trim($scope),
             explode(',', (string) env('GOOGLE_SCOPES', 'openid,profile,email')),
@@ -48,7 +48,7 @@ return [
     'whoop' => [
         'client_id' => env('WHOOP_CLIENT_ID'),
         'client_secret' => env('WHOOP_CLIENT_SECRET'),
-        'redirect' => env('WHOOP_REDIRECT_URI'),
+        'redirect' => env('WHOOP_REDIRECT_URI', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/wearables/whoop/callback'),
         'base_url' => env('WHOOP_BASE_URL', 'https://api.prod.whoop.com'),
         'auth_url' => env('WHOOP_AUTH_URL', 'https://api.prod.whoop.com/oauth/oauth2/auth'),
         'token_url' => env('WHOOP_TOKEN_URL', 'https://api.prod.whoop.com/oauth/oauth2/token'),

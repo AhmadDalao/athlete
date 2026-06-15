@@ -44,6 +44,12 @@ If you want to match production more closely, switch `.env` to MySQL and fill in
 
 The target deployment profile is cheap shared hosting with cron support, not Redis and not daemon workers.
 
+Production URL target for this repo:
+
+- app URL: `https://ahmaddalao.com/athlete`
+- app-relative base path: `/athlete`
+- API base URL: `https://ahmaddalao.com/athlete/api/v1`
+
 Important:
 
 - The current lock file requires PHP `8.4.1+`.
@@ -58,7 +64,23 @@ Recommended cron jobs:
 * * * * * /opt/alt/php85/usr/bin/php /home/USER/domains/DOMAIN/throughline-athlete-app/artisan queue:work --stop-when-empty --tries=3 --max-time=50 >> /dev/null 2>&1
 ```
 
-Update the paths for your actual Hostinger account layout. If you deploy under a subdirectory such as `/athlete`, build with `VITE_ASSET_BASE=/athlete/` and set `ASSET_URL=/athlete` in production.
+The production subdirectory is not optional here. Build and deploy for `/athlete`, or your assets and callback URLs will be wrong.
+
+Use these production env values:
+
+```dotenv
+APP_URL=https://ahmaddalao.com/athlete
+ASSET_URL=/athlete
+VITE_ASSET_BASE=/athlete/
+GOOGLE_REDIRECT_URI=https://ahmaddalao.com/athlete/auth/google/callback
+WHOOP_REDIRECT_URI=https://ahmaddalao.com/athlete/wearables/whoop/callback
+```
+
+Use this production frontend build:
+
+```bash
+npm run build:athlete
+```
 
 If you want a direct belt-and-suspenders billing audit outside the scheduler, run:
 
@@ -74,6 +96,7 @@ composer run setup
 composer run deploy:optimize
 composer run queue:drain
 npm run build
+npm run build:athlete
 php artisan test
 php artisan throughline:memberships:audit
 ```
@@ -87,26 +110,33 @@ POST /api/device-connections/{public_id}/ingest
 Header: X-Throughline-Key: {ingest_key}
 ```
 
+Production absolute URL:
+
+```text
+https://ahmaddalao.com/athlete/api/device-connections/{public_id}/ingest
+```
+
 Example JSON body:
 
 ```json
 {
-  "metric_date": "2026-06-10",
-  "external_event_id": "provider-event-123",
-  "metrics": {
-    "readiness_score": 82,
-    "sleep_minutes": 445,
-    "strain_score": 13.4,
-    "steps": 11240,
-    "resting_heart_rate": 47,
-    "heart_rate_variability": 72.1,
-    "training_load": 418.6
-  }
+    "metric_date": "2026-06-10",
+    "external_event_id": "provider-event-123",
+    "metrics": {
+        "readiness_score": 82,
+        "sleep_minutes": 445,
+        "strain_score": 13.4,
+        "steps": 11240,
+        "resting_heart_rate": 47,
+        "heart_rate_variability": 72.1,
+        "training_load": 418.6
+    }
 }
 ```
 
 ## Planning docs
 
 - [Project plan](docs/Throughline_Project_Plan.md)
+- [Deployment contract](docs/Throughline_Deployment.md)
 - [Shareable DOCX plan](output/doc/Throughline_Project_Plan.docx)
 - [Progress report](docs/Throughline_Progress_Report.md)

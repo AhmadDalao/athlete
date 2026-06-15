@@ -31,8 +31,18 @@ class SocialAuthService
         $service = config("services.{$method->value}", []);
 
         return filled($service['client_id'] ?? null)
-            && filled($service['client_secret'] ?? null)
-            && filled($service['redirect'] ?? null);
+            && filled($service['client_secret'] ?? null);
+    }
+
+    public function redirectUrlFor(SignupMethod $provider): string
+    {
+        $configuredRedirect = config("services.{$provider->value}.redirect");
+
+        if (is_string($configuredRedirect) && $configuredRedirect !== '') {
+            return $configuredRedirect;
+        }
+
+        return route('auth.oauth.callback', ['provider' => $provider->value], absolute: true);
     }
 
     public function resolveProvider(string $provider): SignupMethod

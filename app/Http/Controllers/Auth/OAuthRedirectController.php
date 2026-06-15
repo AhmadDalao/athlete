@@ -45,6 +45,7 @@ class OAuthRedirectController extends Controller
         ]);
 
         return Socialite::driver($signupMethod->value)
+            ->redirectUrl($socialAuth->redirectUrlFor($signupMethod))
             ->scopes($socialAuth->scopesFor($signupMethod))
             ->redirect();
     }
