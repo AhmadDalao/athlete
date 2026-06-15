@@ -72,6 +72,14 @@ Hostinger shared hosting does not expose `crontab` over SSH here, so add these i
 * * * * * /opt/alt/php85/usr/bin/php /home/u867436826/domains/ahmaddalao.com/throughline-athlete-app/artisan queue:work --stop-when-empty --tries=3 --max-time=50 >/dev/null 2>&1
 ```
 
+## Immediate post-deploy hardening
+
+Run this once after a fresh seeded deploy so the public demo passwords stop being real:
+
+```bash
+/opt/alt/php85/usr/bin/php /home/u867436826/domains/ahmaddalao.com/throughline-athlete-app/artisan throughline:security:lock-demo-users --admin-email=admin@athlete.ahmaddalao.com --admin-name="Ahmad Dalao"
+```
+
 ## Callback URLs
 
 Use these exact production callbacks in provider dashboards:

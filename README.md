@@ -88,6 +88,12 @@ If you want a direct belt-and-suspenders billing audit outside the scheduler, ru
 php artisan throughline:memberships:audit
 ```
 
+After first production deploy, harden access immediately:
+
+```bash
+php artisan throughline:security:lock-demo-users --admin-email=admin@athlete.ahmaddalao.com --admin-name="Ahmad Dalao"
+```
+
 ## Useful commands
 
 ```bash
@@ -99,6 +105,7 @@ npm run build
 npm run build:athlete
 php artisan test
 php artisan throughline:memberships:audit
+php artisan throughline:security:lock-demo-users --admin-email=admin@athlete.ahmaddalao.com --admin-name="Ahmad Dalao"
 ```
 
 ## API ingest shape
