@@ -7,12 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { WorkspaceHero, WorkspaceMetricCard, WorkspacePanel, WorkspaceSectionHeading } from '@/components/workspace-primitives';
+import { WorkspaceHero, WorkspacePanel, WorkspaceSectionHeading } from '@/components/workspace-primitives';
 import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, ArrowRight, MailCheck, PhoneCall, Search, Shield, UserPlus, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Search, UserPlus } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 
 const adminPrimaryButtonClass = 'rounded-full bg-stone-950 text-white hover:bg-stone-800';
@@ -671,11 +671,11 @@ export default function AdminUsersIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin users" />
 
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
                 <WorkspaceHero
-                    eyebrow="Admin users"
-                    title="User control should feel like control, not cleanup roulette."
-                    description="Admin-only control over roles, onboarding data, and contact preferences. This is where the platform stops being a pile of accounts."
+                    eyebrow="Access control"
+                    title="Users"
+                    description="Track accounts, roles, contact paths, subscriptions, and roster impact in one clean table."
                     badges={['Admin only', `${summary.totalUsers} total users`, `${summary.newThisMonth} new this month`]}
                     actions={
                         <>
@@ -688,61 +688,14 @@ export default function AdminUsersIndex({
                             </Button>
                         </>
                     }
-                    aside={
-                        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                            <div className="rounded-[1.35rem] border border-white/70 bg-white/80 p-4">
-                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Platform mix</p>
-                                <p className="mt-3 text-sm font-semibold tracking-tight text-stone-950">
-                                    {summary.owners} owners · {summary.admins} admins · {summary.coaches} coaches · {summary.athletes} athletes
-                                </p>
-                            </div>
-                            <div className="rounded-[1.35rem] border border-white/70 bg-white/80 p-4">
-                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Verified email</p>
-                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">{summary.emailVerified}</p>
-                                <p className="mt-2 text-sm text-stone-600">Accounts with verified email status kept intact.</p>
-                            </div>
-                            <div className="rounded-[1.35rem] border border-white/70 bg-white/80 p-4">
-                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Phone-first users</p>
-                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">{summary.phoneFirst}</p>
-                                <p className="mt-2 text-sm text-stone-600">Accounts that prefer phone as the primary contact path.</p>
-                            </div>
-                        </div>
-                    }
                 />
-
-                <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <WorkspaceMetricCard
-                        title="Platform users"
-                        value={summary.totalUsers.toString()}
-                        note={`${summary.owners} owners, ${summary.admins} admins, ${summary.coaches} coaches, and ${summary.athletes} athletes.`}
-                        icon={Users}
-                    />
-                    <WorkspaceMetricCard
-                        title="Email verified"
-                        value={summary.emailVerified.toString()}
-                        note="Accounts with verified email status kept intact."
-                        icon={MailCheck}
-                    />
-                    <WorkspaceMetricCard
-                        title="Phone-first users"
-                        value={summary.phoneFirst.toString()}
-                        note="Accounts that prefer phone as the primary contact path."
-                        icon={PhoneCall}
-                    />
-                    <WorkspaceMetricCard
-                        title="New this month"
-                        value={summary.newThisMonth.toString()}
-                        note="Fresh accounts created since the start of the month."
-                        icon={Shield}
-                    />
-                </section>
 
                 <WorkspacePanel
                     title="Find users fast"
-                    description="Filter by search, role, or signup channel before the list gets ugly."
+                    description="Filter by search, role, or signup channel. Changes also auto-refresh the table."
                     contentClassName="p-0"
                 >
-                    <div className="p-0">
+                    <div className="space-y-4 p-0">
                         <form className="grid gap-4 lg:grid-cols-[1fr_0.26fr_0.26fr_auto]" onSubmit={applyFilters}>
                             <div className="grid gap-2">
                                 <Label htmlFor="user-search">Search</Label>
@@ -801,6 +754,15 @@ export default function AdminUsersIndex({
                                 </Button>
                             </div>
                         </form>
+                        <div className="flex flex-wrap gap-2 text-xs font-black text-stone-950">
+                            <span className="rounded-full bg-amber-50 px-3 py-2 text-amber-900">All: {summary.totalUsers}</span>
+                            <span className="rounded-full bg-stone-100 px-3 py-2">Owners: {summary.owners}</span>
+                            <span className="rounded-full bg-stone-100 px-3 py-2">Admins: {summary.admins}</span>
+                            <span className="rounded-full bg-stone-100 px-3 py-2">Coaches: {summary.coaches}</span>
+                            <span className="rounded-full bg-stone-100 px-3 py-2">Athletes: {summary.athletes}</span>
+                            <span className="rounded-full bg-stone-100 px-3 py-2">Email verified: {summary.emailVerified}</span>
+                            <span className="rounded-full bg-stone-100 px-3 py-2">Phone-first: {summary.phoneFirst}</span>
+                        </div>
                     </div>
                 </WorkspacePanel>
 
@@ -828,13 +790,13 @@ export default function AdminUsersIndex({
                                 <table className="w-full min-w-[1180px] text-left text-sm">
                                     <thead className="bg-stone-50 text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
                                         <tr>
-                                            <th className="px-4 py-3">User</th>
-                                            <th className="px-4 py-3">Roles</th>
-                                            <th className="px-4 py-3">Contact</th>
-                                            <th className="px-4 py-3">Subscription</th>
-                                            <th className="px-4 py-3">Tracking</th>
-                                            <th className="px-4 py-3">Created</th>
-                                            <th className="px-4 py-3 text-right">Actions</th>
+                                            <th className="px-5 py-4">User</th>
+                                            <th className="px-5 py-4">Roles</th>
+                                            <th className="px-5 py-4">Contact</th>
+                                            <th className="px-5 py-4">Subscription</th>
+                                            <th className="px-5 py-4">Tracking</th>
+                                            <th className="px-5 py-4">Created</th>
+                                            <th className="px-5 py-4 text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-stone-100">
@@ -843,7 +805,7 @@ export default function AdminUsersIndex({
 
                                             return (
                                             <tr key={user.id} className="align-top transition-colors hover:bg-stone-50/80">
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <Link
                                                         href={route('admin.users.show', user.id)}
                                                         className="font-semibold text-stone-950 underline-offset-4 hover:text-emerald-700 hover:underline"
@@ -857,7 +819,7 @@ export default function AdminUsersIndex({
                                                         <p className="mt-2 text-xs text-stone-400">No primary goal set.</p>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <div className="flex max-w-[14rem] flex-wrap gap-1.5">
                                                         {user.roles.map((roleName) => (
                                                             <Badge key={roleName} variant="outline">
@@ -869,7 +831,7 @@ export default function AdminUsersIndex({
                                                     <p className="mt-2 text-xs font-medium text-stone-700">{user.position ?? 'No position set'}</p>
                                                     <p className="mt-1 text-xs text-stone-500">{user.permissionCount} permission(s)</p>
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <p className="font-medium text-stone-950">
                                                         {humanizeStatus(user.preferredContactMethod ?? 'email')}
                                                     </p>
@@ -883,7 +845,7 @@ export default function AdminUsersIndex({
                                                         </Badge>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     {user.currentMembership ? (
                                                         <div className="space-y-2">
                                                             <div className="flex flex-wrap gap-1.5">
@@ -920,7 +882,7 @@ export default function AdminUsersIndex({
                                                         <p className="text-xs text-stone-500">No current membership on record.</p>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <dl className="grid gap-1 text-xs text-stone-600">
                                                         <div className="flex justify-between gap-4">
                                                             <dt>Memberships</dt>
@@ -936,8 +898,8 @@ export default function AdminUsersIndex({
                                                         </div>
                                                     </dl>
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{formatDate(user.createdAt)}</td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4 text-sm text-stone-700">{formatDate(user.createdAt)}</td>
+                                                <td className="px-5 py-4">
                                                     <div className="flex justify-end gap-2">
                                                         <Button asChild variant="outline" size="sm">
                                                             <Link href={route('admin.users.show', user.id)}>Details</Link>

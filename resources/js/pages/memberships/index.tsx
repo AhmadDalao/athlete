@@ -697,7 +697,7 @@ export default function MembershipIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Memberships" />
 
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
                 <WorkspaceHero
                     eyebrow="Membership workspace"
                     title={heroTitle}
@@ -892,43 +892,43 @@ export default function MembershipIndex({
                                 <tbody className="divide-y divide-stone-100">
                                     {memberships.data.map((membership) => (
                                         <tr key={membership.id} className="align-top transition-colors hover:bg-stone-50/80">
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="font-semibold text-stone-950">{membership.userName}</p>
                                                 <p className="mt-1 text-xs text-stone-500">{membership.userEmail}</p>
                                                 {membership.userPhone && <p className="mt-1 text-xs text-stone-500">{membership.userPhone}</p>}
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <Badge variant="outline">{humanizeStatus(membership.userRole ?? 'user')}</Badge>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="font-medium text-stone-950">{membership.planName}</p>
                                                 <p className="mt-1 text-xs text-stone-500">
                                                     {membership.autoRenew ? 'Auto renew on' : 'Manual renewal'}
                                                 </p>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <Badge variant={badgeVariantForStatus(membership.status)}>
                                                     {humanizeStatus(membership.status)}
                                                 </Badge>
                                                 <p className="mt-2 text-xs font-medium text-emerald-700">{formatDays(membership.daysRemaining)}</p>
                                             </td>
-                                            <td className="px-4 py-4 text-sm text-stone-700">{membership.renewsAt ?? 'Not scheduled'}</td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4 text-sm text-stone-700">{membership.renewsAt ?? 'Not scheduled'}</td>
+                                            <td className="px-5 py-4">
                                                 <p className="text-sm text-stone-700">{membership.effectiveEndsAt ?? 'Open ended'}</p>
                                                 <p className="mt-1 text-xs text-stone-500">
                                                     Grace/cancelled: {membership.graceEndsAt ?? membership.cancelledAt ?? 'None'}
                                                 </p>
                                             </td>
-                                            <td className="px-4 py-4 font-medium text-stone-950">
+                                            <td className="px-5 py-4 font-medium text-stone-950">
                                                 {formatCurrency(membership.price, membership.currency)}
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="text-sm text-stone-700">{membership.billingProvider?.toUpperCase() ?? 'Manual'}</p>
                                                 <p className="mt-1 line-clamp-2 max-w-[12rem] text-xs text-stone-500">
                                                     {membership.providerSubscriptionId ?? membership.notes ?? 'No provider id'}
                                                 </p>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 {canManageMemberships ? (
                                                     <div className="flex flex-col gap-2">
                                                         <MembershipSettingsDialog membership={membership} />
@@ -972,23 +972,23 @@ export default function MembershipIndex({
                                 <tbody className="divide-y divide-stone-100">
                                     {recentPaymentActivity.map((event) => (
                                         <tr key={`${event.userName}-${event.id}`} className="align-top transition-colors hover:bg-stone-50/80">
-                                            <td className="px-4 py-4 text-sm text-stone-700">{formatDateTime(event.eventAt)}</td>
-                                            <td className="px-4 py-4 font-medium text-stone-950">{event.userName}</td>
-                                            <td className="px-4 py-4 text-sm text-stone-700">{event.planName}</td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4 text-sm text-stone-700">{formatDateTime(event.eventAt)}</td>
+                                            <td className="px-5 py-4 font-medium text-stone-950">{event.userName}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{event.planName}</td>
+                                            <td className="px-5 py-4">
                                                 <Badge variant="outline">{humanizeStatus(event.eventType)}</Badge>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <Badge variant={badgeVariantForStatus(event.status)}>{humanizeStatus(event.status)}</Badge>
                                             </td>
-                                            <td className="px-4 py-4 font-medium text-stone-950">
+                                            <td className="px-5 py-4 font-medium text-stone-950">
                                                 {event.amount === null ? 'No amount' : formatCurrency(event.amount, event.currency)}
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="text-sm text-stone-700">{event.provider ?? 'Manual'}</p>
                                                 <p className="mt-1 max-w-[14rem] break-words text-xs text-stone-500">{event.reference ?? 'No reference'}</p>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="max-w-[18rem] text-sm leading-6 text-stone-700">{event.notes ?? 'No notes attached.'}</p>
                                                 <p className="mt-1 text-xs text-stone-500">
                                                     {event.createdBy ? `Recorded by ${event.createdBy}` : 'System event'}

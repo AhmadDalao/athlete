@@ -19,7 +19,7 @@ import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Archive, Download, Files, FileText, Search, UserRoundCheck } from 'lucide-react';
+import { Archive, Download, Eye, Files, FileText, Search, UserRoundCheck } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -49,6 +49,7 @@ interface FileRow {
     uploadedBy: string | null;
     createdAt: string | null;
     archivedAt: string | null;
+    previewable: boolean;
 }
 
 interface FilePaginator {
@@ -262,6 +263,39 @@ function EditFileDialog({ file, athleteOptions, fileOptions }: { file: FileRow; 
     );
 }
 
+function FilePreviewDialog({ file }: { file: FileRow }) {
+    const previewUrl = route('athlete-files.preview', file.id);
+    const image = file.mimeType?.startsWith('image/');
+
+    if (!file.previewable) {
+        return null;
+    }
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                    <Eye className="size-4" />
+                    Preview
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-5xl">
+                <DialogHeader>
+                    <DialogTitle>{file.displayName}</DialogTitle>
+                    <DialogDescription>{file.originalFilename}</DialogDescription>
+                </DialogHeader>
+                <div className="max-h-[72vh] overflow-hidden rounded-2xl border border-stone-200 bg-stone-50">
+                    {image ? (
+                        <img src={previewUrl} alt={file.displayName} className="max-h-[72vh] w-full object-contain" />
+                    ) : (
+                        <iframe title={file.displayName} src={previewUrl} className="h-[72vh] w-full bg-white" />
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export default function AdminFiles({ filters, summary, files, athleteOptions, fileOptions }: AdminFilesProps) {
     const baseRoute = route('admin.files.index');
     const [q, setQ] = useState(filters.q ?? '');
@@ -281,7 +315,7 @@ export default function AdminFiles({ filters, summary, files, athleteOptions, fi
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin files" />
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
                 <WorkspaceHero
                     eyebrow="Admin file library"
                     title="Athlete files should be searchable, movable, and exportable."
@@ -413,7 +447,7 @@ export default function AdminFiles({ filters, summary, files, athleteOptions, fi
                                 <tbody className="divide-y divide-stone-100">
                                     {files.data.map((file) => (
                                         <tr key={file.id} className="align-top hover:bg-stone-50/80">
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="font-semibold text-stone-950">{file.athlete.name ?? 'Unknown athlete'}</p>
                                                 <p className="text-xs text-stone-500">{file.athlete.email}</p>
                                                 {file.athlete.id && (
@@ -422,18 +456,19 @@ export default function AdminFiles({ filters, summary, files, athleteOptions, fi
                                                     </Button>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="font-medium text-stone-950">{file.displayName}</p>
                                                 <p className="text-xs text-stone-500">{file.originalFilename}</p>
                                             </td>
-                                            <td className="px-4 py-4 text-sm text-stone-600">{humanize(file.category)}</td>
-                                            <td className="px-4 py-4 text-sm text-stone-600">{humanize(file.visibility)}</td>
-                                            <td className="px-4 py-4"><Badge variant={statusVariant(file.status)}>{humanize(file.status)}</Badge></td>
-                                            <td className="px-4 py-4 text-sm text-stone-600">{formatSize(file.sizeBytes)}</td>
-                                            <td className="px-4 py-4 text-sm text-stone-600">{file.createdAt ?? 'N/A'} by {file.uploadedBy ?? 'System'}</td>
-                                            <td className="px-4 py-4 text-sm text-stone-600">{file.notes ?? 'No notes'}</td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4 text-sm text-stone-600">{humanize(file.category)}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-600">{humanize(file.visibility)}</td>
+                                            <td className="px-5 py-4"><Badge variant={statusVariant(file.status)}>{humanize(file.status)}</Badge></td>
+                                            <td className="px-5 py-4 text-sm text-stone-600">{formatSize(file.sizeBytes)}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-600">{file.createdAt ?? 'N/A'} by {file.uploadedBy ?? 'System'}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-600">{file.notes ?? 'No notes'}</td>
+                                            <td className="px-5 py-4">
                                                 <div className="flex flex-col gap-2">
+                                                    <FilePreviewDialog file={file} />
                                                     <Button asChild size="sm" variant="outline">
                                                         <a href={route('athlete-files.download', file.id)}>
                                                             <Download className="size-4" />

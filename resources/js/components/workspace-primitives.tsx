@@ -1,5 +1,4 @@
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
 import { ArrowRight, type LucideIcon } from 'lucide-react';
@@ -21,70 +20,66 @@ export function WorkspaceHero({
     aside?: ReactNode;
 }) {
     return (
-        <section className="min-w-0 rounded-[2rem] border border-stone-200/90 bg-white shadow-[0_18px_38px_-34px_rgba(15,23,42,0.16)]">
-            <div className="grid min-w-0 gap-6 p-6 lg:grid-cols-[1.12fr_0.88fr] lg:p-8">
-                <div className="min-w-0 space-y-6">
+        <section className="min-w-0 border-b border-stone-200 bg-white pb-7">
+            <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                <div className="min-w-0 space-y-4">
                     <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-[0.68rem] font-semibold tracking-[0.22em] text-stone-600 uppercase">
+                        <span className="text-[0.72rem] font-black tracking-[0.08em] text-amber-700">
                             {eyebrow}
                         </span>
                         {badges.map((badge) => (
-                            <Badge key={badge} variant="outline" className="border-stone-200 bg-white text-stone-700">
+                            <Badge key={badge} variant="outline" className="rounded-full border-stone-200 bg-white text-stone-700">
                                 {badge}
                             </Badge>
                         ))}
                     </div>
-                    <div className="space-y-4">
-                        <h1 className="max-w-3xl font-['Space_Grotesk'] text-3xl leading-none font-bold tracking-[-0.04em] text-stone-950 sm:text-[2.7rem]">
+                    <div className="space-y-2">
+                        <h1 className="max-w-3xl font-['Space_Grotesk'] text-4xl leading-none font-black tracking-[-0.06em] text-stone-950 sm:text-[2.65rem]">
                             {title}
                         </h1>
-                        <p className="max-w-2xl text-sm leading-7 text-stone-600">{description}</p>
+                        <p className="max-w-2xl text-base leading-7 text-stone-500">{description}</p>
                     </div>
-                    {actions && <div className="flex min-w-0 flex-wrap gap-3">{actions}</div>}
                 </div>
-                {aside && <div className="min-w-0 lg:pl-4">{aside}</div>}
+                {actions && <div className="flex min-w-0 shrink-0 flex-wrap gap-3">{actions}</div>}
             </div>
+            {aside && <div className="mt-5 min-w-0 border-t border-stone-100 pt-5">{aside}</div>}
         </section>
     );
 }
 
 export function WorkspaceMetricCard({ title, value, note, icon: Icon }: { title: string; value: string; note: string; icon: LucideIcon }) {
     return (
-        <Card className="min-w-0 border-stone-200/90 bg-white shadow-[0_14px_30px_-28px_rgba(15,23,42,0.14)]">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <div>
-                    <CardDescription className="text-stone-500">{title}</CardDescription>
-                    <CardTitle className="mt-3 text-3xl tracking-[-0.04em] text-stone-950">{value}</CardTitle>
+        <div className="min-w-0 border-t border-stone-100 bg-white py-4">
+            <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                    <p className="text-xs font-black tracking-[0.14em] text-stone-500 uppercase">{title}</p>
+                    <p className="mt-2 font-['Space_Grotesk'] text-3xl font-black tracking-[-0.06em] text-stone-950">{value}</p>
                 </div>
-                <div className="rounded-2xl border border-stone-200 bg-stone-50 p-2 text-stone-700">
+                <div className="grid size-8 shrink-0 place-items-center rounded-full bg-amber-50 text-amber-700">
                     <Icon className="size-4" />
                 </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm leading-6 text-stone-600">{note}</p>
-            </CardContent>
-        </Card>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-stone-500">{note}</p>
+        </div>
     );
 }
 
 export function WorkspaceActionCard({ title, href, note, icon: Icon }: { title: string; href: string; note: string; icon: LucideIcon }) {
     return (
         <Link href={href} className="block min-w-0">
-            <Card className="h-full min-w-0 border-stone-200/90 bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-stone-300 hover:bg-white">
-                <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                    <div>
-                        <CardTitle className="text-lg tracking-tight text-stone-950">{title}</CardTitle>
-                        <CardDescription className="mt-2 leading-6 text-stone-600">{note}</CardDescription>
+            <div className="flex h-full min-w-0 items-start justify-between gap-4 border-t border-stone-100 bg-white py-4 transition-colors hover:bg-stone-50">
+                <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                        <Icon className="size-4 text-amber-700" />
+                        <p className="font-['Space_Grotesk'] text-lg font-black tracking-[-0.04em] text-stone-950">{title}</p>
                     </div>
-                    <div className="rounded-2xl border border-stone-200 bg-stone-50 p-2 text-stone-700">
-                        <Icon className="size-4" />
-                    </div>
-                </CardHeader>
-                <CardContent className="flex items-center text-sm font-medium text-stone-800">
+                    <p className="mt-2 text-sm leading-6 text-stone-500">{note}</p>
+                </div>
+                <span className="inline-flex shrink-0 items-center text-sm font-black text-stone-900">
                     Open view
-                    <ArrowRight className="ml-2 size-4" />
-                </CardContent>
-            </Card>
+                    <ArrowRight className="ml-1.5 size-4" />
+                </span>
+            </div>
         </Link>
     );
 }
@@ -103,23 +98,25 @@ export function WorkspacePanel({
     contentClassName?: string;
 }) {
     return (
-        <Card className={cn('min-w-0 border-stone-200/90 bg-white shadow-[0_14px_30px_-28px_rgba(15,23,42,0.14)]', className)}>
-            <CardHeader>
-                <CardTitle className="text-xl tracking-[-0.03em] text-stone-950">{title}</CardTitle>
-                {description && <CardDescription className="max-w-3xl leading-6 text-stone-600">{description}</CardDescription>}
-            </CardHeader>
-            <CardContent className={contentClassName}>{children}</CardContent>
-        </Card>
+        <section className={cn('min-w-0 rounded-[1.35rem] border border-stone-200 bg-white', className)}>
+            <div className="flex flex-col gap-3 border-b border-stone-100 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                    <h2 className="font-['Space_Grotesk'] text-2xl font-black tracking-[-0.05em] text-stone-950">{title}</h2>
+                    {description && <p className="mt-1 max-w-4xl text-sm leading-6 text-stone-500">{description}</p>}
+                </div>
+            </div>
+            <div className={cn('p-6', contentClassName)}>{children}</div>
+        </section>
     );
 }
 
 export function WorkspaceSectionHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
     return (
         <div className="space-y-2">
-            <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-400 uppercase">{eyebrow}</p>
+            <p className="text-[0.7rem] font-black tracking-[0.14em] text-stone-400 uppercase">{eyebrow}</p>
             <div className="space-y-1">
-                <h2 className="font-['Space_Grotesk'] text-2xl font-bold tracking-[-0.04em] text-stone-950">{title}</h2>
-                <p className="max-w-3xl text-sm leading-7 text-stone-600">{description}</p>
+                <h2 className="font-['Space_Grotesk'] text-2xl font-black tracking-[-0.05em] text-stone-950">{title}</h2>
+                <p className="max-w-4xl text-sm leading-7 text-stone-500">{description}</p>
             </div>
         </div>
     );
@@ -133,18 +130,18 @@ export function WorkspaceTable({
     minWidth?: string;
 }) {
     return (
-        <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
-            <table className={cn('w-full text-left text-sm', minWidth)}>{children}</table>
+        <div className="overflow-x-auto rounded-[1.05rem] border border-stone-200 bg-white">
+            <table className={cn('w-full border-collapse text-left text-sm', minWidth)}>{children}</table>
         </div>
     );
 }
 
 export function WorkspaceTableHeader({ labels }: { labels: string[] }) {
     return (
-        <thead className="bg-stone-50 text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
+        <thead className="bg-stone-50 text-[0.72rem] font-black tracking-[0.12em] text-stone-500 uppercase">
             <tr>
                 {labels.map((label) => (
-                    <th key={label} className="px-4 py-3">
+                    <th key={label} className="px-5 py-4">
                         {label}
                     </th>
                 ))}
@@ -157,7 +154,7 @@ export function WorkspaceTableEmpty({ message, colSpan }: { message: string; col
     return (
         <tbody>
             <tr>
-                <td colSpan={colSpan} className="px-4 py-8 text-center text-sm text-stone-500">
+                <td colSpan={colSpan} className="px-5 py-10 text-center text-sm text-stone-500">
                     {message}
                 </td>
             </tr>

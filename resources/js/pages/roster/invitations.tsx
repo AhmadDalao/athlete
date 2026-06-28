@@ -240,7 +240,7 @@ export default function InvitationIndex({ adminMode, filters, summary, invitatio
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={adminMode ? 'Admin invitations' : 'Athlete invitations'} />
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
                 <WorkspaceHero
                     eyebrow={adminMode ? 'Admin invitation control' : 'Coach invite pipeline'}
                     title="Athlete invitations should be visible, resendable, and accountable."
@@ -343,29 +343,29 @@ export default function InvitationIndex({ adminMode, filters, summary, invitatio
                                 <tbody className="divide-y divide-stone-100">
                                     {invitations.data.map((invitation) => (
                                         <tr key={invitation.id} className="align-top hover:bg-stone-50/80">
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="font-semibold text-stone-950">{invitation.name}</p>
                                                 <p className="mt-1 text-xs text-stone-500">{invitation.email}</p>
                                                 <p className="mt-1 text-xs text-stone-500">{invitation.phone ?? 'No phone'}</p>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="font-medium text-stone-950">{invitation.coach.name ?? 'No coach'}</p>
                                                 <p className="mt-1 text-xs text-stone-500">{invitation.coach.email}</p>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <Badge variant={statusVariant(invitation.status)}>{humanize(invitation.status)}</Badge>
                                                 <p className="mt-2 text-xs text-stone-500">By {invitation.invitedBy.name ?? 'System'}</p>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="max-w-[16rem] text-sm text-stone-700">{invitation.goal ?? 'No goal set'}</p>
                                                 <p className="mt-2 line-clamp-2 max-w-[16rem] text-xs text-stone-500">{invitation.notes ?? 'No notes'}</p>
                                             </td>
-                                            <td className="px-4 py-4 text-xs text-stone-600">
+                                            <td className="px-5 py-4 text-xs text-stone-600">
                                                 <p>Created {invitation.createdAt ?? 'N/A'}</p>
                                                 <p className="mt-1">Expires {invitation.expiresAt ?? 'N/A'}</p>
                                                 {invitation.cancelledAt && <p className="mt-1">Cancelled {invitation.cancelledAt}</p>}
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 {invitation.acceptedUser ? (
                                                     <>
                                                         <p className="font-medium text-stone-950">{invitation.acceptedUser.name}</p>
@@ -377,7 +377,7 @@ export default function InvitationIndex({ adminMode, filters, summary, invitatio
                                                     <span className="text-xs text-stone-500">Not accepted</span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <div className="flex flex-col gap-2">
                                                     {invitation.status !== 'accepted' && (
                                                         <Button

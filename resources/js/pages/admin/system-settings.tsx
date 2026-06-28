@@ -97,7 +97,7 @@ export default function SystemSettings({ groups, mailRuntime }: SystemSettingsPr
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="System settings" />
 
-            <form className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6" onSubmit={submit}>
+            <form className="flex h-full flex-1 flex-col gap-8 bg-white py-8" onSubmit={submit}>
                 <WorkspaceHero
                     eyebrow="Admin system control"
                     title="Control the product copy and operational identity from one page."

@@ -86,13 +86,56 @@ class AthleteProfileAndFilesTest extends TestCase
                 ->where('profile.email', $athlete->email)
                 ->where('summary.sessions', 1)
                 ->where('summary.completedSessions', 1)
-                ->where('progress.0.weightKg', 82.4)
-                ->where('sessions.0.title', 'Lower Body')
-                ->where('sessions.0.completedSets', 1)
-                ->where('setLogs.0.exerciseName', 'Back squat')
-                ->where('setLogs.0.actualLoad', '102.5kg')
-                ->where('setLogs.0.actualRpe', 8)
+                ->where('tables.progress.data.0.weightKg', 82.4)
+                ->where('tables.sessions.data.0.title', 'Lower Body')
+                ->where('tables.sessions.data.0.completedSets', 1)
+                ->where('tables.setLogs.data.0.exerciseName', 'Back squat')
+                ->where('tables.setLogs.data.0.actualLoad', '102.5kg')
+                ->where('tables.setLogs.data.0.actualRpe', 8)
             );
+    }
+
+    public function test_athlete_profile_tables_filter_paginate_and_export_csv(): void
+    {
+        [$coach, $athlete] = $this->assignedCoachAthlete();
+
+        $program = TrainingProgram::query()->create([
+            'coach_id' => $coach->id,
+            'athlete_id' => $athlete->id,
+            'title' => 'Strength Block',
+            'goal' => 'Build base',
+            'status' => TrainingProgramStatus::Active,
+            'start_date' => now()->subDays(2)->toDateString(),
+        ]);
+
+        TrainingSession::query()->create([
+            'training_program_id' => $program->id,
+            'title' => 'Lower Body',
+            'scheduled_date' => now()->toDateString(),
+            'focus' => 'Strength',
+            'sort_order' => 1,
+        ]);
+        TrainingSession::query()->create([
+            'training_program_id' => $program->id,
+            'title' => 'Mobility Reset',
+            'scheduled_date' => now()->addDay()->toDateString(),
+            'focus' => 'Recovery',
+            'sort_order' => 2,
+        ]);
+
+        $this->actingAs($coach)
+            ->get(route('athletes.show', ['user' => $athlete->id, 'sessions_q' => 'Lower'], false))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('tables.sessions.total', 1)
+                ->where('tables.sessions.data.0.title', 'Lower Body')
+            );
+
+        $response = $this->actingAs($coach)
+            ->get(route('athletes.exports.show', ['user' => $athlete->id, 'section' => 'sessions', 'sessions_q' => 'Lower'], false))
+            ->assertOk();
+
+        $this->assertStringContainsString('text/csv', (string) $response->headers->get('content-type'));
     }
 
     public function test_unassigned_coach_cannot_view_another_coachs_athlete_profile(): void
@@ -134,6 +177,10 @@ class AthleteProfileAndFilesTest extends TestCase
         $this->actingAs($coach)
             ->get(route('athlete-files.download', $file, false))
             ->assertOk();
+
+        $this->actingAs($coach)
+            ->get(route('athlete-files.preview', $file, false))
+            ->assertOk();
     }
 
     public function test_unassigned_coach_cannot_download_private_athlete_file(): void
@@ -159,6 +206,10 @@ class AthleteProfileAndFilesTest extends TestCase
 
         $this->actingAs($otherCoach)
             ->get(route('athlete-files.download', $file, false))
+            ->assertForbidden();
+
+        $this->actingAs($otherCoach)
+            ->get(route('athlete-files.preview', $file, false))
             ->assertForbidden();
     }
 

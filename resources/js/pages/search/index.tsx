@@ -39,7 +39,7 @@ export default function SearchIndex({ query, sections }: SearchProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Search" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-6 bg-white py-8">
                 <div className="flex flex-wrap items-end justify-between gap-4 border-b border-stone-200 pb-5">
                     <div>
                         <p className="text-sm font-semibold text-stone-500">Find anything fast</p>

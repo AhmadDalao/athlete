@@ -145,6 +145,7 @@ class AthleteFileIndexController extends Controller
             'uploadedBy' => $file->uploadedBy?->name,
             'createdAt' => $file->created_at?->toDateTimeString(),
             'archivedAt' => $file->archived_at?->toDateTimeString(),
+            'previewable' => in_array($file->mime_type, ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif'], true),
         ];
     }
 

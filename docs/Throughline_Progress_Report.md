@@ -44,6 +44,8 @@ The current build supports:
 - per-set workout execution at `/app/workouts/{trainingSession}`
 - workout journal fields for duration, RPE, energy, soreness, stress, sleep quality, and notes
 - workout media playback for YouTube, Vimeo, direct video URLs, or external links
+- coach-attached workout image references stored on the training session
+- athlete workout media tab with primary video first and a reference image slider
 - coach-athlete async messaging at `/messages`
 - membership lifecycle tracking and cron-safe auditing
 - payment event tracking and manual membership operations
@@ -60,6 +62,43 @@ The current build supports:
 - phone-first athlete app direction based on the reference app video: today workout, wearable prompt, exercise rows, journal/media actions, and sticky bottom navigation
 - admin ops triage for renewals, payment failures, coach load, coverage gaps, and stale progress logging
 - KONA-style operational navigation with topbar search, table-first admin logs, CSV exports, and direct next-action cards
+
+## 2026-06-28 workout media and athlete reference slider slice
+
+This slice closes the immediate media gap from the athlete app reference video.
+
+- Added `training_sessions.media_items` for session-level media references.
+- Added `TrainingSessionMediaParser` so coaches can paste clean image URLs without writing JSON.
+- Coaches can add image URLs when creating a new training program's first session.
+- Coaches can add image URLs when adding another session to an existing program.
+- Invalid image URLs are rejected clearly instead of silently creating broken athlete media.
+- The athlete workout execution payload now returns `mediaItems` with the video first and image references after it.
+- The API training session payload now exposes the same `mediaItems` shape for future mobile use.
+- `/app/workouts/{trainingSession}` now keeps the primary video first, then shows reference images in a slider with next/previous controls and thumbnails.
+- Training workspace session cards now show a media count badge so coaches can tell which sessions include references.
+
+What this does not solve yet:
+
+- Uploaded image/video files are not yet bound directly to exercises. This is the next media-library slice.
+- One athlete subscribing to multiple coaches, nutritionists, or other specialists needs a relationship-type and billing model. Do not hack that into the current single active coach assumption.
+
+Regression:
+
+- `php artisan test --filter=TrainingProgramStoreTest`: 4 passed, 31 assertions.
+- `php artisan test --filter=AthleteAppExperienceTest`: 7 passed, 77 assertions.
+- `npm run build:athlete`: passed.
+- `npx eslint resources/js --max-warnings=0`: passed.
+- `php artisan test`: 143 passed, 1337 assertions.
+
+Production deploy:
+
+- Deployed to `https://athlete.ahmaddalao.com`.
+- Source backup created at `/home/u867436826/db-backups/athlete-source-media-20260628182842.tgz`.
+- Database backup created at `/home/u867436826/db-backups/athlete-media-20260628182842.sql.gz`.
+- Migration `2026_06_28_190000_add_media_items_to_training_sessions_table` is `Ran`.
+- Live manifest checksum matches local: `ed57ce4307e3d39e413bed476e072f61b1f2dfc320cc1f28d001ec2dfa942eaf`.
+- Public smoke passed: `/`, `/login`, `/register`, `/contact`, and `/build/manifest.json` returned `200`.
+- Protected smoke passed: `/app` and `/training` returned `302` to login.
 
 ## 2026-06-28 coach athlete ownership and admin control slice
 
@@ -871,3 +910,38 @@ This cycle made the filter-heavy pages update through debounced Inertia requests
 - `npx eslint resources/js --max-warnings=0`: passed.
 - `npm run build:athlete`: passed.
 - `php artisan test`: 140 tests passed, 1287 assertions.
+
+## 2026-06-28 backend table-first UI pass
+
+This cycle tightened the backend toward the KONA operating style: light mode, compact headers, direct filters, and tables as the primary record view.
+
+### What changed
+
+- Reworked the shared workspace primitives so backend pages inherit the same cleaner visual language.
+- Changed the workspace canvas to white and reduced the old rounded dashboard-shell treatment.
+- Converted shared metric blocks from card-style tiles into flat stat rows so they stop competing with the actual tables.
+- Converted shared action cards into simple action rows.
+- Tightened the shared page hero into a compact KONA-style page header.
+- Removed the duplicated metric-card block from `/admin/users`.
+- Moved user counts on `/admin/users` into small filter chips above the table.
+- Kept the backend tables, filters, pagination, and CSV/export behavior intact.
+- Left athlete mobile/app surfaces separate because those are chart/workout experiences, not backend operations screens.
+
+### Verification
+
+- `git diff --check`: passed.
+- `npx eslint resources/js --max-warnings=0`: passed.
+- `npm run build:athlete`: passed.
+- `php artisan test`: 143 tests passed, 1337 assertions.
+- Live deployment completed to `https://athlete.ahmaddalao.com`.
+- Live manifest checksum: `c1aa7eb947cf4580e03651ab57accbe686f7f0b1a137e110971cca3b1bc5c039`.
+- Authenticated browser smoke passed for:
+    - `/admin/control-center`
+    - `/admin/users`
+    - `/roster`
+    - `/training`
+    - `/progress`
+    - `/memberships`
+    - `/wearables`
+    - `/api-access`
+- No application page errors were found during browser smoke. The only console output was a browser permissions-policy warning for `compute-pressure`.

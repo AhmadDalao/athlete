@@ -13,6 +13,7 @@ use App\Models\TrainingSession;
 use App\Models\User;
 use App\Services\AthleteWorkoutExecutionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -44,6 +45,7 @@ class AthleteAppController extends Controller
             ->where('user_id', $athlete->id)
             ->latest('metric_date')
             ->first();
+        $chartRange = $this->chartRange($request);
 
         $membership = $athlete->currentMembership();
         $messageUnreadCount = CoachAthleteMessage::query()
@@ -122,7 +124,81 @@ class AthleteAppController extends Controller
                 'unreadMessages' => $messageUnreadCount,
                 'items' => $this->feedItems($athlete),
             ],
+            'charts' => $this->chartPayload($athlete, $chartRange),
         ]);
+    }
+
+    private function chartRange(Request $request): int
+    {
+        $range = (int) $request->input('range', 30);
+
+        return in_array($range, [7, 14, 30], true) ? $range : 30;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function chartPayload(User $athlete, int $rangeDays): array
+    {
+        $startDate = now()->subDays($rangeDays - 1)->toDateString();
+
+        $snapshots = MetricSnapshot::query()
+            ->where('user_id', $athlete->id)
+            ->whereDate('metric_date', '>=', $startDate)
+            ->orderBy('metric_date')
+            ->get();
+
+        $checkIns = $athlete->athleteCheckIns()
+            ->whereDate('logged_date', '>=', $startDate)
+            ->orderBy('logged_date')
+            ->get();
+
+        return [
+            'rangeDays' => $rangeDays,
+            'rangeOptions' => [7, 14, 30],
+            'wearable' => [
+                'readiness' => $this->series($snapshots, 'metric_date', fn (MetricSnapshot $snapshot) => $snapshot->readiness_score),
+                'strain' => $this->series($snapshots, 'metric_date', fn (MetricSnapshot $snapshot) => $snapshot->strain_score),
+                'sleepHours' => $this->series($snapshots, 'metric_date', fn (MetricSnapshot $snapshot) => $snapshot->sleepHours()),
+                'heartRateVariability' => $this->series($snapshots, 'metric_date', fn (MetricSnapshot $snapshot) => $snapshot->heart_rate_variability),
+                'restingHeartRate' => $this->series($snapshots, 'metric_date', fn (MetricSnapshot $snapshot) => $snapshot->resting_heart_rate),
+                'steps' => $this->series($snapshots, 'metric_date', fn (MetricSnapshot $snapshot) => $snapshot->steps),
+                'caloriesBurned' => $this->series($snapshots, 'metric_date', fn (MetricSnapshot $snapshot) => $snapshot->calories_burned),
+            ],
+            'progress' => [
+                'weightKg' => $this->series($checkIns, 'logged_date', fn ($checkIn) => $checkIn->weight_kg),
+                'proteinGrams' => $this->series($checkIns, 'logged_date', fn ($checkIn) => $checkIn->protein_grams),
+                'waterLiters' => $this->series($checkIns, 'logged_date', fn ($checkIn) => $checkIn->water_liters),
+                'energyScore' => $this->series($checkIns, 'logged_date', fn ($checkIn) => $checkIn->energy_score),
+                'sorenessScore' => $this->series($checkIns, 'logged_date', fn ($checkIn) => $checkIn->soreness_score),
+                'stressScore' => $this->series($checkIns, 'logged_date', fn ($checkIn) => $checkIn->stress_score),
+                'sleepQualityScore' => $this->series($checkIns, 'logged_date', fn ($checkIn) => $checkIn->sleep_quality_score),
+            ],
+        ];
+    }
+
+    /**
+     * @param  Collection<int, mixed>  $records
+     * @return list<array{date:string,value:float|int}>
+     */
+    private function series(Collection $records, string $dateColumn, callable $valueResolver): array
+    {
+        return $records
+            ->map(function ($record) use ($dateColumn, $valueResolver): ?array {
+                $value = $valueResolver($record);
+
+                if ($value === null) {
+                    return null;
+                }
+
+                return [
+                    'date' => $record->{$dateColumn}?->toDateString(),
+                    'value' => is_float($value) ? round($value, 2) : $value,
+                ];
+            })
+            ->filter(fn (?array $point): bool => $point !== null && $point['date'] !== null)
+            ->values()
+            ->all();
     }
 
     private function nextSession(TrainingProgram $program): ?TrainingSession

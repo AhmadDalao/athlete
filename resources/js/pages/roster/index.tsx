@@ -514,7 +514,7 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Roster" />
 
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
                 <WorkspaceHero
                     eyebrow={isAdmin ? 'Admin roster control' : 'Coach roster control'}
                     title={
@@ -641,7 +641,7 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
 
                                         return (
                                             <tr key={assignment.id} className="align-top transition-colors hover:bg-stone-50/80">
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <p className="font-semibold text-stone-950">{assignment.athlete.name}</p>
                                                     <p className="mt-1 text-xs text-stone-500">{assignment.athlete.email}</p>
                                                     <p className="mt-2 line-clamp-2 max-w-[16rem] text-xs text-stone-600">
@@ -651,11 +651,11 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                                                         <Link href={route('athletes.show', assignment.athlete.id)}>View athlete profile</Link>
                                                     </Button>
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <p className="font-medium text-stone-950">{assignment.coach.name}</p>
                                                     {isAdmin && <p className="mt-1 text-xs text-stone-500">{assignment.coach.email}</p>}
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <div className="flex flex-col items-start gap-2">
                                                         <Badge variant={badgeVariant(assignment.status)}>{humanizeStatus(assignment.status)}</Badge>
                                                         <Badge variant={priorityBadgeVariant(weeklyBrief.priority)}>
@@ -663,7 +663,7 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                                                         </Badge>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     {assignment.membership ? (
                                                         <div className="space-y-1">
                                                             <Badge variant={badgeVariant(assignment.membership.status)}>
@@ -676,7 +676,7 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                                                         <span className="text-xs text-stone-500">No active membership</span>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <p className="font-medium text-stone-950">
                                                         {formatReadiness(assignment.latestSnapshot?.readinessScore ?? null)}
                                                     </p>
@@ -687,7 +687,7 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                                                     </p>
                                                     <p className="mt-1 text-xs text-stone-500">{assignment.connectedDevices} device(s)</p>
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <p className="font-medium text-stone-950">
                                                         {assignment.latestCheckIn?.weightKg === null || assignment.latestCheckIn?.weightKg === undefined
                                                             ? 'No weight'
@@ -706,7 +706,7 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                                                             : `${assignment.latestCheckIn.waterLiters.toFixed(1)} L`}
                                                     </p>
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <p className="font-medium text-stone-950">
                                                         {assignment.currentProgram?.title ?? 'No current program'}
                                                     </p>
@@ -716,14 +716,14 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                                                             : 'Programming needed'}
                                                     </p>
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <p className="font-medium text-stone-950">Start {assignment.startedAt ?? 'not set'}</p>
                                                     <p className="mt-1 text-xs text-stone-500">
                                                         {assignment.endedAt ? `End ${assignment.endedAt}` : 'Still live'}
                                                     </p>
                                                     <p className="mt-2 line-clamp-2 max-w-[14rem] text-xs text-stone-600">{weeklyBrief.headline}</p>
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <div className="flex flex-col gap-2">
                                                         <Button asChild variant="default" size="sm">
                                                             <Link href={route('athletes.show', assignment.athlete.id)}>Open profile</Link>

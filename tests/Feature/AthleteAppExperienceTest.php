@@ -3,10 +3,15 @@
 namespace Tests\Feature;
 
 use App\Enums\CoachAthleteStatus;
+use App\Enums\DeviceConnectionStatus;
+use App\Enums\DeviceProvider;
 use App\Enums\RoleName;
 use App\Enums\TrainingProgramStatus;
 use App\Enums\WorkoutCompletionStatus;
+use App\Models\AthleteCheckIn;
 use App\Models\CoachAthleteAssignment;
+use App\Models\DeviceConnection;
+use App\Models\MetricSnapshot;
 use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use App\Models\User;
@@ -36,6 +41,54 @@ class AthleteAppExperienceTest extends TestCase
             );
     }
 
+    public function test_athlete_app_includes_health_chart_series(): void
+    {
+        [$athlete] = $this->athleteWorkoutFixture();
+
+        $connection = DeviceConnection::query()->create([
+            'user_id' => $athlete->id,
+            'provider' => DeviceProvider::Whoop,
+            'status' => DeviceConnectionStatus::Connected,
+            'external_user_id' => 'whoop-athlete-1',
+            'last_synced_at' => now(),
+        ]);
+
+        MetricSnapshot::query()->create([
+            'user_id' => $athlete->id,
+            'device_connection_id' => $connection->id,
+            'provider' => DeviceProvider::Whoop,
+            'metric_date' => now()->subDay()->toDateString(),
+            'readiness_score' => 78,
+            'strain_score' => 11.2,
+            'sleep_minutes' => 430,
+            'calories_burned' => 2450,
+            'heart_rate_variability' => 58,
+            'resting_heart_rate' => 47,
+        ]);
+
+        AthleteCheckIn::query()->create([
+            'user_id' => $athlete->id,
+            'logged_date' => now()->toDateString(),
+            'weight_kg' => 82.1,
+            'protein_grams' => 168,
+            'water_liters' => 3.2,
+            'energy_score' => 8,
+            'soreness_score' => 3,
+            'stress_score' => 4,
+            'sleep_quality_score' => 7,
+        ]);
+
+        $this->actingAs($athlete)
+            ->get('/app')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('charts.rangeDays', 30)
+                ->where('charts.wearable.readiness.0.value', 78)
+                ->where('charts.progress.weightKg.0.value', 82.1)
+                ->where('charts.progress.sleepQualityScore.0.value', 7)
+            );
+    }
+
     public function test_athlete_can_open_assigned_workout_execution_route(): void
     {
         [$athlete, $session] = $this->athleteWorkoutFixture();
@@ -46,6 +99,9 @@ class AthleteAppExperienceTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('athlete-app/workout')
                 ->where('execution.session.title', $session->title)
+                ->where('execution.session.mediaItems.0.type', 'video')
+                ->where('execution.session.mediaItems.1.type', 'image')
+                ->where('execution.session.mediaItems.1.url', 'https://cdn.example.com/workouts/squat-side.jpg')
                 ->where('execution.setLogs.0.exerciseName', 'Back squat')
                 ->where('execution.setLogs.1.setNumber', 2)
             );
@@ -165,6 +221,7 @@ class AthleteAppExperienceTest extends TestCase
         $this->getJson(route('api.v1.training.sessions.execution', $session))
             ->assertOk()
             ->assertJsonPath('data.session.title', $session->title)
+            ->assertJsonPath('data.session.mediaItems.1.url', 'https://cdn.example.com/workouts/squat-side.jpg')
             ->assertJsonPath('data.setLogs.0.exerciseName', 'Back squat');
 
         $this->postJson(route('api.v1.training.sessions.sets.store', $session), [
@@ -230,6 +287,18 @@ class AthleteAppExperienceTest extends TestCase
             'focus' => 'Strength',
             'instructions' => 'Stop two reps before form breaks.',
             'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            'media_items' => [
+                [
+                    'type' => 'image',
+                    'url' => 'https://cdn.example.com/workouts/squat-side.jpg',
+                    'title' => 'Side angle squat reference',
+                ],
+                [
+                    'type' => 'image',
+                    'url' => 'https://cdn.example.com/workouts/squat-depth.jpg',
+                    'title' => 'Depth reference',
+                ],
+            ],
             'exercises' => [
                 [
                     'name' => 'Back squat',

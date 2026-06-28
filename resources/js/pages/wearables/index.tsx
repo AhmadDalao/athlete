@@ -289,7 +289,7 @@ function AthleteWearablesExperience({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Wearables" />
 
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
                 <AthleteHero
                     eyebrow="Recovery signal board"
                     title={
@@ -605,7 +605,7 @@ export default function WearablesIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Wearables" />
 
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
                 {page.props.flash?.success && (
                     <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
                         {page.props.flash.success}
@@ -713,19 +713,19 @@ export default function WearablesIndex({
                                 <tbody className="divide-y divide-stone-100">
                                     {reviewQueue.map((entry) => (
                                         <tr key={entry.id} className="align-top transition-colors hover:bg-stone-50/80">
-                                            <td className="px-4 py-4 font-semibold text-stone-950">{entry.userName}</td>
-                                            <td className="px-4 py-4 text-sm text-stone-700">{entry.providerLabel}</td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4 font-semibold text-stone-950">{entry.userName}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.providerLabel}</td>
+                                            <td className="px-5 py-4">
                                                 <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <Badge variant={badgeVariantForSeverity(entry.severity)}>{humanizeStatus(entry.severity)}</Badge>
                                             </td>
-                                            <td className="px-4 py-4 text-sm text-stone-700">
+                                            <td className="px-5 py-4 text-sm text-stone-700">
                                                 {entry.staleHours !== null ? `${entry.staleHours}h` : 'N/A'}
                                             </td>
-                                            <td className="px-4 py-4 text-sm text-stone-700">{entry.syncFailuresCount}</td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.syncFailuresCount}</td>
+                                            <td className="px-5 py-4">
                                                 <p className="max-w-[18rem] text-sm leading-6 text-stone-700">{entry.issue}</p>
                                                 {entry.lastErrorMessage && (
                                                     <p className="mt-1 line-clamp-2 max-w-[18rem] text-xs text-stone-500">
@@ -733,7 +733,7 @@ export default function WearablesIndex({
                                                     </p>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="max-w-[18rem] text-sm leading-6 text-stone-700">{entry.recommendation}</p>
                                             </td>
                                         </tr>
@@ -790,7 +790,7 @@ export default function WearablesIndex({
                                 <tbody className="divide-y divide-stone-100">
                                     {connections.data.map((connection) => (
                                         <tr key={connection.id} className="align-top transition-colors hover:bg-stone-50/80">
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="font-semibold text-stone-950">{connection.userName}</p>
                                                 <p className="mt-1 text-xs text-stone-500">{connection.userEmail}</p>
                                                 {connection.userRole && (
@@ -799,17 +799,17 @@ export default function WearablesIndex({
                                                     </Badge>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="font-medium text-stone-950">{connection.providerLabel}</p>
                                                 <p className="mt-1 text-xs text-stone-500">{connection.publicId}</p>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <Badge variant="outline">{humanizeStatus(connection.authType)}</Badge>
                                                 <p className="mt-2 line-clamp-2 max-w-[12rem] text-xs text-stone-500">
                                                     {connection.grantedScopes.length ? connection.grantedScopes.join(', ') : 'No scopes'}
                                                 </p>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <div className="flex flex-col items-start gap-2">
                                                     <Badge variant={badgeVariantForStatus(connection.status)}>
                                                         {humanizeStatus(connection.status)}
@@ -819,13 +819,13 @@ export default function WearablesIndex({
                                                     </Badge>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="text-sm text-stone-700">{connection.lastSyncedAt ?? 'Never synced'}</p>
                                                 <p className="mt-1 text-xs text-stone-500">
                                                     {connection.review.staleHours !== null ? `${connection.review.staleHours}h stale` : 'No stale data'}
                                                 </p>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 {connection.latestSnapshot ? (
                                                     <dl className="grid gap-1 text-xs text-stone-600">
                                                         <div className="flex justify-between gap-4">
@@ -857,7 +857,7 @@ export default function WearablesIndex({
                                                     <span className="text-xs text-stone-500">No snapshot ingested</span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <dl className="grid gap-1 text-xs text-stone-600">
                                                     <div className="flex justify-between gap-4">
                                                         <dt>Days</dt>
@@ -882,13 +882,13 @@ export default function WearablesIndex({
                                                     </p>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="max-w-[16rem] text-sm leading-6 text-stone-700">{connection.review.issue}</p>
                                                 <p className="mt-1 line-clamp-2 max-w-[16rem] text-xs text-stone-500">
                                                     {connection.review.recommendation}
                                                 </p>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 {connection.ingest ? (
                                                     <div className="space-y-1">
                                                         <p className="font-mono text-xs text-stone-700">****{connection.ingest.lastFour}</p>

@@ -1,10 +1,10 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     WorkspaceActionCard,
     WorkspaceHero,
     WorkspaceMetricCard,
+    WorkspacePanel,
     WorkspaceTable,
     WorkspaceTableEmpty,
     WorkspaceTableHeader,
@@ -184,7 +184,7 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Control Center" />
 
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
                 <WorkspaceHero
                     eyebrow="Admin operations"
                     title="One page for the mess that actually matters."
@@ -285,14 +285,11 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                 </section>
 
                 <section className="grid gap-4 xl:grid-cols-3">
-                    <Card className="border-stone-200/75 bg-white/92 xl:col-span-2">
-                        <CardHeader>
-                            <CardTitle className="text-xl tracking-tight text-stone-950">Renewal queue</CardTitle>
-                            <CardDescription className="leading-6 text-stone-600">
-                                The next memberships likely to become support tickets if ignored.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                    <WorkspacePanel
+                        title="Renewal queue"
+                        description="The next memberships likely to become support tickets if ignored."
+                        className="xl:col-span-2"
+                    >
                             <WorkspaceTable minWidth="min-w-[760px]">
                                 <WorkspaceTableHeader labels={['User', 'Role', 'Plan', 'Status', 'Renewal', 'Ends']} />
                                 {queues.membershipQueue.length === 0 ? (
@@ -301,62 +298,46 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                     <tbody className="divide-y divide-stone-100">
                                         {queues.membershipQueue.map((entry) => (
                                             <tr key={`${entry.userName}-${entry.planName}`} className="align-top hover:bg-stone-50/80">
-                                                <td className="px-4 py-4 font-semibold text-stone-950">{entry.userName}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{humanizeStatus(entry.userRole)}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.planName}</td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4 font-semibold text-stone-950">{entry.userName}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{humanizeStatus(entry.userRole)}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.planName}</td>
+                                                <td className="px-5 py-4">
                                                     <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <Badge variant="outline">{entry.autoRenew ? 'Auto renew on' : 'Manual renewal'}</Badge>
                                                     <p className="mt-1 text-xs text-stone-500">{formatDays(entry.daysRemaining)}</p>
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.endsAt ?? 'No end date'}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.endsAt ?? 'No end date'}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 )}
                             </WorkspaceTable>
-                        </CardContent>
-                    </Card>
+                    </WorkspacePanel>
 
-                    <Card className="border-stone-200/75 bg-white/92">
-                        <CardHeader>
-                            <CardTitle className="text-xl tracking-tight text-stone-950">Signup mix</CardTitle>
-                            <CardDescription className="leading-6 text-stone-600">
-                                Current account channels and what is staged for later.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                    <WorkspacePanel title="Signup mix" description="Current account channels and what is staged for later.">
                             <WorkspaceTable minWidth="min-w-[520px]">
                                 <WorkspaceTableHeader labels={['Channel', 'Status', 'Accounts']} />
                                 <tbody className="divide-y divide-stone-100">
                                     {signupMix.map((entry) => (
                                         <tr key={entry.method} className="align-top hover:bg-stone-50/80">
-                                            <td className="px-4 py-4 font-semibold text-stone-950">{entry.label}</td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4 font-semibold text-stone-950">{entry.label}</td>
+                                            <td className="px-5 py-4">
                                                 <Badge variant={entry.enabled ? 'default' : 'secondary'}>
                                                     {entry.enabled ? 'Live now' : 'Later stage'}
                                                 </Badge>
                                             </td>
-                                            <td className="px-4 py-4 text-sm text-stone-700">{entry.count}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.count}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </WorkspaceTable>
-                        </CardContent>
-                    </Card>
+                    </WorkspacePanel>
                 </section>
 
                 <section className="grid gap-4 xl:grid-cols-2">
-                    <Card className="border-stone-200/75 bg-white/92">
-                        <CardHeader>
-                            <CardTitle className="text-xl tracking-tight text-stone-950">Payment queue</CardTitle>
-                            <CardDescription className="leading-6 text-stone-600">
-                                Pending and failed money events still waiting for a human to care.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                    <WorkspacePanel title="Payment queue" description="Pending and failed money events still waiting for a human to care.">
                             <WorkspaceTable minWidth="min-w-[760px]">
                                 <WorkspaceTableHeader labels={['User', 'Role', 'Plan', 'Status', 'Amount', 'Provider', 'Reference', 'Date']} />
                                 {queues.paymentQueue.length === 0 ? (
@@ -365,34 +346,26 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                     <tbody className="divide-y divide-stone-100">
                                         {queues.paymentQueue.map((entry) => (
                                             <tr key={`${entry.userName}-${entry.reference ?? entry.eventAt}`} className="align-top hover:bg-stone-50/80">
-                                                <td className="px-4 py-4 font-semibold text-stone-950">{entry.userName}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{humanizeStatus(entry.userRole)}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.planName}</td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4 font-semibold text-stone-950">{entry.userName}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{humanizeStatus(entry.userRole)}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.planName}</td>
+                                                <td className="px-5 py-4">
                                                     <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
                                                 </td>
-                                                <td className="px-4 py-4 font-medium text-stone-950">
+                                                <td className="px-5 py-4 font-medium text-stone-950">
                                                     {entry.amount === null ? 'No amount' : formatCurrency(entry.amount, entry.currency)}
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.provider ?? 'Manual'}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.reference ?? 'No reference'}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.eventAt ?? 'No date'}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.provider ?? 'Manual'}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.reference ?? 'No reference'}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.eventAt ?? 'No date'}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 )}
                             </WorkspaceTable>
-                        </CardContent>
-                    </Card>
+                    </WorkspacePanel>
 
-                    <Card className="border-stone-200/75 bg-white/92">
-                        <CardHeader>
-                            <CardTitle className="text-xl tracking-tight text-stone-950">Device queue</CardTitle>
-                            <CardDescription className="leading-6 text-stone-600">
-                                Wearable relationships most likely to create blind spots.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                    <WorkspacePanel title="Device queue" description="Wearable relationships most likely to create blind spots.">
                             <WorkspaceTable minWidth="min-w-[920px]">
                                 <WorkspaceTableHeader
                                     labels={['User', 'Provider', 'Status', 'Readiness', 'Last sync', 'Failures', 'Issue', 'Recommendation']}
@@ -403,25 +376,25 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                     <tbody className="divide-y divide-stone-100">
                                         {queues.deviceQueue.map((entry) => (
                                             <tr key={`${entry.userName}-${entry.provider}`} className="align-top hover:bg-stone-50/80">
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <p className="font-semibold text-stone-950">{entry.userName}</p>
                                                     <p className="mt-1 text-xs text-stone-500">{humanizeStatus(entry.userRole)}</p>
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.provider}</td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.provider}</td>
+                                                <td className="px-5 py-4">
                                                     <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">
+                                                <td className="px-5 py-4 text-sm text-stone-700">
                                                     {entry.readinessScore === null ? 'No readiness' : `${Math.round(entry.readinessScore)}/100`}
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <p className="text-sm text-stone-700">{entry.lastSyncedAt ?? 'Never synced'}</p>
                                                     <p className="mt-1 text-xs text-stone-500">
                                                         {entry.staleHours !== null ? `${entry.staleHours}h stale` : 'No stale data'}
                                                     </p>
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.syncFailuresCount}</td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.syncFailuresCount}</td>
+                                                <td className="px-5 py-4">
                                                     <p className="max-w-[16rem] text-sm leading-6 text-stone-700">{entry.issue}</p>
                                                     {entry.lastErrorMessage && (
                                                         <p className="mt-1 line-clamp-2 max-w-[16rem] text-xs text-stone-500">
@@ -429,7 +402,7 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                                         </p>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <p className="max-w-[16rem] text-sm leading-6 text-stone-700">{entry.recommendation}</p>
                                                 </td>
                                             </tr>
@@ -437,19 +410,14 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                     </tbody>
                                 )}
                             </WorkspaceTable>
-                        </CardContent>
-                    </Card>
+                    </WorkspacePanel>
                 </section>
 
                 <section className="grid gap-4 xl:grid-cols-2">
-                    <Card className="border-stone-200/75 bg-white/92">
-                        <CardHeader>
-                            <CardTitle className="text-xl tracking-tight text-stone-950">Athlete coverage gaps</CardTitle>
-                            <CardDescription className="leading-6 text-stone-600">
-                                Athletes missing a coach, a clean membership state, or a usable device signal.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                    <WorkspacePanel
+                        title="Athlete coverage gaps"
+                        description="Athletes missing a coach, a clean membership state, or a usable device signal."
+                    >
                             <WorkspaceTable minWidth="min-w-[780px]">
                                 <WorkspaceTableHeader
                                     labels={['Athlete', 'Email', 'Membership', 'Plan', 'Runway', 'Coach links', 'Devices']}
@@ -460,33 +428,25 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                     <tbody className="divide-y divide-stone-100">
                                         {queues.athleteCoverageGaps.map((entry) => (
                                             <tr key={entry.email} className="align-top hover:bg-stone-50/80">
-                                                <td className="px-4 py-4 font-semibold text-stone-950">{entry.name}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.email}</td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4 font-semibold text-stone-950">{entry.name}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.email}</td>
+                                                <td className="px-5 py-4">
                                                     <Badge variant={badgeVariantForStatus(entry.membershipStatus)}>
                                                         {humanizeStatus(entry.membershipStatus)}
                                                     </Badge>
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.membershipPlan}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{formatDays(entry.daysRemaining)}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.coachCount}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.connectedDevices}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.membershipPlan}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{formatDays(entry.daysRemaining)}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.coachCount}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.connectedDevices}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 )}
                             </WorkspaceTable>
-                        </CardContent>
-                    </Card>
+                    </WorkspacePanel>
 
-                    <Card className="border-stone-200/75 bg-white/92">
-                        <CardHeader>
-                            <CardTitle className="text-xl tracking-tight text-stone-950">Coach load</CardTitle>
-                            <CardDescription className="leading-6 text-stone-600">
-                                Which coaches are carrying real roster weight and where the cracks are forming.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
+                    <WorkspacePanel title="Coach load" description="Which coaches are carrying real roster weight and where the cracks are forming.">
                             <WorkspaceTable minWidth="min-w-[780px]">
                                 <WorkspaceTableHeader
                                     labels={['Coach', 'Email', 'Roster', 'Live programs', 'Pending logs', 'No device', 'Membership risk']}
@@ -497,30 +457,26 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                     <tbody className="divide-y divide-stone-100">
                                         {queues.coachLoad.map((entry) => (
                                             <tr key={entry.email} className="align-top hover:bg-stone-50/80">
-                                                <td className="px-4 py-4 font-semibold text-stone-950">{entry.name}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.email}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.rosterCount}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.activePrograms}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.pendingLogs}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.athletesWithoutDevice}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.membershipsAtRisk}</td>
+                                                <td className="px-5 py-4 font-semibold text-stone-950">{entry.name}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.email}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.rosterCount}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.activePrograms}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.pendingLogs}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.athletesWithoutDevice}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.membershipsAtRisk}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 )}
                             </WorkspaceTable>
-                        </CardContent>
-                    </Card>
+                    </WorkspacePanel>
                 </section>
 
-                <Card className="border-stone-200/75 bg-white/92">
-                    <CardHeader>
-                        <CardTitle className="text-xl tracking-tight text-stone-950">Ops playbook</CardTitle>
-                        <CardDescription className="leading-6 text-stone-600">
-                            Commands and automations the dev team should keep alive once this leaves the sandbox.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-4 lg:grid-cols-3">
+                <WorkspacePanel
+                    title="Ops playbook"
+                    description="Commands and automations the dev team should keep alive once this leaves the sandbox."
+                    contentClassName="grid gap-4 lg:grid-cols-3"
+                >
                         {opsPlaybook.map((entry) => (
                             <div key={entry.title} className="rounded-2xl border border-stone-200/75 bg-stone-50/80 p-5">
                                 <div className="flex items-start justify-between gap-4">
@@ -544,8 +500,7 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                 <p className="mt-4 text-sm leading-6 text-stone-600">{entry.reason}</p>
                             </div>
                         ))}
-                    </CardContent>
-                </Card>
+                </WorkspacePanel>
             </div>
         </AppLayout>
     );

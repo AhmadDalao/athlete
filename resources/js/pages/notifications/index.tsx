@@ -262,7 +262,7 @@ export default function NotificationsIndex({ notifications, canCreateNotificatio
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Notifications" />
 
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
                 <WorkspaceHero
                     eyebrow="Notification center"
                     title="System messages should be visible, targeted, and easy to clear."
@@ -329,30 +329,30 @@ export default function NotificationsIndex({ notifications, canCreateNotificatio
                                 <tbody className="divide-y divide-stone-100">
                                     {notifications.data.map((notification) => (
                                         <tr key={notification.id} className="align-top transition-colors hover:bg-stone-50/80">
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <p className="font-semibold text-stone-950">{notification.title}</p>
                                                 <p className="mt-1 line-clamp-3 max-w-[24rem] text-sm leading-6 text-stone-600">
                                                     {notification.body}
                                                 </p>
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <Badge variant="outline">
                                                     {notification.targetType === 'role'
                                                         ? `Role: ${humanizeStatus(notification.targetRole ?? '')}`
                                                         : humanizeStatus(notification.targetType)}
                                                 </Badge>
                                             </td>
-                                            <td className="px-4 py-4 text-sm text-stone-700">{notification.createdAt ?? 'Unknown'}</td>
-                                            <td className="px-4 py-4 text-sm text-stone-700">{notification.creatorName ?? 'System'}</td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4 text-sm text-stone-700">{notification.createdAt ?? 'Unknown'}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{notification.creatorName ?? 'System'}</td>
+                                            <td className="px-5 py-4">
                                                 <Badge variant={notification.readAt ? 'outline' : 'default'}>
                                                     {notification.readAt ? `Read ${notification.readAt}` : 'Unread'}
                                                 </Badge>
                                             </td>
-                                            <td className="px-4 py-4 text-sm text-stone-700">
+                                            <td className="px-5 py-4 text-sm text-stone-700">
                                                 {notification.startsAt ?? 'Now'} → {notification.expiresAt ?? 'No expiry'}
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <div className="flex flex-col gap-2">
                                                     <NotificationAction notification={notification} />
                                                     {!notification.readAt && (

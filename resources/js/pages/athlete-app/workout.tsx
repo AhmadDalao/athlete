@@ -6,7 +6,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle2, Clock3, ExternalLink, FileText, Film, ListChecks, Pause, Play, SkipForward, TimerReset } from 'lucide-react';
+import {
+    ArrowLeft,
+    CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
+    Clock3,
+    ExternalLink,
+    FileText,
+    Film,
+    Images,
+    ListChecks,
+    Pause,
+    Play,
+    SkipForward,
+    TimerReset,
+} from 'lucide-react';
 import { type FormEvent, useEffect, useState } from 'react';
 
 interface ExerciseRow {
@@ -49,6 +64,13 @@ interface WorkoutLogRow {
     notes: string | null;
 }
 
+interface MediaItem {
+    type: 'video' | 'image';
+    url: string;
+    title: string | null;
+    isPrimary: boolean;
+}
+
 interface WorkoutExecutionProps {
     execution: {
         session: {
@@ -58,6 +80,7 @@ interface WorkoutExecutionProps {
             focus: string | null;
             instructions: string | null;
             videoUrl: string | null;
+            mediaItems?: MediaItem[];
         };
         program: {
             id: number;
@@ -217,6 +240,90 @@ function VideoPlayer({ url }: { url: string | null }) {
     );
 }
 
+function ImageSlider({ items }: { items: MediaItem[] }) {
+    const [activeIndex, setActiveIndex] = useState(0);
+
+    useEffect(() => {
+        if (activeIndex >= items.length) {
+            setActiveIndex(0);
+        }
+    }, [activeIndex, items.length]);
+
+    if (items.length === 0) {
+        return (
+            <div className="rounded-[1.5rem] border border-dashed border-stone-300 bg-stone-50 p-6 text-sm leading-6 text-stone-600">
+                No reference images were attached to this session.
+            </div>
+        );
+    }
+
+    const activeItem = items[activeIndex] ?? items[0];
+    const move = (direction: -1 | 1) => {
+        setActiveIndex((current) => (current + direction + items.length) % items.length);
+    };
+
+    return (
+        <div className="rounded-[1.5rem] border border-stone-200 bg-white p-3 shadow-sm">
+            <div className="relative overflow-hidden rounded-[1.25rem] bg-stone-100">
+                <img
+                    src={activeItem.url}
+                    alt={activeItem.title ?? `Workout reference ${activeIndex + 1}`}
+                    className="aspect-video w-full object-cover"
+                    loading="lazy"
+                />
+
+                {items.length > 1 && (
+                    <div className="absolute inset-x-3 top-1/2 flex -translate-y-1/2 items-center justify-between">
+                        <button
+                            type="button"
+                            onClick={() => move(-1)}
+                            className="grid size-10 place-items-center rounded-full bg-white/90 text-stone-800 shadow-sm backdrop-blur hover:bg-white"
+                            aria-label="Previous reference image"
+                        >
+                            <ChevronLeft className="size-5" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => move(1)}
+                            className="grid size-10 place-items-center rounded-full bg-white/90 text-stone-800 shadow-sm backdrop-blur hover:bg-white"
+                            aria-label="Next reference image"
+                        >
+                            <ChevronRight className="size-5" />
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p className="text-xs font-semibold tracking-[0.16em] text-stone-500 uppercase">Reference images</p>
+                    <p className="text-sm font-semibold text-stone-950">
+                        Image {activeIndex + 1} of {items.length}
+                    </p>
+                </div>
+
+                {items.length > 1 && (
+                    <div className="flex max-w-full gap-2 overflow-x-auto">
+                        {items.map((item, index) => (
+                            <button
+                                key={`${item.url}-${index}`}
+                                type="button"
+                                onClick={() => setActiveIndex(index)}
+                                className={`h-14 w-20 shrink-0 overflow-hidden rounded-xl border ${
+                                    index === activeIndex ? 'border-emerald-700 ring-2 ring-emerald-100' : 'border-stone-200'
+                                }`}
+                                aria-label={`Show reference image ${index + 1}`}
+                            >
+                                <img src={item.url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 function tabClass(active: boolean) {
     return active ? 'bg-emerald-700 text-white shadow-sm' : 'bg-white text-stone-700 hover:bg-stone-50';
 }
@@ -227,6 +334,8 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
     const [timerSeconds, setTimerSeconds] = useState(execution.exercises[0]?.restSeconds ?? 0);
     const [timerRunning, setTimerRunning] = useState(false);
     const currentExercise = execution.exercises[currentExerciseIndex] ?? null;
+    const mediaItems = execution.session.mediaItems ?? [];
+    const imageMediaItems = mediaItems.filter((item) => item.type === 'image');
 
     const { data, setData, post, processing, errors } = useForm<SetFormData>({
         sets: execution.setLogs.map((row) => ({
@@ -634,7 +743,23 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
 
                 {tab === 'media' && (
                     <AthletePanel title="Coach media" description="Session video, movement standard, or external coaching link.">
-                        <VideoPlayer url={execution.session.videoUrl} />
+                        <div className="space-y-5">
+                            <div>
+                                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-950">
+                                    <Film className="size-4 text-emerald-700" />
+                                    Primary video
+                                </div>
+                                <VideoPlayer url={execution.session.videoUrl} />
+                            </div>
+
+                            <div>
+                                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-950">
+                                    <Images className="size-4 text-emerald-700" />
+                                    Image slider
+                                </div>
+                                <ImageSlider items={imageMediaItems} />
+                            </div>
+                        </div>
                     </AthletePanel>
                 )}
             </div>

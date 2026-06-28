@@ -19,6 +19,7 @@ class TrainingSession extends Model
         'focus',
         'instructions',
         'video_url',
+        'media_items',
         'exercises',
         'sort_order',
     ];
@@ -27,6 +28,7 @@ class TrainingSession extends Model
     {
         return [
             'scheduled_date' => 'date',
+            'media_items' => 'array',
             'exercises' => 'array',
             'sort_order' => 'integer',
         ];

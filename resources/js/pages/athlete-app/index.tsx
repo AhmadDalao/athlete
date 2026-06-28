@@ -2,7 +2,7 @@ import { AthleteAppShell } from '@/components/athlete-app-shell';
 import { AthletePanel, ReadinessDial } from '@/components/athlete-page-primitives';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { ArrowRight, CalendarDays, CheckCircle2, Dumbbell, HeartPulse, MessageCircle, ShieldCheck, UserRound, Watch } from 'lucide-react';
 
 interface WorkoutSetLogRow {
@@ -53,6 +53,34 @@ interface TodaySession {
     };
     exercises: ExerciseRow[];
     setLogs: WorkoutSetLogRow[];
+}
+
+interface ChartPoint {
+    date: string;
+    value: number;
+}
+
+interface AthleteCharts {
+    rangeDays: number;
+    rangeOptions: number[];
+    wearable: {
+        readiness: ChartPoint[];
+        strain: ChartPoint[];
+        sleepHours: ChartPoint[];
+        heartRateVariability: ChartPoint[];
+        restingHeartRate: ChartPoint[];
+        steps: ChartPoint[];
+        caloriesBurned: ChartPoint[];
+    };
+    progress: {
+        weightKg: ChartPoint[];
+        proteinGrams: ChartPoint[];
+        waterLiters: ChartPoint[];
+        energyScore: ChartPoint[];
+        sorenessScore: ChartPoint[];
+        stressScore: ChartPoint[];
+        sleepQualityScore: ChartPoint[];
+    };
 }
 
 interface AthleteAppHomeProps {
@@ -132,6 +160,7 @@ interface AthleteAppHomeProps {
             read: boolean;
         }>;
     };
+    charts: AthleteCharts;
 }
 
 function formatDate(value: string | null) {
@@ -244,6 +273,164 @@ function StatTile({ label, value, icon: Icon }: { label: string; value: string; 
     );
 }
 
+function chartStats(points: ChartPoint[]) {
+    if (points.length === 0) {
+        return { latest: null, average: null, min: 0, max: 1, delta: null };
+    }
+
+    const values = points.map((point) => Number(point.value));
+    const latest = values[values.length - 1];
+    const first = values[0];
+    const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+
+    return {
+        latest,
+        average,
+        min: min === max ? min - 1 : min,
+        max: min === max ? max + 1 : max,
+        delta: latest - first,
+    };
+}
+
+function formatChartNumber(value: number | null, suffix = '') {
+    if (value === null || Number.isNaN(value)) {
+        return 'N/A';
+    }
+
+    return `${Number.isInteger(value) ? value : value.toFixed(1)}${suffix}`;
+}
+
+function LineChart({ points, stroke = '#047857' }: { points: ChartPoint[]; stroke?: string }) {
+    const stats = chartStats(points);
+    const chartPoints = points.map((point, index) => {
+        const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100;
+        const y = 92 - ((point.value - stats.min) / (stats.max - stats.min)) * 78;
+
+        return `${x},${y}`;
+    });
+
+    return (
+        <svg viewBox="0 0 100 100" className="h-24 w-full overflow-visible">
+            <path d="M0 92 H100" stroke="#e7e5e4" strokeWidth="1" />
+            <path d="M0 52 H100" stroke="#f1f0ec" strokeWidth="1" />
+            <path d="M0 14 H100" stroke="#f1f0ec" strokeWidth="1" />
+            {points.length > 0 && (
+                <>
+                    <polyline points={chartPoints.join(' ')} fill="none" stroke={stroke} strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" />
+                    {chartPoints.map((point, index) => {
+                        const [x, y] = point.split(',');
+
+                        return <circle key={`${point}-${index}`} cx={x} cy={y} r="2.5" fill="white" stroke={stroke} strokeWidth="2" />;
+                    })}
+                </>
+            )}
+        </svg>
+    );
+}
+
+function BarChart({ points, fill = '#0f766e' }: { points: ChartPoint[]; fill?: string }) {
+    const stats = chartStats(points);
+
+    return (
+        <svg viewBox="0 0 100 100" className="h-24 w-full overflow-visible">
+            <path d="M0 92 H100" stroke="#e7e5e4" strokeWidth="1" />
+            {points.map((point, index) => {
+                const gap = points.length > 20 ? 0.8 : 1.5;
+                const width = points.length === 1 ? 8 : Math.max(1, (92 - gap * (points.length - 1)) / points.length);
+                const x = points.length === 1 ? 46 : 4 + index * (width + gap);
+                const height = Math.max(5, ((point.value - stats.min) / (stats.max - stats.min)) * 72);
+
+                return <rect key={`${point.date}-${point.value}`} x={x} y={92 - height} width={width} height={height} rx="2.8" fill={fill} />;
+            })}
+        </svg>
+    );
+}
+
+function TrendCard({
+    title,
+    points,
+    unit = '',
+    type = 'line',
+    accent = '#047857',
+}: {
+    title: string;
+    points: ChartPoint[];
+    unit?: string;
+    type?: 'line' | 'bar';
+    accent?: string;
+}) {
+    const stats = chartStats(points);
+    const trend = stats.delta === null ? 'No trend yet' : stats.delta > 0 ? `+${formatChartNumber(stats.delta, unit)}` : formatChartNumber(stats.delta, unit);
+
+    return (
+        <div className="rounded-[1.55rem] border border-stone-200 bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <p className="text-xs font-semibold tracking-[0.18em] text-stone-400 uppercase">{title}</p>
+                    <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-stone-950">{formatChartNumber(stats.latest, unit)}</p>
+                </div>
+                <Badge variant="outline" className="bg-stone-50">
+                    Avg {formatChartNumber(stats.average, unit)}
+                </Badge>
+            </div>
+            {points.length === 0 ? (
+                <div className="mt-4 rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-4 text-sm text-stone-500">No data in this range.</div>
+            ) : type === 'bar' ? (
+                <BarChart points={points} fill={accent} />
+            ) : (
+                <LineChart points={points} stroke={accent} />
+            )}
+            <div className="mt-2 flex items-center justify-between text-xs text-stone-500">
+                <span>{points[0]?.date ?? 'No start'}</span>
+                <span>{trend}</span>
+                <span>{points[points.length - 1]?.date ?? 'No end'}</span>
+            </div>
+        </div>
+    );
+}
+
+function HealthTrendsPanel({ charts }: { charts: AthleteCharts }) {
+    const changeRange = (range: number) => {
+        router.get('/app', { range }, { only: ['charts'], preserveScroll: true, preserveState: true, replace: true });
+    };
+
+    return (
+        <AthletePanel
+            title="Health trends"
+            description="Thirty-day view by default: recovery, sleep, strain, food, hydration, and body progress."
+        >
+            <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                    {charts.rangeOptions.map((range) => (
+                        <Button
+                            key={range}
+                            type="button"
+                            size="sm"
+                            variant={charts.rangeDays === range ? 'default' : 'outline'}
+                            className={charts.rangeDays === range ? 'bg-emerald-800 text-white hover:bg-emerald-900' : 'bg-white'}
+                            onClick={() => changeRange(range)}
+                        >
+                            {range}D
+                        </Button>
+                    ))}
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                    <TrendCard title="Readiness" points={charts.wearable.readiness} unit="%" accent="#047857" />
+                    <TrendCard title="Sleep" points={charts.wearable.sleepHours} unit="h" accent="#2563eb" />
+                    <TrendCard title="Strain" points={charts.wearable.strain} accent="#f59e0b" />
+                    <TrendCard title="HRV" points={charts.wearable.heartRateVariability} unit="ms" accent="#0d9488" />
+                    <TrendCard title="Weight" points={charts.progress.weightKg} unit="kg" accent="#44403c" />
+                    <TrendCard title="Protein" points={charts.progress.proteinGrams} unit="g" type="bar" accent="#65a30d" />
+                    <TrendCard title="Hydration" points={charts.progress.waterLiters} unit="L" type="bar" accent="#0284c7" />
+                    <TrendCard title="Calories" points={charts.wearable.caloriesBurned} type="bar" accent="#ea580c" />
+                </div>
+            </div>
+        </AthletePanel>
+    );
+}
+
 export default function AthleteAppHome(props: AthleteAppHomeProps) {
     const workoutHref = props.training.todaySession ? route('athlete.workouts.show', props.training.todaySession.session.id) : '/app';
     const readiness = props.wearable.latestSnapshot?.readinessScore ?? null;
@@ -285,6 +472,8 @@ export default function AthleteAppHome(props: AthleteAppHomeProps) {
                                 </div>
                             )}
                         </AthletePanel>
+
+                        <HealthTrendsPanel charts={props.charts} />
 
                         <TodayWorkoutCard session={props.training.todaySession} />
 

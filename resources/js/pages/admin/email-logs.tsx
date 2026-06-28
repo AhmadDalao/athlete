@@ -139,7 +139,7 @@ export default function EmailLogs({ filters, summary, statuses, types, logs }: E
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Email Logs" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-6 bg-white py-8">
                 <div className="flex flex-wrap items-end justify-between gap-4 border-b border-stone-200 pb-5">
                     <div>
                         <p className="text-sm font-semibold text-stone-500">Mailer delivery trail</p>
@@ -247,13 +247,13 @@ export default function EmailLogs({ filters, summary, statuses, types, logs }: E
                         <table className="w-full min-w-[980px] text-left text-sm">
                             <thead className="bg-stone-50 text-xs font-semibold tracking-[0.16em] text-stone-500 uppercase">
                                 <tr>
-                                    <th className="px-4 py-3">Time</th>
-                                    <th className="px-4 py-3">Status</th>
-                                    <th className="px-4 py-3">Type</th>
-                                    <th className="px-4 py-3">Recipient</th>
-                                    <th className="px-4 py-3">Subject</th>
-                                    <th className="px-4 py-3">Source</th>
-                                    <th className="px-4 py-3">Error</th>
+                                    <th className="px-5 py-4">Time</th>
+                                    <th className="px-5 py-4">Status</th>
+                                    <th className="px-5 py-4">Type</th>
+                                    <th className="px-5 py-4">Recipient</th>
+                                    <th className="px-5 py-4">Subject</th>
+                                    <th className="px-5 py-4">Source</th>
+                                    <th className="px-5 py-4">Error</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-stone-100">
@@ -266,14 +266,14 @@ export default function EmailLogs({ filters, summary, statuses, types, logs }: E
                                 ) : (
                                     logs.data.map((log) => (
                                         <tr key={log.id} className="align-top">
-                                            <td className="px-4 py-4 text-stone-600">{log.time ?? 'N/A'}</td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4 text-stone-600">{log.time ?? 'N/A'}</td>
+                                            <td className="px-5 py-4">
                                                 <Badge variant={badgeVariant(log.status)}>{humanize(log.status)}</Badge>
                                             </td>
-                                            <td className="px-4 py-4 text-stone-700">{log.type}</td>
-                                            <td className="px-4 py-4 text-stone-600">{log.recipient ?? 'N/A'}</td>
+                                            <td className="px-5 py-4 text-stone-700">{log.type}</td>
+                                            <td className="px-5 py-4 text-stone-600">{log.recipient ?? 'N/A'}</td>
                                             <td className="max-w-xs px-4 py-4 leading-6 text-stone-700">{log.subject ?? 'No subject'}</td>
-                                            <td className="px-4 py-4 text-stone-500">{log.source ?? log.mailer ?? 'N/A'}</td>
+                                            <td className="px-5 py-4 text-stone-500">{log.source ?? log.mailer ?? 'N/A'}</td>
                                             <td className="max-w-xs px-4 py-4 leading-6 text-red-700">{log.error ?? '-'}</td>
                                         </tr>
                                     ))

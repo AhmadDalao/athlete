@@ -2,12 +2,11 @@ import { AthleteHero, AthleteMetricCard, AthletePanel, AthleteSectionHeading, Tr
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { WorkspaceTable, WorkspaceTableEmpty, WorkspaceTableHeader } from '@/components/workspace-primitives';
+import { WorkspaceHero, WorkspaceMetricCard, WorkspacePanel, WorkspaceTable, WorkspaceTableEmpty, WorkspaceTableHeader } from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -421,22 +420,7 @@ function CheckInDialog({
 }
 
 function SummaryMetric({ title, value, note, icon: Icon }: { title: string; value: string; note: string; icon: typeof Users }) {
-    return (
-        <Card className="border-sidebar-border/70">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <div>
-                    <CardDescription>{title}</CardDescription>
-                    <CardTitle className="mt-3 text-3xl font-semibold tracking-tight">{value}</CardTitle>
-                </div>
-                <div className="bg-primary/10 text-primary rounded-full p-2">
-                    <Icon className="size-4" />
-                </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground text-sm leading-6">{note}</p>
-            </CardContent>
-        </Card>
-    );
+    return <WorkspaceMetricCard title={title} value={value} note={note} icon={Icon} />;
 }
 
 function AthleteProgressView({ athleteProfile, canManageOwnCheckIns }: { athleteProfile: AthleteProfile; canManageOwnCheckIns: boolean }) {
@@ -642,20 +626,20 @@ function AthleteProgressView({ athleteProfile, canManageOwnCheckIns }: { athlete
                         <tbody className="divide-y divide-stone-100">
                             {athleteProfile.recentCheckIns.map((checkIn) => (
                                 <tr key={checkIn.id} className="align-top transition-colors hover:bg-stone-50/80">
-                                    <td className="px-4 py-4 font-medium text-stone-950">{shortDate(checkIn.loggedDate)}</td>
-                                    <td className="px-4 py-4 text-sm text-stone-700">{formatWeight(checkIn.weightKg)}</td>
-                                    <td className="px-4 py-4 text-sm text-stone-700">{formatCalories(checkIn.caloriesConsumed)}</td>
-                                    <td className="px-4 py-4 text-sm text-stone-700">{formatGrams(checkIn.proteinGrams)}</td>
-                                    <td className="px-4 py-4 text-sm text-stone-700">{formatLiters(checkIn.waterLiters)}</td>
-                                    <td className="px-4 py-4 text-sm text-stone-700">{formatScore(checkIn.energyScore)}</td>
-                                    <td className="px-4 py-4 text-sm text-stone-700">{formatScore(checkIn.sorenessScore)}</td>
-                                    <td className="px-4 py-4 text-sm text-stone-700">{formatScore(checkIn.sleepQualityScore)}</td>
-                                    <td className="px-4 py-4">
+                                    <td className="px-5 py-4 font-medium text-stone-950">{shortDate(checkIn.loggedDate)}</td>
+                                    <td className="px-5 py-4 text-sm text-stone-700">{formatWeight(checkIn.weightKg)}</td>
+                                    <td className="px-5 py-4 text-sm text-stone-700">{formatCalories(checkIn.caloriesConsumed)}</td>
+                                    <td className="px-5 py-4 text-sm text-stone-700">{formatGrams(checkIn.proteinGrams)}</td>
+                                    <td className="px-5 py-4 text-sm text-stone-700">{formatLiters(checkIn.waterLiters)}</td>
+                                    <td className="px-5 py-4 text-sm text-stone-700">{formatScore(checkIn.energyScore)}</td>
+                                    <td className="px-5 py-4 text-sm text-stone-700">{formatScore(checkIn.sorenessScore)}</td>
+                                    <td className="px-5 py-4 text-sm text-stone-700">{formatScore(checkIn.sleepQualityScore)}</td>
+                                    <td className="px-5 py-4">
                                         <p className="line-clamp-2 max-w-[18rem] text-sm leading-6 text-stone-700">
                                             {checkIn.notes ?? 'No notes.'}
                                         </p>
                                     </td>
-                                    <td className="px-4 py-4">
+                                    <td className="px-5 py-4">
                                         {canManageOwnCheckIns && <CheckInDialog label="Edit" checkIn={checkIn} defaults={athleteProfile.defaults} />}
                                     </td>
                                 </tr>
@@ -681,18 +665,12 @@ function CoachAdminProgressView({
 
     return (
         <div className="space-y-6">
-            <Card className="border-sidebar-border/70 overflow-hidden">
-                <CardHeader className="from-primary/10 via-background to-background bg-linear-to-br">
-                    <div className="space-y-2">
-                        <Badge variant="outline">{isAdmin ? 'Admin progress control' : 'Coach progress control'}</Badge>
-                        <CardTitle className="text-3xl">Progress workspace</CardTitle>
-                        <CardDescription className="max-w-3xl leading-6">
-                            Nutrition, weight, soreness, hydration, and training support across the visible athlete group. This is where you catch
-                            drift before it becomes an excuse.
-                        </CardDescription>
-                    </div>
-                </CardHeader>
-            </Card>
+            <WorkspaceHero
+                eyebrow={isAdmin ? 'Admin progress control' : 'Coach progress control'}
+                title="Progress workspace"
+                description="Nutrition, weight, soreness, hydration, and training support across the visible athlete group. This is where you catch drift before it becomes an excuse."
+                badges={[`${summary.visibleAthletes} visible athletes`, `${summary.checkInsThisWeek} check-ins this week`]}
+            />
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <SummaryMetric
@@ -721,14 +699,11 @@ function CoachAdminProgressView({
                 />
             </div>
 
-            <Card className="border-sidebar-border/70">
-                <CardHeader>
-                    <CardTitle className="text-xl">Athlete progress queue</CardTitle>
-                    <CardDescription>
-                        Each card should tell you whether the athlete is fueling the work, logging honestly, and trending the right way.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+            <WorkspacePanel
+                title="Athlete progress queue"
+                description="Table-first tracking for fueling, body metrics, subjective state, compliance, wearable context, and alerts."
+                contentClassName="space-y-4"
+            >
                     <WorkspaceTable minWidth="min-w-[1280px]">
                         <WorkspaceTableHeader
                             labels={['Athlete', 'Coach', 'Latest check-in', 'Weight', 'Fuel', 'State', 'Compliance', 'Wearable', 'Alerts', 'Actions']}
@@ -739,15 +714,15 @@ function CoachAdminProgressView({
                             <tbody className="divide-y divide-stone-100">
                                 {athletes.data.map((athlete) => (
                                     <tr key={athlete.id} className="align-top transition-colors hover:bg-stone-50/80">
-                                        <td className="px-4 py-4">
+                                        <td className="px-5 py-4">
                                             <p className="font-semibold text-stone-950">{athlete.name}</p>
                                             <p className="mt-1 text-xs text-stone-500">{athlete.email}</p>
                                             <p className="mt-2 line-clamp-2 max-w-[16rem] text-xs text-stone-600">
                                                 {athlete.primaryGoal ?? 'No goal saved.'}
                                             </p>
                                         </td>
-                                        <td className="px-4 py-4 text-sm text-stone-700">{athlete.coachName ?? 'No coach label'}</td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-5 py-4 text-sm text-stone-700">{athlete.coachName ?? 'No coach label'}</td>
+                                        <td className="px-5 py-4">
                                             <p className="font-medium text-stone-950">
                                                 {athlete.latestCheckIn ? shortDate(athlete.latestCheckIn.loggedDate) : 'No check-in'}
                                             </p>
@@ -755,13 +730,13 @@ function CoachAdminProgressView({
                                                 Water {formatLiters(athlete.latestCheckIn?.waterLiters ?? null)}
                                             </p>
                                         </td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-5 py-4">
                                             <p className="font-medium text-stone-950">{formatWeight(athlete.progressOverview.latestWeightKg)}</p>
                                             <p className="mt-1 text-xs text-stone-500">
                                                 Delta {formatDelta(athlete.progressOverview.weightDeltaKg)}
                                             </p>
                                         </td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-5 py-4">
                                             <p className="font-medium text-stone-950">
                                                 {formatCalories(athlete.progressOverview.averageCaloriesConsumed)}
                                             </p>
@@ -773,7 +748,7 @@ function CoachAdminProgressView({
                                                 {formatGrams(athlete.progressOverview.averageFatGrams)}
                                             </p>
                                         </td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-5 py-4">
                                             <p className="text-sm text-stone-700">
                                                 Energy {formatScore(athlete.progressOverview.averageEnergyScore)}
                                             </p>
@@ -782,13 +757,13 @@ function CoachAdminProgressView({
                                                 {formatScore(athlete.progressOverview.averageStressScore)}
                                             </p>
                                         </td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-5 py-4">
                                             <p className="font-medium text-stone-950">{formatPercent(athlete.progressOverview.completionRate)}</p>
                                             <p className="mt-1 text-xs text-stone-500">
                                                 {athlete.progressOverview.completedSessions}/{athlete.progressOverview.scheduledSessions} sessions
                                             </p>
                                         </td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-5 py-4">
                                             <p className="font-medium text-stone-950">
                                                 Readiness {athlete.latestSnapshot?.readinessScore ?? 'N/A'}
                                             </p>
@@ -797,7 +772,7 @@ function CoachAdminProgressView({
                                                 {athlete.latestSnapshot?.trainingLoad ?? 'N/A'}
                                             </p>
                                         </td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-5 py-4">
                                             {athlete.alerts.length === 0 ? (
                                                 <span className="text-xs text-stone-500">No alerts</span>
                                             ) : (
@@ -810,7 +785,7 @@ function CoachAdminProgressView({
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-5 py-4">
                                             <div className="flex flex-col gap-2">
                                                 <Button asChild variant="outline" size="sm">
                                                     <Link href="/training">
@@ -854,67 +829,60 @@ function CoachAdminProgressView({
                             </div>
                         </div>
                     )}
-                </CardContent>
-            </Card>
+            </WorkspacePanel>
 
-            <div className="grid gap-4 xl:grid-cols-3">
-                <Card className="border-sidebar-border/70">
-                    <CardHeader>
-                        <CardTitle className="text-lg">Why this exists</CardTitle>
-                        <CardDescription>Recovery metrics without nutrition and body context are half a coaching product.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-muted-foreground space-y-2 text-sm leading-6">
-                        <p>Food intake changes whether training stress is supported or just survived.</p>
-                        <p>Bodyweight drift matters when performance, making weight, and recovery all pull in different directions.</p>
-                        <p>Subjective scores explain weird weeks faster than pretending every problem lives inside HRV.</p>
-                    </CardContent>
-                </Card>
-                <Card className="border-sidebar-border/70">
-                    <CardHeader>
-                        <CardTitle className="text-lg">Use with</CardTitle>
-                        <CardDescription>This page is meant to sit next to the rest of the app, not replace it.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                        <Button asChild variant="outline" className="w-full justify-between">
-                            <Link href="/roster">
-                                Roster workspace
-                                <Users className="size-4" />
-                            </Link>
-                        </Button>
-                        <Button asChild variant="outline" className="w-full justify-between">
-                            <Link href="/training">
-                                Training workspace
-                                <Dumbbell className="size-4" />
-                            </Link>
-                        </Button>
-                        <Button asChild variant="outline" className="w-full justify-between">
-                            <Link href="/wearables">
-                                Wearable board
-                                <Watch className="size-4" />
-                            </Link>
-                        </Button>
-                        {isAdmin && (
-                            <Button asChild variant="outline" className="w-full justify-between">
-                                <Link href="/admin/control-center">
-                                    Admin control center
-                                    <Shield className="size-4" />
-                                </Link>
-                            </Button>
-                        )}
-                    </CardContent>
-                </Card>
-                <Card className="border-sidebar-border/70">
-                    <CardHeader>
-                        <CardTitle className="text-lg">What to watch</CardTitle>
-                        <CardDescription>A few signals matter more than a hundred fake-deep charts.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-muted-foreground space-y-2 text-sm leading-6">
-                        <p>Missing logs are a signal. Either compliance is poor or the workflow is annoying.</p>
-                        <p>Low protein plus hard training is an own goal.</p>
-                        <p>High soreness and low energy should change the coaching conversation immediately.</p>
-                    </CardContent>
-                </Card>
-            </div>
+            <WorkspacePanel
+                title="Progress operating notes"
+                description="Reference detail stays available, but it lives in one table instead of three cards."
+            >
+                <WorkspaceTable minWidth="min-w-[980px]">
+                    <WorkspaceTableHeader labels={['Area', 'Why it matters', 'Open next']} />
+                    <tbody className="divide-y divide-stone-100">
+                        <tr className="align-top hover:bg-stone-50/80">
+                            <td className="px-5 py-4 font-semibold text-stone-950">Nutrition and body context</td>
+                            <td className="px-5 py-4 text-sm leading-6 text-stone-600">
+                                Food intake, bodyweight drift, and subjective scores explain training weeks faster than pretending every problem lives inside HRV.
+                            </td>
+                            <td className="px-5 py-4">
+                                <Button asChild variant="outline" size="sm">
+                                    <Link href="/training">
+                                        Training workspace
+                                        <Dumbbell className="ml-2 size-4" />
+                                    </Link>
+                                </Button>
+                            </td>
+                        </tr>
+                        <tr className="align-top hover:bg-stone-50/80">
+                            <td className="px-5 py-4 font-semibold text-stone-950">Roster follow-up</td>
+                            <td className="px-5 py-4 text-sm leading-6 text-stone-600">
+                                Missing logs are a signal. Either compliance is poor, the athlete needs a reminder, or the workflow is annoying.
+                            </td>
+                            <td className="px-5 py-4">
+                                <Button asChild variant="outline" size="sm">
+                                    <Link href="/roster">
+                                        Roster workspace
+                                        <Users className="ml-2 size-4" />
+                                    </Link>
+                                </Button>
+                            </td>
+                        </tr>
+                        <tr className="align-top hover:bg-stone-50/80">
+                            <td className="px-5 py-4 font-semibold text-stone-950">Wearable context</td>
+                            <td className="px-5 py-4 text-sm leading-6 text-stone-600">
+                                Readiness still matters, but it becomes useful when it sits next to food, soreness, stress, and completed work.
+                            </td>
+                            <td className="px-5 py-4">
+                                <Button asChild variant="outline" size="sm">
+                                    <Link href={isAdmin ? '/admin/control-center' : '/wearables'}>
+                                        {isAdmin ? 'Admin control center' : 'Wearable board'}
+                                        {isAdmin ? <Shield className="ml-2 size-4" /> : <Watch className="ml-2 size-4" />}
+                                    </Link>
+                                </Button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </WorkspaceTable>
+            </WorkspacePanel>
         </div>
     );
 }

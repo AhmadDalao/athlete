@@ -2,7 +2,6 @@ import { AthleteHero, AthleteMetricCard, AthletePanel, AthleteSectionHeading } f
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -81,6 +80,7 @@ interface TrainingSessionRow {
     focus: string | null;
     instructions: string | null;
     videoUrl: string | null;
+    mediaCount: number;
     exercises: ExerciseRow[];
     workoutLog: WorkoutLogRow | null;
 }
@@ -142,6 +142,7 @@ interface ProgramCreateFormData {
     first_session_focus: string;
     first_session_instructions: string;
     first_session_video_url: string;
+    first_session_image_urls: string;
     first_session_exercises: string;
 }
 
@@ -151,6 +152,7 @@ interface SessionCreateFormData {
     focus: string;
     instructions: string;
     video_url: string;
+    image_urls: string;
     exercises: string;
 }
 
@@ -630,6 +632,7 @@ function ProgramCreateForm({ rosterAthletes, exerciseFormatHint }: { rosterAthle
         first_session_focus: '',
         first_session_instructions: '',
         first_session_video_url: '',
+        first_session_image_urls: '',
         first_session_exercises: '',
     });
 
@@ -648,20 +651,17 @@ function ProgramCreateForm({ rosterAthletes, exerciseFormatHint }: { rosterAthle
                     'first_session_focus',
                     'first_session_instructions',
                     'first_session_video_url',
+                    'first_session_image_urls',
                     'first_session_exercises',
                 ),
         });
     };
 
     return (
-        <Card className="border-sidebar-border/70">
-            <CardHeader>
-                <CardTitle className="text-2xl">Assign a new program</CardTitle>
-                <CardDescription>
-                    Start with the athlete, define the block, then drop in the first session so the dashboard is useful on day one.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
+        <WorkspacePanel
+            title="Assign a new program"
+            description="Start with the athlete, define the block, then drop in the first session so the dashboard is useful on day one."
+        >
                 {rosterAthletes.length === 0 ? (
                     <div className="border-sidebar-border/70 rounded-2xl border border-dashed p-6">
                         <p className="font-medium">No active roster assignments yet.</p>
@@ -806,6 +806,19 @@ function ProgramCreateForm({ rosterAthletes, exerciseFormatHint }: { rosterAthle
                                     />
                                     <InputError message={errors.first_session_video_url} />
                                 </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="first_session_image_urls">Image URLs</Label>
+                                    <Textarea
+                                        id="first_session_image_urls"
+                                        value={data.first_session_image_urls}
+                                        onChange={(event) => setData('first_session_image_urls', event.target.value)}
+                                        disabled={processing}
+                                        placeholder={`https://cdn.example.com/squat-angle.jpg\nhttps://cdn.example.com/stance-reference.jpg`}
+                                    />
+                                    <p className="text-xs leading-5 text-muted-foreground">One image URL per line. Athletes see these as a slider inside the workout.</p>
+                                    <InputError message={errors.first_session_image_urls} />
+                                </div>
                             </div>
 
                             <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -840,8 +853,7 @@ function ProgramCreateForm({ rosterAthletes, exerciseFormatHint }: { rosterAthle
                         </Button>
                     </form>
                 )}
-            </CardContent>
-        </Card>
+        </WorkspacePanel>
     );
 }
 
@@ -853,6 +865,7 @@ function ProgramSessionForm({ programId, exerciseFormatHint }: { programId: numb
         focus: '',
         instructions: '',
         video_url: '',
+        image_urls: '',
         exercises: '',
     });
 
@@ -861,17 +874,12 @@ function ProgramSessionForm({ programId, exerciseFormatHint }: { programId: numb
 
         post(route('training.programs.sessions.store', { trainingProgram: programId }), {
             preserveScroll: true,
-            onSuccess: () => reset('title', 'focus', 'instructions', 'video_url', 'exercises'),
+            onSuccess: () => reset('title', 'focus', 'instructions', 'video_url', 'image_urls', 'exercises'),
         });
     };
 
     return (
-        <Card className="border-sidebar-border/70 bg-muted/20">
-            <CardHeader>
-                <CardTitle className="text-lg">Add session</CardTitle>
-                <CardDescription>Keep the block moving. Add the next workout without leaving the page.</CardDescription>
-            </CardHeader>
-            <CardContent>
+        <WorkspacePanel title="Add session" description="Keep the block moving. Add the next workout without leaving the page.">
                 <form className="space-y-4" onSubmit={submit}>
                     <div className="grid gap-4 lg:grid-cols-2">
                         <div className="grid gap-2">
@@ -921,6 +929,19 @@ function ProgramSessionForm({ programId, exerciseFormatHint }: { programId: numb
                             />
                             <InputError message={errors.video_url} />
                         </div>
+
+                        <div className="grid gap-2 lg:col-span-2">
+                            <Label htmlFor={`session-images-${programId}`}>Image URLs</Label>
+                            <Textarea
+                                id={`session-images-${programId}`}
+                                value={data.image_urls}
+                                onChange={(event) => setData('image_urls', event.target.value)}
+                                disabled={processing}
+                                placeholder={`https://cdn.example.com/movement-standard.jpg\nhttps://cdn.example.com/finish-position.jpg`}
+                            />
+                            <p className="text-xs leading-5 text-muted-foreground">One image URL per line. These become the athlete image slider for this calendar workout.</p>
+                            <InputError message={errors.image_urls} />
+                        </div>
                     </div>
 
                     <div className="grid gap-4 lg:grid-cols-2">
@@ -953,8 +974,7 @@ function ProgramSessionForm({ programId, exerciseFormatHint }: { programId: numb
                         Add session
                     </Button>
                 </form>
-            </CardContent>
-        </Card>
+        </WorkspacePanel>
     );
 }
 
@@ -977,12 +997,10 @@ function WorkoutLogForm({ session, statusOptions }: { session: TrainingSessionRo
     };
 
     return (
-        <Card className="border-sidebar-border/70 bg-muted/20">
-            <CardHeader>
-                <CardTitle className="text-lg">{session.workoutLog ? 'Update workout log' : 'Log this workout'}</CardTitle>
-                <CardDescription>Feed the coach real feedback. A plan without execution data is just decoration.</CardDescription>
-            </CardHeader>
-            <CardContent>
+        <WorkspacePanel
+            title={session.workoutLog ? 'Update workout log' : 'Log this workout'}
+            description="Feed the coach real feedback. A plan without execution data is just decoration."
+        >
                 <form className="space-y-4" onSubmit={submit}>
                     <div className="grid gap-4 lg:grid-cols-2">
                         <div className="grid gap-2">
@@ -1061,8 +1079,7 @@ function WorkoutLogForm({ session, statusOptions }: { session: TrainingSessionRo
                         {session.workoutLog ? 'Update log' : 'Submit log'}
                     </Button>
                 </form>
-            </CardContent>
-        </Card>
+        </WorkspacePanel>
     );
 }
 
@@ -1102,7 +1119,7 @@ function AthleteTrainingExperience({ summary, programs, statusOptions }: Pick<Tr
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Training" />
 
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
                 <AthleteHero
                     eyebrow="Athlete training board"
                     title={primaryProgram ? primaryProgram.title : 'Training is ready when your coach assigns the block.'}
@@ -1252,6 +1269,11 @@ function AthleteTrainingExperience({ summary, programs, statusOptions }: Pick<Tr
                                                                     <Badge variant="outline">{shortDayLabel(session.scheduledDate)}</Badge>
                                                                 )}
                                                                 {session.focus && <Badge variant="outline">{session.focus}</Badge>}
+                                                                {session.mediaCount > 0 && (
+                                                                    <Badge variant="outline">
+                                                                        {session.mediaCount} media {session.mediaCount === 1 ? 'item' : 'items'}
+                                                                    </Badge>
+                                                                )}
                                                             </div>
                                                             {session.instructions && (
                                                                 <p className="max-w-3xl text-sm leading-6 text-stone-600">{session.instructions}</p>
@@ -1324,7 +1346,7 @@ export default function TrainingIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Training" />
 
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
                 <WorkspaceHero
                     eyebrow={viewerRole === 'coach' ? 'Coach training control' : 'Training oversight'}
                     title={
@@ -1422,11 +1444,11 @@ export default function TrainingIndex({
                                     {programs.data.map((program) => (
                                         <Fragment key={program.id}>
                                             <tr key={`program-${program.id}`} className="align-top transition-colors hover:bg-stone-50/80">
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <p className="font-semibold text-stone-950">{program.title}</p>
                                                     {program.goal && <p className="mt-1 text-xs text-stone-500">{program.goal}</p>}
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <Link
                                                         href={route('athletes.show', program.athleteId)}
                                                         className="font-medium text-stone-950 underline-offset-4 hover:text-emerald-700 hover:underline"
@@ -1434,23 +1456,23 @@ export default function TrainingIndex({
                                                         {program.athleteName}
                                                     </Link>
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{program.coachName}</td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4 text-sm text-stone-700">{program.coachName}</td>
+                                                <td className="px-5 py-4">
                                                     <Badge variant={badgeVariantForProgram(program.status)}>{humanizeStatus(program.status)}</Badge>
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">
+                                                <td className="px-5 py-4 text-sm text-stone-700">
                                                     {program.startDate ?? 'Not set'} → {program.endDate ?? 'Open ended'}
                                                 </td>
-                                                <td className="px-4 py-4 font-medium text-stone-950">{program.sessionCount}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{program.nextSessionDate ?? 'Not scheduled'}</td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4 font-medium text-stone-950">{program.sessionCount}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{program.nextSessionDate ?? 'Not scheduled'}</td>
+                                                <td className="px-5 py-4">
                                                     <p className="line-clamp-2 max-w-[18rem] text-sm text-stone-700">
                                                         {program.notes ?? 'No coach notes.'}
                                                     </p>
                                                 </td>
                                             </tr>
                                             <tr key={`program-detail-${program.id}`} className="bg-stone-50/50">
-                                                <td colSpan={8} className="px-4 py-4">
+                                                <td colSpan={8} className="px-5 py-4">
                                                     {viewerRole === 'coach' && (
                                                         <div className="mb-4">
                                                             <ProgramSessionForm programId={program.id} exerciseFormatHint={exerciseFormatHint} />
@@ -1476,7 +1498,7 @@ export default function TrainingIndex({
                                                                 <tbody className="divide-y divide-stone-100">
                                                                     {program.sessions.map((session) => (
                                                                         <tr key={session.id} className="align-top">
-                                                                            <td className="px-4 py-4">
+                                                                            <td className="px-5 py-4">
                                                                                 <p className="font-medium text-stone-950">{session.title}</p>
                                                                                 <p className="mt-1 max-w-[18rem] text-xs leading-5 text-stone-500">
                                                                                     {session.instructions ?? 'No instructions.'}
@@ -1490,16 +1512,21 @@ export default function TrainingIndex({
                                                                                     </div>
                                                                                 )}
                                                                             </td>
-                                                                            <td className="px-4 py-4 text-sm text-stone-700">
+                                                                            <td className="px-5 py-4 text-sm text-stone-700">
                                                                                 {session.scheduledDate ?? 'Not scheduled'}
                                                                             </td>
-                                                                            <td className="px-4 py-4 text-sm text-stone-700">
+                                                                            <td className="px-5 py-4 text-sm text-stone-700">
                                                                                 {session.focus ?? 'General'}
                                                                             </td>
-                                                                            <td className="px-4 py-4">
+                                                                            <td className="px-5 py-4">
                                                                                 <WorkoutVideoPlayer url={session.videoUrl} />
+                                                                                {session.mediaCount > 0 && (
+                                                                                    <p className="mt-2 text-xs font-medium text-stone-500">
+                                                                                        {session.mediaCount} attached media {session.mediaCount === 1 ? 'item' : 'items'}
+                                                                                    </p>
+                                                                                )}
                                                                             </td>
-                                                                            <td className="px-4 py-4">
+                                                                            <td className="px-5 py-4">
                                                                                 {session.workoutLog ? (
                                                                                     <div className="space-y-1 text-xs text-stone-600">
                                                                                         <Badge
@@ -1529,7 +1556,7 @@ export default function TrainingIndex({
                                                                                     <Badge variant="outline">No workout log yet</Badge>
                                                                                 )}
                                                                             </td>
-                                                                            <td className="px-4 py-4">
+                                                                            <td className="px-5 py-4">
                                                                                 <WorkspaceTable minWidth="min-w-[720px]">
                                                                                     <WorkspaceTableHeader
                                                                                         labels={[
@@ -1550,7 +1577,7 @@ export default function TrainingIndex({
                                                                                         <tbody className="divide-y divide-stone-100">
                                                                                             {session.exercises.map((exercise, index) => (
                                                                                                 <tr key={`${session.id}-${index}`}>
-                                                                                                    <td className="px-4 py-3">
+                                                                                                    <td className="px-5 py-4">
                                                                                                         <p className="font-medium text-stone-950">
                                                                                                             {exercise.name}
                                                                                                         </p>
@@ -1560,19 +1587,19 @@ export default function TrainingIndex({
                                                                                                                 'No note.'}
                                                                                                         </p>
                                                                                                     </td>
-                                                                                                    <td className="px-4 py-3 text-sm text-stone-700">
+                                                                                                    <td className="px-5 py-4 text-sm text-stone-700">
                                                                                                         {exercise.sets ?? '-'}
                                                                                                     </td>
-                                                                                                    <td className="px-4 py-3 text-sm text-stone-700">
+                                                                                                    <td className="px-5 py-4 text-sm text-stone-700">
                                                                                                         {exercise.reps ?? '-'}
                                                                                                     </td>
-                                                                                                    <td className="px-4 py-3 text-sm text-stone-700">
+                                                                                                    <td className="px-5 py-4 text-sm text-stone-700">
                                                                                                         {exercise.load ?? '-'}
                                                                                                     </td>
-                                                                                                    <td className="px-4 py-3 text-sm text-stone-700">
+                                                                                                    <td className="px-5 py-4 text-sm text-stone-700">
                                                                                                         {exercise.rest_label ?? '-'}
                                                                                                     </td>
-                                                                                                    <td className="px-4 py-3 text-sm text-stone-700">
+                                                                                                    <td className="px-5 py-4 text-sm text-stone-700">
                                                                                                         {exercise.target ?? '-'}
                                                                                                     </td>
                                                                                                 </tr>

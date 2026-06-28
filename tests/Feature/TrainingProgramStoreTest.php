@@ -32,6 +32,7 @@ class TrainingProgramStoreTest extends TestCase
             'first_session_focus' => 'Threshold work',
             'first_session_instructions' => 'Relax into pace before you push.',
             'first_session_video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            'first_session_image_urls' => "https://cdn.example.com/workouts/run-start.jpg\nhttps://cdn.example.com/workouts/run-finish.jpg",
             'first_session_exercises' => "Back squat | 4 | 6 | 120 kg | 150s | RPE 8 | Full depth\nBike flush | 1 | 10 min zone 1 | Easy spin | 0s | Nasal breathing | Calm exit",
         ]);
 
@@ -49,6 +50,9 @@ class TrainingProgramStoreTest extends TestCase
 
         $this->assertSame('Run intervals', $session->title);
         $this->assertSame('https://www.youtube.com/watch?v=dQw4w9WgXcQ', $session->video_url);
+        $this->assertSame('image', $session->media_items[0]['type']);
+        $this->assertSame('https://cdn.example.com/workouts/run-start.jpg', $session->media_items[0]['url']);
+        $this->assertSame('https://cdn.example.com/workouts/run-finish.jpg', $session->media_items[1]['url']);
         $this->assertSame('Back squat', $session->exercises[0]['name']);
         $this->assertSame(4, $session->exercises[0]['sets']);
         $this->assertSame('6', $session->exercises[0]['reps']);
@@ -79,6 +83,7 @@ class TrainingProgramStoreTest extends TestCase
             'focus' => 'Low-intensity volume',
             'instructions' => 'Keep breathing easy.',
             'video_url' => 'https://cdn.example.com/workouts/aerobic-reset.mp4',
+            'image_urls' => 'https://cdn.example.com/workouts/aerobic-bike-fit.jpg',
             'exercises' => "Bike | 40 min zone 2 | No surges\nMobility | 3 rounds | Move slowly",
         ]);
 
@@ -88,10 +93,46 @@ class TrainingProgramStoreTest extends TestCase
 
         $this->assertSame('Aerobic reset', $session->title);
         $this->assertSame('https://cdn.example.com/workouts/aerobic-reset.mp4', $session->video_url);
+        $this->assertSame('https://cdn.example.com/workouts/aerobic-bike-fit.jpg', $session->media_items[0]['url']);
         $this->assertSame('Bike', $session->exercises[0]['name']);
         $this->assertSame('40 min zone 2', $session->exercises[0]['prescription']);
         $this->assertNull($session->exercises[0]['sets']);
         $this->assertSame('No surges', $session->exercises[0]['note']);
+    }
+
+    public function test_session_media_rejects_invalid_image_urls(): void
+    {
+        [$coach, $athlete] = $this->coachRosterFixture();
+
+        $program = TrainingProgram::query()->create([
+            'coach_id' => $coach->id,
+            'athlete_id' => $athlete->id,
+            'title' => 'Competition Prep',
+            'goal' => 'Stay explosive',
+            'status' => TrainingProgramStatus::Active,
+            'start_date' => now()->subDays(3)->toDateString(),
+            'end_date' => now()->addDays(25)->toDateString(),
+            'notes' => null,
+        ]);
+
+        $this->actingAs($coach)
+            ->from('/training')
+            ->post("/training/programs/{$program->id}/sessions", [
+                'title' => 'Bad media',
+                'scheduled_date' => now()->addDays(2)->toDateString(),
+                'focus' => 'Media validation',
+                'instructions' => null,
+                'video_url' => null,
+                'image_urls' => 'not-a-url',
+                'exercises' => null,
+            ])
+            ->assertRedirect('/training')
+            ->assertSessionHasErrors('image_urls');
+
+        $this->assertDatabaseMissing('training_sessions', [
+            'training_program_id' => $program->id,
+            'title' => 'Bad media',
+        ]);
     }
 
     public function test_coach_cannot_create_a_program_for_an_unassigned_athlete(): void

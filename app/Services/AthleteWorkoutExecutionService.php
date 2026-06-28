@@ -32,6 +32,7 @@ class AthleteWorkoutExecutionService
                 'focus' => $session->focus,
                 'instructions' => $session->instructions,
                 'videoUrl' => $session->video_url,
+                'mediaItems' => $this->mediaItems($session),
             ],
             'program' => [
                 'id' => $session->program->id,
@@ -234,6 +235,35 @@ class AthleteWorkoutExecutionService
                 'target' => $exercise['target'] ?? null,
                 'note' => $exercise['note'] ?? null,
             ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{type:string,url:string,title:string|null,isPrimary:bool}>
+     */
+    private function mediaItems(TrainingSession $session): array
+    {
+        $items = collect();
+
+        if ($session->video_url) {
+            $items->push([
+                'type' => 'video',
+                'url' => $session->video_url,
+                'title' => 'Workout video',
+                'isPrimary' => true,
+            ]);
+        }
+
+        return $items
+            ->merge(collect($session->media_items ?? [])
+                ->filter(fn ($item): bool => is_array($item) && ($item['type'] ?? null) === 'image' && filled($item['url'] ?? null))
+                ->map(fn (array $item): array => [
+                    'type' => 'image',
+                    'url' => (string) $item['url'],
+                    'title' => isset($item['title']) && filled($item['title']) ? (string) $item['title'] : null,
+                    'isPrimary' => false,
+                ]))
             ->values()
             ->all();
     }

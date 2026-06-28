@@ -277,7 +277,7 @@ export function AthleteDashboardExperience({ viewer, athlete }: { viewer: Viewer
         <AppLayout breadcrumbs={dashboardBreadcrumbs}>
             <Head title="Dashboard" />
 
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
                 <AthleteHero
                     eyebrow="Athlete command board"
                     title={`Your work is clear, ${viewer.name}.`}

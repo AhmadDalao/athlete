@@ -203,7 +203,7 @@ export default function AdminUserShow({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${profile.name} profile`} />
 
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
                 <WorkspaceHero
                     eyebrow="User profile"
                     title={profile.name}
@@ -277,14 +277,14 @@ export default function AdminUserShow({
                         <WorkspaceTableHeader labels={['Field', 'Value', 'Field', 'Value']} />
                         <tbody className="divide-y divide-stone-200">
                             <tr>
-                                <td className="px-4 py-3 font-medium text-stone-950">Email</td>
-                                <td className="px-4 py-3 text-stone-600">{profile.email}</td>
-                                <td className="px-4 py-3 font-medium text-stone-950">Phone</td>
-                                <td className="px-4 py-3 text-stone-600">{profile.phone ?? 'Not set'}</td>
+                                <td className="px-5 py-4 font-medium text-stone-950">Email</td>
+                                <td className="px-5 py-4 text-stone-600">{profile.email}</td>
+                                <td className="px-5 py-4 font-medium text-stone-950">Phone</td>
+                                <td className="px-5 py-4 text-stone-600">{profile.phone ?? 'Not set'}</td>
                             </tr>
                             <tr>
-                                <td className="px-4 py-3 font-medium text-stone-950">Roles</td>
-                                <td className="px-4 py-3">
+                                <td className="px-5 py-4 font-medium text-stone-950">Roles</td>
+                                <td className="px-5 py-4">
                                     <div className="flex flex-wrap gap-2">
                                         {profile.roles.map((role) => (
                                             <Badge key={role} variant="outline">
@@ -293,26 +293,26 @@ export default function AdminUserShow({
                                         ))}
                                     </div>
                                 </td>
-                                <td className="px-4 py-3 font-medium text-stone-950">Signup channel</td>
-                                <td className="px-4 py-3 text-stone-600">{humanizeStatus(profile.registrationChannel ?? 'email')}</td>
+                                <td className="px-5 py-4 font-medium text-stone-950">Signup channel</td>
+                                <td className="px-5 py-4 text-stone-600">{humanizeStatus(profile.registrationChannel ?? 'email')}</td>
                             </tr>
                             <tr>
-                                <td className="px-4 py-3 font-medium text-stone-950">Position</td>
-                                <td className="px-4 py-3 text-stone-600">{profile.position ?? 'Not set'}</td>
-                                <td className="px-4 py-3 font-medium text-stone-950">Permissions</td>
-                                <td className="px-4 py-3 text-stone-600">{profile.permissionCount} active permission(s)</td>
+                                <td className="px-5 py-4 font-medium text-stone-950">Position</td>
+                                <td className="px-5 py-4 text-stone-600">{profile.position ?? 'Not set'}</td>
+                                <td className="px-5 py-4 font-medium text-stone-950">Permissions</td>
+                                <td className="px-5 py-4 text-stone-600">{profile.permissionCount} active permission(s)</td>
                             </tr>
                             <tr>
-                                <td className="px-4 py-3 font-medium text-stone-950">Email verified</td>
-                                <td className="px-4 py-3 text-stone-600">{formatDate(profile.emailVerifiedAt)}</td>
-                                <td className="px-4 py-3 font-medium text-stone-950">Phone verified</td>
-                                <td className="px-4 py-3 text-stone-600">{formatDate(profile.phoneVerifiedAt)}</td>
+                                <td className="px-5 py-4 font-medium text-stone-950">Email verified</td>
+                                <td className="px-5 py-4 text-stone-600">{formatDate(profile.emailVerifiedAt)}</td>
+                                <td className="px-5 py-4 font-medium text-stone-950">Phone verified</td>
+                                <td className="px-5 py-4 text-stone-600">{formatDate(profile.phoneVerifiedAt)}</td>
                             </tr>
                             <tr>
-                                <td className="px-4 py-3 font-medium text-stone-950">Goal</td>
-                                <td className="px-4 py-3 text-stone-600">{profile.primaryGoal ?? 'Not set'}</td>
-                                <td className="px-4 py-3 font-medium text-stone-950">Stripe customer</td>
-                                <td className="px-4 py-3 text-stone-600">{profile.stripeCustomerId ?? 'Not connected'}</td>
+                                <td className="px-5 py-4 font-medium text-stone-950">Goal</td>
+                                <td className="px-5 py-4 text-stone-600">{profile.primaryGoal ?? 'Not set'}</td>
+                                <td className="px-5 py-4 font-medium text-stone-950">Stripe customer</td>
+                                <td className="px-5 py-4 text-stone-600">{profile.stripeCustomerId ?? 'Not connected'}</td>
                             </tr>
                         </tbody>
                     </WorkspaceTable>
@@ -325,14 +325,14 @@ export default function AdminUserShow({
                             {permissionGroups.flatMap((group) =>
                                 group.permissions.map((permission) => (
                                     <tr key={permission.key}>
-                                        <td className="px-4 py-4 font-medium text-stone-950">{group.label}</td>
-                                        <td className="px-4 py-4 font-mono text-xs text-stone-700">{permission.key}</td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-5 py-4 font-medium text-stone-950">{group.label}</td>
+                                        <td className="px-5 py-4 font-mono text-xs text-stone-700">{permission.key}</td>
+                                        <td className="px-5 py-4">
                                             <Badge variant={permission.enabled ? 'default' : 'outline'}>
                                                 {permission.enabled ? 'Enabled' : 'Off'}
                                             </Badge>
                                         </td>
-                                        <td className="px-4 py-4 text-stone-600">{permission.description}</td>
+                                        <td className="px-5 py-4 text-stone-600">{permission.description}</td>
                                     </tr>
                                 )),
                             )}
@@ -355,20 +355,20 @@ export default function AdminUserShow({
                                 <tbody className="divide-y divide-stone-200">
                                     {memberships.map((membership) => (
                                         <tr key={membership.id} className="align-top">
-                                            <td className="px-4 py-4 font-medium text-stone-950">{membership.planName}</td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4 font-medium text-stone-950">{membership.planName}</td>
+                                            <td className="px-5 py-4">
                                                 <Badge variant={badgeVariantForStatus(membership.status)}>{humanizeStatus(membership.status)}</Badge>
                                                 <p className="mt-2 text-xs text-stone-500">
                                                     {membership.autoRenew ? 'Auto-renew' : 'Manual renewal'}
                                                 </p>
                                             </td>
-                                            <td className="px-4 py-4 text-stone-600">{formatDate(membership.startsAt)}</td>
-                                            <td className="px-4 py-4 text-stone-600">
+                                            <td className="px-5 py-4 text-stone-600">{formatDate(membership.startsAt)}</td>
+                                            <td className="px-5 py-4 text-stone-600">
                                                 <p>{formatDate(membership.renewsAt ?? membership.endsAt)}</p>
                                                 <p className="mt-1 text-xs text-stone-500">{formatDays(membership.daysRemaining)}</p>
                                             </td>
-                                            <td className="px-4 py-4 text-stone-600">{formatCurrency(membership.price, membership.currency)}</td>
-                                            <td className="px-4 py-4 text-stone-600">
+                                            <td className="px-5 py-4 text-stone-600">{formatCurrency(membership.price, membership.currency)}</td>
+                                            <td className="px-5 py-4 text-stone-600">
                                                 <p>{membership.billingProvider ?? 'Manual'}</p>
                                                 <p className="mt-1 text-xs text-stone-500">{membership.providerSubscriptionId ?? 'No provider ID'}</p>
                                             </td>
@@ -388,13 +388,13 @@ export default function AdminUserShow({
                                 <tbody className="divide-y divide-stone-200">
                                     {payments.map((event) => (
                                         <tr key={event.id}>
-                                            <td className="px-4 py-4 text-stone-600">{formatDate(event.eventAt)}</td>
-                                            <td className="px-4 py-4 text-stone-600">{humanizeStatus(event.eventType)}</td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4 text-stone-600">{formatDate(event.eventAt)}</td>
+                                            <td className="px-5 py-4 text-stone-600">{humanizeStatus(event.eventType)}</td>
+                                            <td className="px-5 py-4">
                                                 <Badge variant={badgeVariantForStatus(event.status)}>{humanizeStatus(event.status)}</Badge>
                                             </td>
-                                            <td className="px-4 py-4 text-stone-600">{formatCurrency(event.amount, event.currency)}</td>
-                                            <td className="px-4 py-4 text-stone-600">{event.reference ?? event.provider ?? 'Manual event'}</td>
+                                            <td className="px-5 py-4 text-stone-600">{formatCurrency(event.amount, event.currency)}</td>
+                                            <td className="px-5 py-4 text-stone-600">{event.reference ?? event.provider ?? 'Manual event'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -413,12 +413,12 @@ export default function AdminUserShow({
                                 <tbody className="divide-y divide-stone-200">
                                     {devices.map((device) => (
                                         <tr key={device.id}>
-                                            <td className="px-4 py-4 text-stone-600">{device.provider}</td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4 text-stone-600">{device.provider}</td>
+                                            <td className="px-5 py-4">
                                                 <Badge variant={badgeVariantForStatus(device.status)}>{humanizeStatus(device.status)}</Badge>
                                             </td>
-                                            <td className="px-4 py-4 text-stone-600">{formatDate(device.lastSyncedAt)}</td>
-                                            <td className="px-4 py-4 text-stone-600">
+                                            <td className="px-5 py-4 text-stone-600">{formatDate(device.lastSyncedAt)}</td>
+                                            <td className="px-5 py-4 text-stone-600">
                                                 {formatDate(device.latestMetricDate)} · readiness {device.latestReadiness ?? 'N/A'}
                                             </td>
                                         </tr>
@@ -443,14 +443,14 @@ export default function AdminUserShow({
                                     <tbody className="divide-y divide-stone-200">
                                         {coachAssignments.map((assignment) => (
                                             <tr key={assignment.id}>
-                                                <td className="px-4 py-4 text-stone-600">{assignment.coachName}</td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4 text-stone-600">{assignment.coachName}</td>
+                                                <td className="px-5 py-4">
                                                     <Badge variant={badgeVariantForStatus(assignment.status)}>
                                                         {humanizeStatus(assignment.status)}
                                                     </Badge>
                                                 </td>
-                                                <td className="px-4 py-4 text-stone-600">{formatDate(assignment.startedAt)}</td>
-                                                <td className="px-4 py-4 text-stone-600">{assignment.goal ?? 'No goal'}</td>
+                                                <td className="px-5 py-4 text-stone-600">{formatDate(assignment.startedAt)}</td>
+                                                <td className="px-5 py-4 text-stone-600">{assignment.goal ?? 'No goal'}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -468,7 +468,7 @@ export default function AdminUserShow({
                                     <tbody className="divide-y divide-stone-200">
                                         {athleteAssignments.map((assignment) => (
                                             <tr key={assignment.id}>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <Link
                                                         href={route('athletes.show', assignment.athleteId)}
                                                         className="font-medium text-stone-950 underline-offset-4 hover:text-emerald-700 hover:underline"
@@ -476,13 +476,13 @@ export default function AdminUserShow({
                                                         {assignment.athleteName}
                                                     </Link>
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <Badge variant={badgeVariantForStatus(assignment.status)}>
                                                         {humanizeStatus(assignment.status)}
                                                     </Badge>
                                                 </td>
-                                                <td className="px-4 py-4 text-stone-600">{formatDate(assignment.startedAt)}</td>
-                                                <td className="px-4 py-4 text-stone-600">{assignment.goal ?? 'No goal'}</td>
+                                                <td className="px-5 py-4 text-stone-600">{formatDate(assignment.startedAt)}</td>
+                                                <td className="px-5 py-4 text-stone-600">{assignment.goal ?? 'No goal'}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -501,9 +501,9 @@ export default function AdminUserShow({
                             <tbody className="divide-y divide-stone-200">
                                 {programs.map((program) => (
                                     <tr key={`${program.role}-${program.id}`}>
-                                        <td className="px-4 py-4 font-medium text-stone-950">{program.title}</td>
-                                        <td className="px-4 py-4 text-stone-600">{humanizeStatus(program.role)}</td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-5 py-4 font-medium text-stone-950">{program.title}</td>
+                                        <td className="px-5 py-4 text-stone-600">{humanizeStatus(program.role)}</td>
+                                        <td className="px-5 py-4">
                                             <Link
                                                 href={
                                                     program.counterpartyIsAthlete
@@ -515,13 +515,13 @@ export default function AdminUserShow({
                                                 {program.counterparty}
                                             </Link>
                                         </td>
-                                        <td className="px-4 py-4">
+                                        <td className="px-5 py-4">
                                             <Badge variant={badgeVariantForStatus(program.status)}>{humanizeStatus(program.status)}</Badge>
                                         </td>
-                                        <td className="px-4 py-4 text-stone-600">
+                                        <td className="px-5 py-4 text-stone-600">
                                             {formatDate(program.startDate)} to {formatDate(program.endDate)}
                                         </td>
-                                        <td className="px-4 py-4 text-stone-600">
+                                        <td className="px-5 py-4 text-stone-600">
                                             <Dumbbell className="mr-2 inline size-4" />
                                             {program.sessionCount}
                                         </td>

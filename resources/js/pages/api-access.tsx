@@ -1,7 +1,6 @@
 import CopyButton from '@/components/copy-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,7 +17,7 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { Cable, CheckCircle2, CloudCog, Cpu, ExternalLink, KeyRound, Link2, RadioTower, ShieldCheck, Trash2, Watch, Workflow } from 'lucide-react';
+import { Cable, CheckCircle2, CloudCog, ExternalLink, KeyRound, Link2, RadioTower, ShieldCheck, Trash2, Watch, Workflow } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -148,7 +147,7 @@ export default function ApiAccess({ viewer, abilities, tokens, managedConnection
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="API Access" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-6 bg-white py-8">
                 <WorkspaceHero
                     eyebrow="Developer surface"
                     title="API access that normal humans can actually use."
@@ -354,8 +353,8 @@ export default function ApiAccess({ viewer, abilities, tokens, managedConnection
                                     <tbody className="divide-y divide-stone-100">
                                         {tokens.map((token) => (
                                             <tr key={token.id} className="align-top transition-colors hover:bg-stone-50/80">
-                                                <td className="px-4 py-4 font-semibold text-stone-950">{token.name}</td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4 font-semibold text-stone-950">{token.name}</td>
+                                                <td className="px-5 py-4">
                                                     <div className="flex max-w-[18rem] flex-wrap gap-1.5">
                                                         {token.abilities.map((ability) => (
                                                             <Badge key={ability} variant="outline">
@@ -364,10 +363,10 @@ export default function ApiAccess({ viewer, abilities, tokens, managedConnection
                                                         ))}
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{token.createdAt ?? 'Unknown'}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{token.lastUsedAt ?? 'Never'}</td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{token.expiresAt ?? 'Never'}</td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4 text-sm text-stone-700">{token.createdAt ?? 'Unknown'}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{token.lastUsedAt ?? 'Never'}</td>
+                                                <td className="px-5 py-4 text-sm text-stone-700">{token.expiresAt ?? 'Never'}</td>
+                                                <td className="px-5 py-4">
                                                     <Link
                                                         href={route('api-access.tokens.destroy', token.id)}
                                                         method="delete"
@@ -409,27 +408,27 @@ export default function ApiAccess({ viewer, abilities, tokens, managedConnection
                                     <tbody className="divide-y divide-stone-100">
                                         {managedConnections.map((connection) => (
                                             <tr key={connection.id} className="align-top transition-colors hover:bg-stone-50/80">
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <p className="font-semibold text-stone-950">{connection.providerLabel}</p>
                                                     <p className="mt-1 text-xs text-stone-500">{connection.publicId}</p>
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <p className="font-medium text-stone-950">{connection.ownerName}</p>
                                                     <p className="mt-1 text-xs text-stone-500">{humanizeStatus(connection.ownerRole)}</p>
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <Badge variant={statusVariant(connection.status)}>{humanizeStatus(connection.status)}</Badge>
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     <Badge variant="outline">{connection.authType === 'oauth' ? 'OAuth' : 'Ingest key'}</Badge>
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-stone-700">{connection.lastSyncedAt ?? 'Never'}</td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4 text-sm text-stone-700">{connection.lastSyncedAt ?? 'Never'}</td>
+                                                <td className="px-5 py-4">
                                                     <p className="line-clamp-2 max-w-[14rem] text-xs text-stone-500">
                                                         {connection.grantedScopes.length ? connection.grantedScopes.join(', ') : 'No scopes'}
                                                     </p>
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     {connection.ingest ? (
                                                         <div className="space-y-1">
                                                             <p className="font-mono text-xs text-stone-700">****{connection.ingest.lastFour}</p>
@@ -441,7 +440,7 @@ export default function ApiAccess({ viewer, abilities, tokens, managedConnection
                                                         <span className="text-xs text-stone-500">OAuth managed</span>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-4">
+                                                <td className="px-5 py-4">
                                                     {connection.ingest ? (
                                                         <div className="flex flex-col gap-2">
                                                             <CopyButton value={connection.ingest.key} label="Copy key" />
@@ -515,44 +514,31 @@ export default function ApiAccess({ viewer, abilities, tokens, managedConnection
                         title="What each integration path is for."
                         description="This is the shortest explanation of the moving parts, which is all most people should need."
                     />
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <Card className="border-stone-200/75 bg-white/92">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg">
-                                    <KeyRound className="size-4 text-stone-700" />
-                                    Bearer token
-                                </CardTitle>
-                                <CardDescription>Use this for your app, admin scripts, and partner reads against API v1.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm leading-6 text-stone-600">Authorization header: `Bearer {'{YOUR_TOKEN}'}`</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-stone-200/75 bg-white/92">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg">
-                                    <Cpu className="size-4 text-stone-700" />
-                                    Ingest key
-                                </CardTitle>
-                                <CardDescription>Use this for normalized device posting into one specific device connection.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm leading-6 text-stone-600">Header: `X-Throughline-Key: {'{INGEST_KEY}'}`</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-stone-200/75 bg-white/92">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg">
-                                    <Workflow className="size-4 text-stone-700" />
-                                    Webhook
-                                </CardTitle>
-                                <CardDescription>Use this for Stripe event delivery. It is not the same thing as a user API token.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm leading-6 text-stone-600">Signature comes from Stripe, not from your app users.</p>
-                            </CardContent>
-                        </Card>
-                    </div>
+                    <WorkspacePanel title="Integration map" description="Use the right credential for the right job. Mixing these up is how APIs become a mess.">
+                        <WorkspaceTable minWidth="min-w-[920px]">
+                            <WorkspaceTableHeader labels={['Path', 'Use for', 'Credential', 'Notes']} />
+                            <tbody className="divide-y divide-stone-100">
+                                <tr className="align-top hover:bg-stone-50/80">
+                                    <td className="px-5 py-4 font-semibold text-stone-950">Bearer token</td>
+                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">Your app, admin scripts, and partner reads against API v1.</td>
+                                    <td className="px-5 py-4 font-mono text-xs text-stone-700">Authorization: Bearer {'{YOUR_TOKEN}'}</td>
+                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">Controlled by token abilities such as training:read or progress:write.</td>
+                                </tr>
+                                <tr className="align-top hover:bg-stone-50/80">
+                                    <td className="px-5 py-4 font-semibold text-stone-950">Ingest key</td>
+                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">Normalized device posting into one specific device connection.</td>
+                                    <td className="px-5 py-4 font-mono text-xs text-stone-700">X-Throughline-Key: {'{INGEST_KEY}'}</td>
+                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">This is not a user login token. Keep it scoped to ingestion.</td>
+                                </tr>
+                                <tr className="align-top hover:bg-stone-50/80">
+                                    <td className="px-5 py-4 font-semibold text-stone-950">Webhook</td>
+                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">Stripe event delivery into billing state.</td>
+                                    <td className="px-5 py-4 font-mono text-xs text-stone-700">Stripe signature</td>
+                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">Signature comes from Stripe, not from your app users.</td>
+                                </tr>
+                            </tbody>
+                        </WorkspaceTable>
+                    </WorkspacePanel>
                 </section>
             </div>
         </AppLayout>

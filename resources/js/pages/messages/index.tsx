@@ -87,7 +87,7 @@ function MessagesWorkspace({ viewerRole, threads }: MessagesProps) {
     };
 
     return (
-        <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+        <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
             <section className="rounded-[2rem] border border-stone-200 bg-white p-6 shadow-[0_18px_38px_-34px_rgba(15,23,42,0.16)]">
                 <Badge variant="outline" className="rounded-full">
                     Messaging V1
@@ -204,11 +204,11 @@ function MessagesWorkspace({ viewerRole, threads }: MessagesProps) {
                                 {threads.flatMap((thread) =>
                                     thread.messages.map((message) => (
                                         <tr key={message.id} className="border-t border-stone-100">
-                                            <td className="px-4 py-3 font-medium text-stone-950">{thread.participant.name}</td>
-                                            <td className="px-4 py-3 text-stone-600">{message.senderName}</td>
+                                            <td className="px-5 py-4 font-medium text-stone-950">{thread.participant.name}</td>
+                                            <td className="px-5 py-4 text-stone-600">{message.senderName}</td>
                                             <td className="max-w-md px-4 py-3 text-stone-600">{message.body}</td>
-                                            <td className="px-4 py-3 text-stone-600">{formatDateTime(message.sentAt)}</td>
-                                            <td className="px-4 py-3">
+                                            <td className="px-5 py-4 text-stone-600">{formatDateTime(message.sentAt)}</td>
+                                            <td className="px-5 py-4">
                                                 <Badge variant={message.readAt ? 'default' : 'outline'}>{message.readAt ? 'Read' : 'Unread'}</Badge>
                                             </td>
                                         </tr>

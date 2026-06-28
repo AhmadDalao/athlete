@@ -120,7 +120,7 @@ export default function AuditLog({ filters, summary, actions, entities, logs }: 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Audit Log" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-6 bg-white py-8">
                 <div className="flex flex-wrap items-end justify-between gap-4 border-b border-stone-200 pb-5">
                     <div>
                         <p className="text-sm font-semibold text-stone-500">Admin accountability</p>
@@ -233,12 +233,12 @@ export default function AuditLog({ filters, summary, actions, entities, logs }: 
                         <table className="w-full min-w-[980px] text-left text-sm">
                             <thead className="bg-stone-50 text-xs font-semibold tracking-[0.16em] text-stone-500 uppercase">
                                 <tr>
-                                    <th className="px-4 py-3">Time</th>
-                                    <th className="px-4 py-3">User</th>
-                                    <th className="px-4 py-3">Action</th>
-                                    <th className="px-4 py-3">Entity</th>
-                                    <th className="px-4 py-3">Summary</th>
-                                    <th className="px-4 py-3">IP</th>
+                                    <th className="px-5 py-4">Time</th>
+                                    <th className="px-5 py-4">User</th>
+                                    <th className="px-5 py-4">Action</th>
+                                    <th className="px-5 py-4">Entity</th>
+                                    <th className="px-5 py-4">Summary</th>
+                                    <th className="px-5 py-4">IP</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-stone-100">
@@ -251,20 +251,20 @@ export default function AuditLog({ filters, summary, actions, entities, logs }: 
                                 ) : (
                                     logs.data.map((log) => (
                                         <tr key={log.id} className="align-top">
-                                            <td className="px-4 py-4 text-stone-600">{log.time ?? 'N/A'}</td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4 text-stone-600">{log.time ?? 'N/A'}</td>
+                                            <td className="px-5 py-4">
                                                 <p className="font-semibold text-stone-950">{log.actorName}</p>
                                                 {log.actorEmail && <p className="text-xs text-stone-500">{log.actorEmail}</p>}
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-5 py-4">
                                                 <Badge variant="outline">{humanize(log.action)}</Badge>
                                             </td>
-                                            <td className="px-4 py-4 text-stone-600">
+                                            <td className="px-5 py-4 text-stone-600">
                                                 {log.entityType ?? 'System'}
                                                 {log.entityId ? ` #${log.entityId}` : ''}
                                             </td>
                                             <td className="max-w-md px-4 py-4 leading-6 text-stone-700">{log.summary}</td>
-                                            <td className="px-4 py-4 text-stone-500">{log.ipAddress ?? 'N/A'}</td>
+                                            <td className="px-5 py-4 text-stone-500">{log.ipAddress ?? 'N/A'}</td>
                                         </tr>
                                     ))
                                 )}

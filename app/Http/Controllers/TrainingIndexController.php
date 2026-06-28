@@ -69,6 +69,7 @@ class TrainingIndexController extends Controller
                         'focus' => $session->focus,
                         'instructions' => $session->instructions,
                         'videoUrl' => $session->video_url,
+                        'mediaCount' => ($session->video_url ? 1 : 0) + collect($session->media_items ?? [])->count(),
                         'exercises' => $this->normalizeExercises($session->exercises ?? []),
                         'workoutLog' => $session->workoutLog ? [
                             'completionStatus' => $session->workoutLog->completion_status->value,

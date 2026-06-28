@@ -8,13 +8,19 @@ use App\Enums\TrainingProgramStatus;
 use App\Models\TrainingProgram;
 use App\Services\PlatformAuditLogger;
 use App\Support\TrainingExerciseParser;
+use App\Support\TrainingSessionMediaParser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class TrainingProgramStoreController extends Controller
 {
-    public function __invoke(Request $request, TrainingExerciseParser $exerciseParser, PlatformAuditLogger $auditLogger): RedirectResponse
-    {
+    public function __invoke(
+        Request $request,
+        TrainingExerciseParser $exerciseParser,
+        TrainingSessionMediaParser $mediaParser,
+        PlatformAuditLogger $auditLogger,
+    ): RedirectResponse {
         $user = $request->user();
 
         abort_unless($user && $user->hasRole(RoleName::Coach), 403);
@@ -31,8 +37,15 @@ class TrainingProgramStoreController extends Controller
             'first_session_focus' => ['nullable', 'string', 'max:255'],
             'first_session_instructions' => ['nullable', 'string'],
             'first_session_video_url' => ['nullable', 'url', 'max:2048'],
+            'first_session_image_urls' => ['nullable', 'string', 'max:10000'],
             'first_session_exercises' => ['nullable', 'string'],
         ]);
+
+        if ($invalidUrls = $mediaParser->invalidUrls($validated['first_session_image_urls'] ?? null)) {
+            throw ValidationException::withMessages([
+                'first_session_image_urls' => 'Every image URL must be valid. Check: '.implode(', ', $invalidUrls),
+            ]);
+        }
 
         $hasRosterAssignment = $user->coachAssignments()
             ->where('status', CoachAthleteStatus::Active->value)
@@ -58,6 +71,7 @@ class TrainingProgramStoreController extends Controller
             'focus' => $validated['first_session_focus'],
             'instructions' => $validated['first_session_instructions'],
             'video_url' => $validated['first_session_video_url'] ?? null,
+            'media_items' => $mediaParser->imageItems($validated['first_session_image_urls'] ?? null),
             'exercises' => $exerciseParser->parse($validated['first_session_exercises'] ?? null),
             'sort_order' => 1,
         ]);

@@ -181,6 +181,32 @@ Post-deploy smoke passed:
 - authenticated Laravel route smoke returned `200` for admin dashboard/control center/users/settings, coach roster/training/messages, and athlete app/progress/messages/workout execution
 - public browser smoke passed on mobile width with no console errors
 
+## 2026-06-28 workout media deploy note
+
+Workout image references and the athlete media slider were deployed to production.
+
+Runtime changes shipped:
+
+- full PHP runtime source slice deployed to `/throughline-athlete-app`
+- compiled Vite build deployed with `/build/` asset base
+- compiled build synced to both app `public/build` and subdomain `public_html/athlete/build`
+- Composer autoload refreshed through `/opt/alt/php85/usr/bin/php /usr/local/bin/composer2.phar`
+- trusted database backup created before migrations at `/home/u867436826/db-backups/athlete-media-20260628182842.sql.gz`
+- source snapshot created at `/home/u867436826/db-backups/athlete-source-media-20260628182842.tgz`
+- Laravel config, route, and view caches rebuilt successfully
+
+Migration applied:
+
+- `2026_06_28_190000_add_media_items_to_training_sessions_table`
+
+Post-deploy smoke passed:
+
+- public home, login, register, contact, and live manifest returned `200`
+- protected `/app` and `/training` returned `302` to `/login`
+- production migration status shows the new media migration as `Ran`
+- route cache exposes training program/session store routes and athlete workout execution routes
+- live manifest checksum matches local and both remote build directories: `ed57ce4307e3d39e413bed476e072f61b1f2dfc320cc1f28d001ec2dfa942eaf`
+
 ## Next deploy note: coach athlete ownership and file library
 
 This local slice adds database migrations and new route/controller/page assets. Before deploying it to production:
@@ -208,6 +234,25 @@ New protected routes:
 New public route:
 
 - `/invites/{token}`
+
+## 2026-06-28 backend table-first UI deploy note
+
+This deployment tightened the backend UI toward the KONA table-first style.
+
+- Production target: `https://athlete.ahmaddalao.com`
+- Source backup: `/home/u867436826/db-backups/athlete-source-backend-ui-20260628190625.tgz`
+- Migration result: `Nothing to migrate`
+- Live manifest checksum: `c1aa7eb947cf4580e03651ab57accbe686f7f0b1a137e110971cca3b1bc5c039`
+- Build synced to:
+    - `/home/u867436826/domains/ahmaddalao.com/throughline-athlete-app/public/build`
+    - `/home/u867436826/domains/ahmaddalao.com/public_html/athlete/build`
+- Laravel caches refreshed:
+    - autoload
+    - config
+    - routes
+    - views
+- Authenticated browser smoke passed for admin/control center, users, roster, training, progress, memberships, wearables, and API access.
+- Temporary QA owner used for browser smoke was removed after testing.
 
 ## Cron jobs
 

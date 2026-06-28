@@ -6,13 +6,20 @@ use App\Enums\RoleName;
 use App\Models\TrainingProgram;
 use App\Services\PlatformAuditLogger;
 use App\Support\TrainingExerciseParser;
+use App\Support\TrainingSessionMediaParser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class TrainingSessionStoreController extends Controller
 {
-    public function __invoke(Request $request, TrainingProgram $trainingProgram, TrainingExerciseParser $exerciseParser, PlatformAuditLogger $auditLogger): RedirectResponse
-    {
+    public function __invoke(
+        Request $request,
+        TrainingProgram $trainingProgram,
+        TrainingExerciseParser $exerciseParser,
+        TrainingSessionMediaParser $mediaParser,
+        PlatformAuditLogger $auditLogger,
+    ): RedirectResponse {
         $user = $request->user();
 
         abort_unless($user && $user->hasRole(RoleName::Coach) && $trainingProgram->coach_id === $user->id, 403);
@@ -23,8 +30,15 @@ class TrainingSessionStoreController extends Controller
             'focus' => ['nullable', 'string', 'max:255'],
             'instructions' => ['nullable', 'string'],
             'video_url' => ['nullable', 'url', 'max:2048'],
+            'image_urls' => ['nullable', 'string', 'max:10000'],
             'exercises' => ['nullable', 'string'],
         ]);
+
+        if ($invalidUrls = $mediaParser->invalidUrls($validated['image_urls'] ?? null)) {
+            throw ValidationException::withMessages([
+                'image_urls' => 'Every image URL must be valid. Check: '.implode(', ', $invalidUrls),
+            ]);
+        }
 
         $session = $trainingProgram->sessions()->create([
             'title' => $validated['title'],
@@ -32,6 +46,7 @@ class TrainingSessionStoreController extends Controller
             'focus' => $validated['focus'],
             'instructions' => $validated['instructions'],
             'video_url' => $validated['video_url'] ?? null,
+            'media_items' => $mediaParser->imageItems($validated['image_urls'] ?? null),
             'exercises' => $exerciseParser->parse($validated['exercises'] ?? null),
             'sort_order' => ((int) $trainingProgram->sessions()->max('sort_order')) + 1,
         ]);
