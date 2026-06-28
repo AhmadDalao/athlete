@@ -1,5 +1,4 @@
 import InputError from '@/components/input-error';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -7,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { WorkspaceHero, WorkspacePanel, WorkspaceSectionHeading } from '@/components/workspace-primitives';
+import { WorkspaceHero, WorkspacePanel } from '@/components/workspace-primitives';
 import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -150,22 +149,6 @@ function formatDays(days: number | null) {
 
 function formatDate(value: string | null) {
     return value ?? 'Not set';
-}
-
-function badgeVariantForMembership(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
-    if (['past_due', 'cancelled', 'expired'].includes(status)) {
-        return 'destructive';
-    }
-
-    if (status === 'grace') {
-        return 'secondary';
-    }
-
-    if (['trialing', 'active'].includes(status)) {
-        return 'default';
-    }
-
-    return 'outline';
 }
 
 function userFilterPayload({ search, role, channel }: { search: string; role: string; channel: string }) {
@@ -690,12 +673,8 @@ export default function AdminUsersIndex({
                     }
                 />
 
-                <WorkspacePanel
-                    title="Find users fast"
-                    description="Filter by search, role, or signup channel. Changes also auto-refresh the table."
-                    contentClassName="p-0"
-                >
-                    <div className="space-y-4 p-0">
+                <WorkspacePanel title="Filters" description="Search, role, and signup channel update the table automatically." contentClassName="space-y-4">
+                    <div className="space-y-4">
                         <form className="grid gap-4 lg:grid-cols-[1fr_0.26fr_0.26fr_auto]" onSubmit={applyFilters}>
                             <div className="grid gap-2">
                                 <Label htmlFor="user-search">Search</Label>
@@ -767,15 +746,9 @@ export default function AdminUsersIndex({
                 </WorkspacePanel>
 
                 <section className="space-y-4">
-                    <WorkspaceSectionHeading
-                        eyebrow="Queue"
-                        title="User records with the filters applied."
-                        description={`${users.total} record(s) match the current filter set.`}
-                    />
-
                     <WorkspacePanel
-                        title="User table"
-                        description="Click a name to open the full profile. This table is the tracking view; cards stay out of the way."
+                        title={`All users (${users.total})`}
+                        description="Click a name for the full profile. Keep this list direct."
                         contentClassName="space-y-4"
                     >
                         {users.data.length === 0 ? (
@@ -787,11 +760,11 @@ export default function AdminUsersIndex({
                             </div>
                         ) : (
                             <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
-                                <table className="w-full min-w-[1180px] text-left text-sm">
+                                <table className="w-full min-w-[1080px] text-left text-sm">
                                     <thead className="bg-stone-50 text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
                                         <tr>
                                             <th className="px-5 py-4">User</th>
-                                            <th className="px-5 py-4">Roles</th>
+                                            <th className="px-5 py-4">Role</th>
                                             <th className="px-5 py-4">Contact</th>
                                             <th className="px-5 py-4">Subscription</th>
                                             <th className="px-5 py-4">Tracking</th>
@@ -805,7 +778,7 @@ export default function AdminUsersIndex({
 
                                             return (
                                             <tr key={user.id} className="align-top transition-colors hover:bg-stone-50/80">
-                                                <td className="px-5 py-4">
+                                                <td className="px-5 py-3">
                                                     <Link
                                                         href={route('admin.users.show', user.id)}
                                                         className="font-semibold text-stone-950 underline-offset-4 hover:text-emerald-700 hover:underline"
@@ -814,98 +787,53 @@ export default function AdminUsersIndex({
                                                     </Link>
                                                     <p className="mt-1 text-xs text-stone-500">{user.email}</p>
                                                     {user.primaryGoal ? (
-                                                        <p className="mt-2 line-clamp-2 max-w-[18rem] text-xs text-stone-600">{user.primaryGoal}</p>
+                                                        <p className="mt-1 line-clamp-1 max-w-[18rem] text-xs text-stone-600">{user.primaryGoal}</p>
                                                     ) : (
-                                                        <p className="mt-2 text-xs text-stone-400">No primary goal set.</p>
+                                                        <p className="mt-1 text-xs text-stone-400">No goal set</p>
                                                     )}
                                                 </td>
-                                                <td className="px-5 py-4">
-                                                    <div className="flex max-w-[14rem] flex-wrap gap-1.5">
-                                                        {user.roles.map((roleName) => (
-                                                            <Badge key={roleName} variant="outline">
-                                                                {humanizeStatus(roleName)}
-                                                            </Badge>
-                                                        ))}
-                                                        <Badge variant="outline">{humanizeStatus(user.registrationChannel ?? 'email')}</Badge>
-                                                    </div>
-                                                    <p className="mt-2 text-xs font-medium text-stone-700">{user.position ?? 'No position set'}</p>
-                                                    <p className="mt-1 text-xs text-stone-500">{user.permissionCount} permission(s)</p>
+                                                <td className="px-5 py-3">
+                                                    <p className="font-semibold text-stone-950">{humanizeStatus(user.primaryRole ?? user.roles[0] ?? 'user')}</p>
+                                                    <p className="mt-1 text-xs text-stone-500">{user.position ?? 'No position'}</p>
+                                                    <p className="mt-1 text-xs text-stone-500">{humanizeStatus(user.registrationChannel ?? 'email')} signup</p>
                                                 </td>
-                                                <td className="px-5 py-4">
+                                                <td className="px-5 py-3">
                                                     <p className="font-medium text-stone-950">
                                                         {humanizeStatus(user.preferredContactMethod ?? 'email')}
                                                     </p>
                                                     <p className="mt-1 text-xs text-stone-500">{user.phone ?? 'No phone'}</p>
-                                                    <div className="mt-2 flex flex-wrap gap-1.5">
-                                                        <Badge variant={user.emailVerifiedAt ? 'default' : 'outline'}>
-                                                            {user.emailVerifiedAt ? 'Email verified' : 'Email pending'}
-                                                        </Badge>
-                                                        <Badge variant={user.phoneVerifiedAt ? 'default' : 'outline'}>
-                                                            {user.phoneVerifiedAt ? 'Phone verified' : 'Phone pending'}
-                                                        </Badge>
-                                                    </div>
+                                                    <p className="mt-1 text-xs text-stone-500">{user.emailVerifiedAt ? 'Email verified' : 'Email pending'}</p>
+                                                    <p className="mt-1 text-xs text-stone-500">{user.phoneVerifiedAt ? 'Phone verified' : 'Phone pending'}</p>
                                                 </td>
-                                                <td className="px-5 py-4">
+                                                <td className="px-5 py-3">
                                                     {user.currentMembership ? (
-                                                        <div className="space-y-2">
-                                                            <div className="flex flex-wrap gap-1.5">
-                                                                <Badge variant={badgeVariantForMembership(user.currentMembership.status)}>
-                                                                    {humanizeStatus(user.currentMembership.status)}
-                                                                </Badge>
-                                                                <Badge variant="outline">{user.currentMembership.planName}</Badge>
-                                                            </div>
-                                                            <dl className="grid gap-1 text-xs text-stone-600">
-                                                                <div className="flex justify-between gap-4">
-                                                                    <dt>Subscribed</dt>
-                                                                    <dd className="font-medium text-stone-950">
-                                                                        {formatDate(user.currentMembership.startsAt)}
-                                                                    </dd>
-                                                                </div>
-                                                                <div className="flex justify-between gap-4">
-                                                                    <dt>Renews</dt>
-                                                                    <dd className="font-medium text-stone-950">
-                                                                        {formatDate(user.currentMembership.renewsAt)}
-                                                                    </dd>
-                                                                </div>
-                                                                <div className="flex justify-between gap-4">
-                                                                    <dt>Ends</dt>
-                                                                    <dd className="font-medium text-stone-950">
-                                                                        {formatDate(user.currentMembership.endsAt)}
-                                                                    </dd>
-                                                                </div>
-                                                            </dl>
-                                                            <p className="text-xs font-medium text-emerald-700">
+                                                        <div>
+                                                            <p className="font-semibold text-stone-950">
+                                                                {humanizeStatus(user.currentMembership.status)}
+                                                            </p>
+                                                            <p className="mt-1 text-xs text-stone-500">{user.currentMembership.planName}</p>
+                                                            <p className="mt-1 text-xs text-stone-500">Renews {formatDate(user.currentMembership.renewsAt)}</p>
+                                                            <p className="mt-1 text-xs font-medium text-emerald-700">
                                                                 {formatDays(user.currentMembership.daysRemaining)}
                                                             </p>
                                                         </div>
                                                     ) : (
-                                                        <p className="text-xs text-stone-500">No current membership on record.</p>
+                                                        <p className="text-xs text-stone-500">No current membership</p>
                                                     )}
                                                 </td>
-                                                <td className="px-5 py-4">
-                                                    <dl className="grid gap-1 text-xs text-stone-600">
-                                                        <div className="flex justify-between gap-4">
-                                                            <dt>Memberships</dt>
-                                                            <dd className="font-semibold text-stone-950">{user.membershipsCount}</dd>
-                                                        </div>
-                                                        <div className="flex justify-between gap-4">
-                                                            <dt>Devices</dt>
-                                                            <dd className="font-semibold text-stone-950">{user.deviceConnectionsCount}</dd>
-                                                        </div>
-                                                        <div className="flex justify-between gap-4">
-                                                            <dt>Active athletes</dt>
-                                                            <dd className="font-semibold text-stone-950">{user.activeAthleteCount}</dd>
-                                                        </div>
-                                                    </dl>
+                                                <td className="px-5 py-3 text-xs text-stone-600">
+                                                    <p>Memberships: <span className="font-semibold text-stone-950">{user.membershipsCount}</span></p>
+                                                    <p className="mt-1">Devices: <span className="font-semibold text-stone-950">{user.deviceConnectionsCount}</span></p>
+                                                    <p className="mt-1">Athletes: <span className="font-semibold text-stone-950">{user.activeAthleteCount}</span></p>
                                                 </td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{formatDate(user.createdAt)}</td>
-                                                <td className="px-5 py-4">
+                                                <td className="px-5 py-3 text-sm text-stone-700">{formatDate(user.createdAt)}</td>
+                                                <td className="px-5 py-3">
                                                     <div className="flex justify-end gap-2">
                                                         <Button asChild variant="outline" size="sm">
                                                             <Link href={route('admin.users.show', user.id)}>Details</Link>
                                                         </Button>
                                                         {ownerLocked ? (
-                                                            <Badge variant="outline">Owner locked</Badge>
+                                                            <span className="rounded-full border border-stone-200 px-3 py-2 text-xs font-semibold text-stone-500">Locked</span>
                                                         ) : (
                                                             <UserEditDialog
                                                                 user={user}

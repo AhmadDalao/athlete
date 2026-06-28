@@ -945,3 +945,29 @@ This cycle tightened the backend toward the KONA operating style: light mode, co
     - `/wearables`
     - `/api-access`
 - No application page errors were found during browser smoke. The only console output was a browser permissions-policy warning for `compute-pressure`.
+
+## 2026-06-28 admin users simplification pass
+
+The admin users screen was still too heavy after the first table-first pass, so this cycle simplified the record list.
+
+### What changed
+
+- Renamed the filter surface to a direct `Filters` block.
+- Removed the extra queue heading above the user table.
+- Changed the table panel to `All users ({count})`.
+- Reduced each user row to the operational facts:
+    - user
+    - role
+    - contact
+    - subscription
+    - tracking counts
+    - created date
+    - actions
+- Removed stacked role badges, verification pill spam, and verbose membership date blocks.
+
+### Verification
+
+- `npx eslint resources/js --max-warnings=0`: passed.
+- `php artisan test`: 143 tests passed, 1337 assertions.
+- `npm run build:athlete`: passed.
+- Production build manifest: `9638127eadbaf044a77a0b56be79072c7cf055c935ac6eb1074068fb68919c47`.

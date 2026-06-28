@@ -254,6 +254,18 @@ This deployment tightened the backend UI toward the KONA table-first style.
 - Authenticated browser smoke passed for admin/control center, users, roster, training, progress, memberships, wearables, and API access.
 - Temporary QA owner used for browser smoke was removed after testing.
 
+## 2026-06-28 admin users simplification deploy note
+
+This deployment simplified `/admin/users` after visual review.
+
+- Production target: `https://athlete.ahmaddalao.com`
+- UI change: compact filters, removed extra queue copy, simplified user table rows, and reduced badge clutter.
+- Local checks passed:
+    - `npx eslint resources/js --max-warnings=0`
+    - `php artisan test`
+    - `npm run build:athlete`
+- Production manifest checksum: `9638127eadbaf044a77a0b56be79072c7cf055c935ac6eb1074068fb68919c47`
+
 ## Cron jobs
 
 Hostinger shared hosting does not expose `crontab` over SSH here, so add these in hPanel:
