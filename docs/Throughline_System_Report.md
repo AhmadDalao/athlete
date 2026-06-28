@@ -738,9 +738,8 @@ Next phase should be boring and valuable:
 2. Manually test live owner/admin/coach/athlete workflows.
 3. Fix live-only issues immediately.
 4. Add CSV export to athlete profile data tables.
-5. Add CSV export to athlete profile data tables.
-6. Improve file previews and admin email controls.
-7. Finalize production provider credentials.
-8. Start launch hardening.
+5. Improve file previews and admin email controls.
+6. Finalize production provider credentials.
+7. Start launch hardening.
 
 No new major feature should be started before live role testing proves the current cycle works end to end.

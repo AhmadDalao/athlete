@@ -824,6 +824,17 @@ This cycle added dedicated production QA accounts/data and improved the table-fi
 - `npx eslint resources/js --max-warnings=0`: passed.
 - `npm run build:athlete`: passed.
 - `php artisan test`: 140 tests passed, 1287 assertions.
+- Deployed live to `https://athlete.ahmaddalao.com` at commit `9de5066`.
+- Live browser smoke passed with a QA owner/admin account:
+    - `/admin/users` search sent `X-Inertia: true` and updated `q=Codex`
+    - `/admin/audit-log` search sent `X-Inertia: true` and updated `q=qa`
+    - `/admin/email-logs` search sent `X-Inertia: true` and updated `q=qa`
+    - `/admin/files` search sent `X-Inertia: true` and updated `q=QA`
+    - `/admin/invitations` search sent `X-Inertia: true` and updated `q=Codex`
+    - `/roster/invites` search sent `X-Inertia: true` and updated `q=Codex`
+    - `/coaches` search sent `X-Inertia: true` and updated `q=Codex`
+    - `/memberships` status filter sent `X-Inertia: true` and updated `status=active`
+    - `/wearables` status filter sent `X-Inertia: true` and updated `status=connected`
 
 ## 2026-06-28 instant filter/AJAX sweep
 
