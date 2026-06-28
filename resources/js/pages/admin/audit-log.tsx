@@ -2,10 +2,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { WorkspaceMetricCard, WorkspacePanel, WorkspaceSectionHeading } from '@/components/workspace-primitives';
+import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Activity, Download, Filter, RotateCcw, Search, ShieldCheck, UserCheck } from 'lucide-react';
+import { type FormEvent, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -62,12 +64,34 @@ function humanize(value: string | null) {
     return value.replace(/[._-]/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function exportHref(filters: AuditLogProps['filters']) {
+function auditFilterPayload({
+    q,
+    action,
+    entity,
+    dateFrom,
+    dateTo,
+}: {
+    q: string;
+    action: string;
+    entity: string;
+    dateFrom: string;
+    dateTo: string;
+}) {
+    return {
+        q: q.trim() || undefined,
+        action: action || undefined,
+        entity: entity || undefined,
+        date_from: dateFrom || undefined,
+        date_to: dateTo || undefined,
+    };
+}
+
+function exportHref(filters: Record<string, string | number | boolean | null | undefined>) {
     const params = new URLSearchParams();
 
     Object.entries(filters).forEach(([key, value]) => {
         if (value) {
-            params.set(key, value);
+            params.set(key, value.toString());
         }
     });
 
@@ -77,6 +101,21 @@ function exportHref(filters: AuditLogProps['filters']) {
 }
 
 export default function AuditLog({ filters, summary, actions, entities, logs }: AuditLogProps) {
+    const baseRoute = route('admin.audit-log.index');
+    const [q, setQ] = useState(filters.q ?? '');
+    const [action, setAction] = useState(filters.action ?? '');
+    const [entity, setEntity] = useState(filters.entity ?? '');
+    const [dateFrom, setDateFrom] = useState(filters.date_from ?? '');
+    const [dateTo, setDateTo] = useState(filters.date_to ?? '');
+    const filterPayload = auditFilterPayload({ q, action, entity, dateFrom, dateTo });
+
+    const applyFilters = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        router.get(baseRoute, filterPayload, { preserveScroll: true, preserveState: true, replace: true });
+    };
+
+    useAutoFilter({ url: baseRoute, payload: filterPayload, only: ['filters', 'summary', 'logs'] });
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Audit Log" />
@@ -88,7 +127,7 @@ export default function AuditLog({ filters, summary, actions, entities, logs }: 
                         <h1 className="font-['Space_Grotesk'] text-4xl font-bold tracking-[-0.05em] text-stone-950">Audit Log</h1>
                     </div>
                     <Button asChild variant="outline" className="rounded-xl border-stone-300 bg-white">
-                        <a href={exportHref(filters)}>
+                        <a href={exportHref(filterPayload)}>
                             <Download className="size-4" />
                             Export CSV
                         </a>
@@ -122,17 +161,17 @@ export default function AuditLog({ filters, summary, actions, entities, logs }: 
                     />
                 </section>
 
-                <form action={route('admin.audit-log.index')} method="get" className="rounded-[1.35rem] border border-stone-200 bg-white p-4">
+                <form onSubmit={applyFilters} className="rounded-[1.35rem] border border-stone-200 bg-white p-4">
                     <div className="grid gap-3 lg:grid-cols-[1.3fr_1fr_1fr_0.9fr_0.9fr_auto_auto] lg:items-end">
                         <label className="grid gap-2 text-sm font-semibold text-stone-800">
                             Search
-                            <Input name="q" defaultValue={filters.q ?? ''} placeholder="Summary, action, user, IP" />
+                            <Input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Summary, action, user, IP" />
                         </label>
                         <label className="grid gap-2 text-sm font-semibold text-stone-800">
                             Action
                             <select
-                                name="action"
-                                defaultValue={filters.action ?? ''}
+                                value={action}
+                                onChange={(event) => setAction(event.target.value)}
                                 className="border-input h-10 rounded-md border bg-white px-3 text-sm"
                             >
                                 <option value="">All actions</option>
@@ -146,8 +185,8 @@ export default function AuditLog({ filters, summary, actions, entities, logs }: 
                         <label className="grid gap-2 text-sm font-semibold text-stone-800">
                             Entity
                             <select
-                                name="entity"
-                                defaultValue={filters.entity ?? ''}
+                                value={entity}
+                                onChange={(event) => setEntity(event.target.value)}
                                 className="border-input h-10 rounded-md border bg-white px-3 text-sm"
                             >
                                 <option value="">All entities</option>
@@ -160,18 +199,18 @@ export default function AuditLog({ filters, summary, actions, entities, logs }: 
                         </label>
                         <label className="grid gap-2 text-sm font-semibold text-stone-800">
                             From
-                            <Input type="date" name="date_from" defaultValue={filters.date_from ?? ''} />
+                            <Input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
                         </label>
                         <label className="grid gap-2 text-sm font-semibold text-stone-800">
                             To
-                            <Input type="date" name="date_to" defaultValue={filters.date_to ?? ''} />
+                            <Input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
                         </label>
                         <Button type="submit" className="rounded-xl bg-amber-500 text-white hover:bg-amber-600">
                             <Filter className="size-4" />
                             Filter
                         </Button>
                         <Button asChild variant="outline" className="rounded-xl border-stone-300 bg-white">
-                            <Link href={route('admin.audit-log.index')}>
+                            <Link href={baseRoute}>
                                 <RotateCcw className="size-4" />
                                 Reset
                             </Link>

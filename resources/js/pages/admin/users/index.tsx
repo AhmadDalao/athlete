@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { WorkspaceHero, WorkspaceMetricCard, WorkspacePanel, WorkspaceSectionHeading } from '@/components/workspace-primitives';
+import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
@@ -165,6 +166,14 @@ function badgeVariantForMembership(status: string): 'default' | 'secondary' | 'd
     }
 
     return 'outline';
+}
+
+function userFilterPayload({ search, role, channel }: { search: string; role: string; channel: string }) {
+    return {
+        q: search.trim() || undefined,
+        role: role === 'all' ? undefined : role,
+        channel: channel === 'all' ? undefined : channel,
+    };
 }
 
 function allPermissionKeys(permissionGroups: PermissionGroup[]) {
@@ -643,24 +652,20 @@ export default function AdminUsersIndex({
     const [search, setSearch] = useState(filters.q ?? '');
     const [role, setRole] = useState(filters.role ?? 'all');
     const [channel, setChannel] = useState(filters.channel ?? 'all');
+    const baseRoute = route('admin.users.index');
+    const filterPayload = userFilterPayload({ search, role, channel });
 
     const applyFilters = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        router.get(
-            route('admin.users.index'),
-            {
-                q: search || undefined,
-                role: role === 'all' ? undefined : role,
-                channel: channel === 'all' ? undefined : channel,
-            },
-            {
-                preserveScroll: true,
-                preserveState: true,
-                replace: true,
-            },
-        );
+        router.get(baseRoute, filterPayload, {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+        });
     };
+
+    useAutoFilter({ url: baseRoute, payload: filterPayload, only: ['filters', 'summary', 'users'] });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -790,7 +795,7 @@ export default function AdminUsersIndex({
                             <div className="flex items-end gap-2">
                                 <Button type="submit">Apply</Button>
                                 <Button variant="outline" asChild>
-                                    <Link href={route('admin.users.index')} preserveScroll>
+                                    <Link href={baseRoute} preserveScroll>
                                         Reset
                                     </Link>
                                 </Button>

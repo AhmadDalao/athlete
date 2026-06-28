@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useAutoFilter } from '@/hooks/use-auto-filter';
 import MarketingLayout from '@/layouts/marketing-layout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowRight, Search, ShieldCheck, Users, Watch } from 'lucide-react';
@@ -38,6 +39,11 @@ export default function CoachesIndex({ filters, summary, coaches }: CoachesPageP
     const { data, setData, get, processing } = useForm({
         q: filters.q ?? '',
     });
+    const filterPayload = {
+        q: data.q.trim() || undefined,
+    };
+
+    useAutoFilter({ url: route('coaches.index'), payload: filterPayload, only: ['filters', 'summary', 'coaches'], debounceMs: 220 });
 
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();

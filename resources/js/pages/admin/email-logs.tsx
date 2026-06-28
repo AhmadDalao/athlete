@@ -2,10 +2,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { WorkspaceMetricCard, WorkspacePanel, WorkspaceSectionHeading } from '@/components/workspace-primitives';
+import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Bell, Download, Filter, MailCheck, MailWarning, RotateCcw, Send } from 'lucide-react';
+import { type FormEvent, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -81,12 +83,34 @@ function badgeVariant(status: string): 'default' | 'secondary' | 'destructive' |
     return 'outline';
 }
 
-function exportHref(filters: EmailLogsProps['filters']) {
+function emailLogFilterPayload({
+    q,
+    status,
+    type,
+    dateFrom,
+    dateTo,
+}: {
+    q: string;
+    status: string;
+    type: string;
+    dateFrom: string;
+    dateTo: string;
+}) {
+    return {
+        q: q.trim() || undefined,
+        status: status || undefined,
+        type: type || undefined,
+        date_from: dateFrom || undefined,
+        date_to: dateTo || undefined,
+    };
+}
+
+function exportHref(filters: Record<string, string | number | boolean | null | undefined>) {
     const params = new URLSearchParams();
 
     Object.entries(filters).forEach(([key, value]) => {
         if (value) {
-            params.set(key, value);
+            params.set(key, value.toString());
         }
     });
 
@@ -96,6 +120,21 @@ function exportHref(filters: EmailLogsProps['filters']) {
 }
 
 export default function EmailLogs({ filters, summary, statuses, types, logs }: EmailLogsProps) {
+    const baseRoute = route('admin.email-logs.index');
+    const [q, setQ] = useState(filters.q ?? '');
+    const [status, setStatus] = useState(filters.status ?? '');
+    const [type, setType] = useState(filters.type ?? '');
+    const [dateFrom, setDateFrom] = useState(filters.date_from ?? '');
+    const [dateTo, setDateTo] = useState(filters.date_to ?? '');
+    const filterPayload = emailLogFilterPayload({ q, status, type, dateFrom, dateTo });
+
+    const applyFilters = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        router.get(baseRoute, filterPayload, { preserveScroll: true, preserveState: true, replace: true });
+    };
+
+    useAutoFilter({ url: baseRoute, payload: filterPayload, only: ['filters', 'summary', 'logs'] });
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Email Logs" />
@@ -111,7 +150,7 @@ export default function EmailLogs({ filters, summary, statuses, types, logs }: E
                             <Link href={route('admin.system-settings.index')}>Email settings</Link>
                         </Button>
                         <Button asChild variant="outline" className="rounded-xl border-stone-300 bg-white">
-                            <a href={exportHref(filters)}>
+                            <a href={exportHref(filterPayload)}>
                                 <Download className="size-4" />
                                 Export CSV
                             </a>
@@ -136,17 +175,17 @@ export default function EmailLogs({ filters, summary, statuses, types, logs }: E
                     <WorkspaceMetricCard title="Failed" value={summary.failed.toString()} note="Recorded workflow failures." icon={MailWarning} />
                 </section>
 
-                <form action={route('admin.email-logs.index')} method="get" className="rounded-[1.35rem] border border-stone-200 bg-white p-4">
+                <form onSubmit={applyFilters} className="rounded-[1.35rem] border border-stone-200 bg-white p-4">
                     <div className="grid gap-3 lg:grid-cols-[1.3fr_1fr_1fr_0.9fr_0.9fr_auto_auto] lg:items-end">
                         <label className="grid gap-2 text-sm font-semibold text-stone-800">
                             Search
-                            <Input name="q" defaultValue={filters.q ?? ''} placeholder="Recipient, subject, type, error" />
+                            <Input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Recipient, subject, type, error" />
                         </label>
                         <label className="grid gap-2 text-sm font-semibold text-stone-800">
                             Status
                             <select
-                                name="status"
-                                defaultValue={filters.status ?? ''}
+                                value={status}
+                                onChange={(event) => setStatus(event.target.value)}
                                 className="border-input h-10 rounded-md border bg-white px-3 text-sm"
                             >
                                 <option value="">All statuses</option>
@@ -160,8 +199,8 @@ export default function EmailLogs({ filters, summary, statuses, types, logs }: E
                         <label className="grid gap-2 text-sm font-semibold text-stone-800">
                             Email type
                             <select
-                                name="type"
-                                defaultValue={filters.type ?? ''}
+                                value={type}
+                                onChange={(event) => setType(event.target.value)}
                                 className="border-input h-10 rounded-md border bg-white px-3 text-sm"
                             >
                                 <option value="">All types</option>
@@ -174,18 +213,18 @@ export default function EmailLogs({ filters, summary, statuses, types, logs }: E
                         </label>
                         <label className="grid gap-2 text-sm font-semibold text-stone-800">
                             From
-                            <Input type="date" name="date_from" defaultValue={filters.date_from ?? ''} />
+                            <Input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
                         </label>
                         <label className="grid gap-2 text-sm font-semibold text-stone-800">
                             To
-                            <Input type="date" name="date_to" defaultValue={filters.date_to ?? ''} />
+                            <Input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
                         </label>
                         <Button type="submit" className="rounded-xl bg-amber-500 text-white hover:bg-amber-600">
                             <Filter className="size-4" />
                             Filter
                         </Button>
                         <Button asChild variant="outline" className="rounded-xl border-stone-300 bg-white">
-                            <Link href={route('admin.email-logs.index')}>
+                            <Link href={baseRoute}>
                                 <RotateCcw className="size-4" />
                                 Reset
                             </Link>

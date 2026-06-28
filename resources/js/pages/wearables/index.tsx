@@ -764,6 +764,9 @@ export default function WearablesIndex({
                                         key={filter.label}
                                         href={route('wearables.index', filter.value ? { status: filter.value } : {})}
                                         preserveScroll
+                                        preserveState
+                                        replace
+                                        only={['filters', 'summary', 'connections']}
                                         className={cn(
                                             'inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
                                             filters.status === filter.value || (!filters.status && filter.value === null)

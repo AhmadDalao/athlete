@@ -824,3 +824,39 @@ This cycle added dedicated production QA accounts/data and improved the table-fi
 - `npx eslint resources/js --max-warnings=0`: passed.
 - `npm run build:athlete`: passed.
 - `php artisan test`: 140 tests passed, 1287 assertions.
+
+## 2026-06-28 instant filter/AJAX sweep
+
+This cycle made the filter-heavy pages update through debounced Inertia requests instead of waiting on a manual submit.
+
+### Shared behavior
+
+- Added `resources/js/hooks/use-auto-filter.ts`.
+- The hook waits for initial page hydration, then sends a debounced `router.get()` request when filter state changes.
+- Requests preserve scroll, preserve component state, replace browser history, and only reload the page props needed by that screen.
+
+### Screens updated
+
+- `/admin/users`
+    - search, role, and signup channel now update the user table as the filter changes
+- `/admin/audit-log`
+    - search, action, entity, and date filters now update the audit table as the filter changes
+- `/admin/email-logs`
+    - search, status, email type, and date filters now update the delivery table as the filter changes
+- `/admin/files`
+    - reused the shared hook for file search, athlete, status, category, and visibility filters
+- `/admin/invitations` and `/roster/invites`
+    - reused the shared hook for invitation search, status, and coach filters
+- `/coaches`
+    - public coach discovery search now updates while typing
+- `/memberships`
+    - status filter links now use partial Inertia reloads for the membership queue
+- `/wearables`
+    - status filter links now use partial Inertia reloads for the connection directory
+
+### Regression result
+
+- `git diff --check`: passed.
+- `npx eslint resources/js --max-warnings=0`: passed.
+- `npm run build:athlete`: passed.
+- `php artisan test`: 140 tests passed, 1287 assertions.

@@ -15,11 +15,12 @@ import {
     WorkspaceTableEmpty,
     WorkspaceTableHeader,
 } from '@/components/workspace-primitives';
+import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ArrowLeft, Download, MailCheck, MailPlus, RefreshCcw, Search, Send, XCircle } from 'lucide-react';
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useState } from 'react';
 
 interface Option {
     value: string;
@@ -227,31 +228,14 @@ export default function InvitationIndex({ adminMode, filters, summary, invitatio
     const [status, setStatus] = useState(filters.status ?? 'all');
     const [coachId, setCoachId] = useState(filters.coach_id ?? 'all');
     const baseRoute = adminMode ? route('admin.invitations.index') : route('roster.invitations.index');
-    const didHydrate = useRef(false);
+    const filterPayload = invitationFilterPayload({ q, status, coachId });
 
     const applyFilters = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        router.get(baseRoute, invitationFilterPayload({ q, status, coachId }), { preserveState: true, preserveScroll: true, replace: true });
+        router.get(baseRoute, filterPayload, { preserveState: true, preserveScroll: true, replace: true });
     };
 
-    useEffect(() => {
-        if (!didHydrate.current) {
-            didHydrate.current = true;
-
-            return;
-        }
-
-        const timeout = window.setTimeout(() => {
-            router.get(baseRoute, invitationFilterPayload({ q, status, coachId }), {
-                only: ['filters', 'summary', 'invitations'],
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            });
-        }, 150);
-
-        return () => window.clearTimeout(timeout);
-    }, [baseRoute, coachId, q, status]);
+    useAutoFilter({ url: baseRoute, payload: filterPayload, only: ['filters', 'summary', 'invitations'] });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -272,7 +256,7 @@ export default function InvitationIndex({ adminMode, filters, summary, invitatio
                                 </Link>
                             </Button>
                             <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white">
-                                <a href={route(adminMode ? 'admin.invitations.index' : 'roster.invitations.index', { ...invitationFilterPayload({ q, status, coachId }), export: 1 })}>
+                                <a href={route(adminMode ? 'admin.invitations.index' : 'roster.invitations.index', { ...filterPayload, export: 1 })}>
                                     <Download className="size-4" />
                                     Export CSV
                                 </a>

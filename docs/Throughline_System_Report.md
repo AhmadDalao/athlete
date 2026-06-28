@@ -647,6 +647,28 @@ Workout execution was verified live by saving a set from the athlete workout UI 
 
 Admin files and invitations now auto-apply filters through Inertia preserve-state requests, and CSV export links include the active filter state.
 
+## 2026-06-28 Instant Filter Sweep
+
+The current filter-heavy pages now update through debounced Inertia requests instead of waiting for classic form submits.
+
+Updated screens:
+
+- `/admin/users`
+- `/admin/audit-log`
+- `/admin/email-logs`
+- `/admin/files`
+- `/admin/invitations`
+- `/roster/invites`
+- `/coaches`
+- `/memberships`
+- `/wearables`
+
+Implementation:
+
+- `resources/js/hooks/use-auto-filter.ts` centralizes debounced filter reload behavior.
+- Form pages preserve scroll and state, replace browser history, and reload only the required page props.
+- Membership and wearable status links now use partial Inertia reloads.
+
 ## What Still Needs Work
 
 ### Must do before proper launch
@@ -665,7 +687,7 @@ Admin files and invitations now auto-apply filters through Inertia preserve-stat
 
 ### Product work still needed
 
-1. Continue converting remaining admin/coach table filters to instant Inertia behavior where they still require explicit submit.
+1. Keep any future filters on the shared instant Inertia pattern instead of adding classic GET forms.
 2. Add more export buttons to high-value tables:
     - athlete profile set logs
     - progress check-ins
@@ -715,7 +737,7 @@ Next phase should be boring and valuable:
 1. Deploy this report and profile drill-down slice live.
 2. Manually test live owner/admin/coach/athlete workflows.
 3. Fix live-only issues immediately.
-4. Convert remaining filters to instant AJAX/preserve-state behavior.
+4. Add CSV export to athlete profile data tables.
 5. Add CSV export to athlete profile data tables.
 6. Improve file previews and admin email controls.
 7. Finalize production provider credentials.

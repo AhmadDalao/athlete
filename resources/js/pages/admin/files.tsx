@@ -15,11 +15,12 @@ import {
     WorkspaceTableEmpty,
     WorkspaceTableHeader,
 } from '@/components/workspace-primitives';
+import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { Archive, Download, Files, FileText, Search, UserRoundCheck } from 'lucide-react';
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Admin files', href: '/admin/files' },
@@ -268,31 +269,14 @@ export default function AdminFiles({ filters, summary, files, athleteOptions, fi
     const [category, setCategory] = useState(filters.category ?? 'all');
     const [visibility, setVisibility] = useState(filters.visibility ?? 'all');
     const [athleteId, setAthleteId] = useState(filters.athlete_id ?? 'all');
-    const didHydrate = useRef(false);
+    const filterPayload = fileFilterPayload({ q, status, category, visibility, athleteId });
 
     const applyFilters = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        router.get(baseRoute, fileFilterPayload({ q, status, category, visibility, athleteId }), { preserveScroll: true, preserveState: true, replace: true });
+        router.get(baseRoute, filterPayload, { preserveScroll: true, preserveState: true, replace: true });
     };
 
-    useEffect(() => {
-        if (!didHydrate.current) {
-            didHydrate.current = true;
-
-            return;
-        }
-
-        const timeout = window.setTimeout(() => {
-            router.get(baseRoute, fileFilterPayload({ q, status, category, visibility, athleteId }), {
-                only: ['filters', 'summary', 'files'],
-                preserveScroll: true,
-                preserveState: true,
-                replace: true,
-            });
-        }, 150);
-
-        return () => window.clearTimeout(timeout);
-    }, [athleteId, baseRoute, category, q, status, visibility]);
+    useAutoFilter({ url: baseRoute, payload: filterPayload, only: ['filters', 'summary', 'files'] });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -312,7 +296,7 @@ export default function AdminFiles({ filters, summary, files, athleteOptions, fi
                                 </Link>
                             </Button>
                             <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white">
-                                <a href={route('admin.files.index', { ...fileFilterPayload({ q, status, category, visibility, athleteId }), export: 1 })}>
+                                <a href={route('admin.files.index', { ...filterPayload, export: 1 })}>
                                     <Download className="size-4" />
                                     Export CSV
                                 </a>
