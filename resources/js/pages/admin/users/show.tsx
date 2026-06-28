@@ -1,11 +1,18 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { WorkspaceHero, WorkspaceMetricCard, WorkspacePanel, WorkspaceSectionHeading } from '@/components/workspace-primitives';
+import {
+    WorkspaceHero,
+    WorkspaceMetricCard,
+    WorkspacePanel,
+    WorkspaceSectionHeading,
+    WorkspaceTable,
+    WorkspaceTableEmpty,
+    WorkspaceTableHeader,
+} from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, CreditCard, Dumbbell, Shield, Smartphone, Users } from 'lucide-react';
-import { type ReactNode } from 'react';
 
 interface Profile {
     id: number;
@@ -115,6 +122,8 @@ interface UserShowProps {
         title: string;
         role: string;
         counterparty: string;
+        counterpartyId: number;
+        counterpartyIsAthlete: boolean;
         status: string;
         startDate: string | null;
         endDate: string | null;
@@ -172,36 +181,6 @@ function badgeVariantForStatus(status: string): 'default' | 'secondary' | 'destr
     }
 
     return 'outline';
-}
-
-function TableShell({ children }: { children: ReactNode }) {
-    return <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">{children}</div>;
-}
-
-function EmptyRows({ message, colSpan }: { message: string; colSpan: number }) {
-    return (
-        <tbody>
-            <tr>
-                <td colSpan={colSpan} className="px-4 py-8 text-center text-sm text-stone-500">
-                    {message}
-                </td>
-            </tr>
-        </tbody>
-    );
-}
-
-function HeaderRow({ labels }: { labels: string[] }) {
-    return (
-        <thead className="bg-stone-50 text-left text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
-            <tr>
-                {labels.map((label) => (
-                    <th key={label} className="px-4 py-3">
-                        {label}
-                    </th>
-                ))}
-            </tr>
-        </thead>
-    );
 }
 
 export default function AdminUserShow({
@@ -294,79 +273,71 @@ export default function AdminUserShow({
                 </section>
 
                 <WorkspacePanel title="Account details" description="Identity, roles, signup source, and verification state." contentClassName="p-0">
-                    <TableShell>
-                        <table className="w-full min-w-[760px] text-sm">
-                            <HeaderRow labels={['Field', 'Value', 'Field', 'Value']} />
-                            <tbody className="divide-y divide-stone-200">
-                                <tr>
-                                    <td className="px-4 py-3 font-medium text-stone-950">Email</td>
-                                    <td className="px-4 py-3 text-stone-600">{profile.email}</td>
-                                    <td className="px-4 py-3 font-medium text-stone-950">Phone</td>
-                                    <td className="px-4 py-3 text-stone-600">{profile.phone ?? 'Not set'}</td>
-                                </tr>
-                                <tr>
-                                    <td className="px-4 py-3 font-medium text-stone-950">Roles</td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex flex-wrap gap-2">
-                                            {profile.roles.map((role) => (
-                                                <Badge key={role} variant="outline">
-                                                    {humanizeStatus(role)}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3 font-medium text-stone-950">Signup channel</td>
-                                    <td className="px-4 py-3 text-stone-600">{humanizeStatus(profile.registrationChannel ?? 'email')}</td>
-                                </tr>
-                                <tr>
-                                    <td className="px-4 py-3 font-medium text-stone-950">Position</td>
-                                    <td className="px-4 py-3 text-stone-600">{profile.position ?? 'Not set'}</td>
-                                    <td className="px-4 py-3 font-medium text-stone-950">Permissions</td>
-                                    <td className="px-4 py-3 text-stone-600">{profile.permissionCount} active permission(s)</td>
-                                </tr>
-                                <tr>
-                                    <td className="px-4 py-3 font-medium text-stone-950">Email verified</td>
-                                    <td className="px-4 py-3 text-stone-600">{formatDate(profile.emailVerifiedAt)}</td>
-                                    <td className="px-4 py-3 font-medium text-stone-950">Phone verified</td>
-                                    <td className="px-4 py-3 text-stone-600">{formatDate(profile.phoneVerifiedAt)}</td>
-                                </tr>
-                                <tr>
-                                    <td className="px-4 py-3 font-medium text-stone-950">Goal</td>
-                                    <td className="px-4 py-3 text-stone-600">{profile.primaryGoal ?? 'Not set'}</td>
-                                    <td className="px-4 py-3 font-medium text-stone-950">Stripe customer</td>
-                                    <td className="px-4 py-3 text-stone-600">{profile.stripeCustomerId ?? 'Not connected'}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </TableShell>
+                    <WorkspaceTable minWidth="min-w-[760px]">
+                        <WorkspaceTableHeader labels={['Field', 'Value', 'Field', 'Value']} />
+                        <tbody className="divide-y divide-stone-200">
+                            <tr>
+                                <td className="px-4 py-3 font-medium text-stone-950">Email</td>
+                                <td className="px-4 py-3 text-stone-600">{profile.email}</td>
+                                <td className="px-4 py-3 font-medium text-stone-950">Phone</td>
+                                <td className="px-4 py-3 text-stone-600">{profile.phone ?? 'Not set'}</td>
+                            </tr>
+                            <tr>
+                                <td className="px-4 py-3 font-medium text-stone-950">Roles</td>
+                                <td className="px-4 py-3">
+                                    <div className="flex flex-wrap gap-2">
+                                        {profile.roles.map((role) => (
+                                            <Badge key={role} variant="outline">
+                                                {humanizeStatus(role)}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </td>
+                                <td className="px-4 py-3 font-medium text-stone-950">Signup channel</td>
+                                <td className="px-4 py-3 text-stone-600">{humanizeStatus(profile.registrationChannel ?? 'email')}</td>
+                            </tr>
+                            <tr>
+                                <td className="px-4 py-3 font-medium text-stone-950">Position</td>
+                                <td className="px-4 py-3 text-stone-600">{profile.position ?? 'Not set'}</td>
+                                <td className="px-4 py-3 font-medium text-stone-950">Permissions</td>
+                                <td className="px-4 py-3 text-stone-600">{profile.permissionCount} active permission(s)</td>
+                            </tr>
+                            <tr>
+                                <td className="px-4 py-3 font-medium text-stone-950">Email verified</td>
+                                <td className="px-4 py-3 text-stone-600">{formatDate(profile.emailVerifiedAt)}</td>
+                                <td className="px-4 py-3 font-medium text-stone-950">Phone verified</td>
+                                <td className="px-4 py-3 text-stone-600">{formatDate(profile.phoneVerifiedAt)}</td>
+                            </tr>
+                            <tr>
+                                <td className="px-4 py-3 font-medium text-stone-950">Goal</td>
+                                <td className="px-4 py-3 text-stone-600">{profile.primaryGoal ?? 'Not set'}</td>
+                                <td className="px-4 py-3 font-medium text-stone-950">Stripe customer</td>
+                                <td className="px-4 py-3 text-stone-600">{profile.stripeCustomerId ?? 'Not connected'}</td>
+                            </tr>
+                        </tbody>
+                    </WorkspaceTable>
                 </WorkspacePanel>
 
-                <WorkspacePanel
-                    title="Access permissions"
-                    description="Exact controls this account can open or manage."
-                    contentClassName="p-0"
-                >
-                    <TableShell>
-                        <table className="w-full min-w-[860px] text-sm">
-                            <HeaderRow labels={['Group', 'Permission', 'Status', 'Meaning']} />
-                            <tbody className="divide-y divide-stone-200">
-                                {permissionGroups.flatMap((group) =>
-                                    group.permissions.map((permission) => (
-                                        <tr key={permission.key}>
-                                            <td className="px-4 py-4 font-medium text-stone-950">{group.label}</td>
-                                            <td className="px-4 py-4 font-mono text-xs text-stone-700">{permission.key}</td>
-                                            <td className="px-4 py-4">
-                                                <Badge variant={permission.enabled ? 'default' : 'outline'}>
-                                                    {permission.enabled ? 'Enabled' : 'Off'}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-4 py-4 text-stone-600">{permission.description}</td>
-                                        </tr>
-                                    )),
-                                )}
-                            </tbody>
-                        </table>
-                    </TableShell>
+                <WorkspacePanel title="Access permissions" description="Exact controls this account can open or manage." contentClassName="p-0">
+                    <WorkspaceTable minWidth="min-w-[860px]">
+                        <WorkspaceTableHeader labels={['Group', 'Permission', 'Status', 'Meaning']} />
+                        <tbody className="divide-y divide-stone-200">
+                            {permissionGroups.flatMap((group) =>
+                                group.permissions.map((permission) => (
+                                    <tr key={permission.key}>
+                                        <td className="px-4 py-4 font-medium text-stone-950">{group.label}</td>
+                                        <td className="px-4 py-4 font-mono text-xs text-stone-700">{permission.key}</td>
+                                        <td className="px-4 py-4">
+                                            <Badge variant={permission.enabled ? 'default' : 'outline'}>
+                                                {permission.enabled ? 'Enabled' : 'Off'}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-4 py-4 text-stone-600">{permission.description}</td>
+                                    </tr>
+                                )),
+                            )}
+                        </tbody>
+                    </WorkspaceTable>
                 </WorkspacePanel>
 
                 <section className="space-y-4">
@@ -376,95 +347,85 @@ export default function AdminUserShow({
                         description="Track when the client subscribed, how billing is moving, and what events have landed."
                     />
                     <WorkspacePanel title="Memberships" contentClassName="p-0">
-                        <TableShell>
-                            <table className="w-full min-w-[860px] text-sm">
-                                <HeaderRow labels={['Plan', 'Status', 'Subscribed', 'Renewal', 'Value', 'Provider']} />
-                                {memberships.length === 0 ? (
-                                    <EmptyRows message="No memberships recorded for this user." colSpan={6} />
-                                ) : (
-                                    <tbody className="divide-y divide-stone-200">
-                                        {memberships.map((membership) => (
-                                            <tr key={membership.id} className="align-top">
-                                                <td className="px-4 py-4 font-medium text-stone-950">{membership.planName}</td>
-                                                <td className="px-4 py-4">
-                                                    <Badge variant={badgeVariantForStatus(membership.status)}>
-                                                        {humanizeStatus(membership.status)}
-                                                    </Badge>
-                                                    <p className="mt-2 text-xs text-stone-500">
-                                                        {membership.autoRenew ? 'Auto-renew' : 'Manual renewal'}
-                                                    </p>
-                                                </td>
-                                                <td className="px-4 py-4 text-stone-600">{formatDate(membership.startsAt)}</td>
-                                                <td className="px-4 py-4 text-stone-600">
-                                                    <p>{formatDate(membership.renewsAt ?? membership.endsAt)}</p>
-                                                    <p className="mt-1 text-xs text-stone-500">{formatDays(membership.daysRemaining)}</p>
-                                                </td>
-                                                <td className="px-4 py-4 text-stone-600">{formatCurrency(membership.price, membership.currency)}</td>
-                                                <td className="px-4 py-4 text-stone-600">
-                                                    <p>{membership.billingProvider ?? 'Manual'}</p>
-                                                    <p className="mt-1 text-xs text-stone-500">
-                                                        {membership.providerSubscriptionId ?? 'No provider ID'}
-                                                    </p>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                )}
-                            </table>
-                        </TableShell>
+                        <WorkspaceTable minWidth="min-w-[860px]">
+                            <WorkspaceTableHeader labels={['Plan', 'Status', 'Subscribed', 'Renewal', 'Value', 'Provider']} />
+                            {memberships.length === 0 ? (
+                                <WorkspaceTableEmpty message="No memberships recorded for this user." colSpan={6} />
+                            ) : (
+                                <tbody className="divide-y divide-stone-200">
+                                    {memberships.map((membership) => (
+                                        <tr key={membership.id} className="align-top">
+                                            <td className="px-4 py-4 font-medium text-stone-950">{membership.planName}</td>
+                                            <td className="px-4 py-4">
+                                                <Badge variant={badgeVariantForStatus(membership.status)}>{humanizeStatus(membership.status)}</Badge>
+                                                <p className="mt-2 text-xs text-stone-500">
+                                                    {membership.autoRenew ? 'Auto-renew' : 'Manual renewal'}
+                                                </p>
+                                            </td>
+                                            <td className="px-4 py-4 text-stone-600">{formatDate(membership.startsAt)}</td>
+                                            <td className="px-4 py-4 text-stone-600">
+                                                <p>{formatDate(membership.renewsAt ?? membership.endsAt)}</p>
+                                                <p className="mt-1 text-xs text-stone-500">{formatDays(membership.daysRemaining)}</p>
+                                            </td>
+                                            <td className="px-4 py-4 text-stone-600">{formatCurrency(membership.price, membership.currency)}</td>
+                                            <td className="px-4 py-4 text-stone-600">
+                                                <p>{membership.billingProvider ?? 'Manual'}</p>
+                                                <p className="mt-1 text-xs text-stone-500">{membership.providerSubscriptionId ?? 'No provider ID'}</p>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            )}
+                        </WorkspaceTable>
                     </WorkspacePanel>
 
                     <WorkspacePanel title="Payment events" contentClassName="p-0">
-                        <TableShell>
-                            <table className="w-full min-w-[760px] text-sm">
-                                <HeaderRow labels={['Date', 'Type', 'Status', 'Amount', 'Reference']} />
-                                {payments.length === 0 ? (
-                                    <EmptyRows message="No payment events recorded for this user." colSpan={5} />
-                                ) : (
-                                    <tbody className="divide-y divide-stone-200">
-                                        {payments.map((event) => (
-                                            <tr key={event.id}>
-                                                <td className="px-4 py-4 text-stone-600">{formatDate(event.eventAt)}</td>
-                                                <td className="px-4 py-4 text-stone-600">{humanizeStatus(event.eventType)}</td>
-                                                <td className="px-4 py-4">
-                                                    <Badge variant={badgeVariantForStatus(event.status)}>{humanizeStatus(event.status)}</Badge>
-                                                </td>
-                                                <td className="px-4 py-4 text-stone-600">{formatCurrency(event.amount, event.currency)}</td>
-                                                <td className="px-4 py-4 text-stone-600">{event.reference ?? event.provider ?? 'Manual event'}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                )}
-                            </table>
-                        </TableShell>
+                        <WorkspaceTable minWidth="min-w-[760px]">
+                            <WorkspaceTableHeader labels={['Date', 'Type', 'Status', 'Amount', 'Reference']} />
+                            {payments.length === 0 ? (
+                                <WorkspaceTableEmpty message="No payment events recorded for this user." colSpan={5} />
+                            ) : (
+                                <tbody className="divide-y divide-stone-200">
+                                    {payments.map((event) => (
+                                        <tr key={event.id}>
+                                            <td className="px-4 py-4 text-stone-600">{formatDate(event.eventAt)}</td>
+                                            <td className="px-4 py-4 text-stone-600">{humanizeStatus(event.eventType)}</td>
+                                            <td className="px-4 py-4">
+                                                <Badge variant={badgeVariantForStatus(event.status)}>{humanizeStatus(event.status)}</Badge>
+                                            </td>
+                                            <td className="px-4 py-4 text-stone-600">{formatCurrency(event.amount, event.currency)}</td>
+                                            <td className="px-4 py-4 text-stone-600">{event.reference ?? event.provider ?? 'Manual event'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            )}
+                        </WorkspaceTable>
                     </WorkspacePanel>
                 </section>
 
                 <section className="grid gap-4 xl:grid-cols-2">
                     <WorkspacePanel title="Devices" description="Connection state and latest visible sync signal." contentClassName="p-0">
-                        <TableShell>
-                            <table className="w-full min-w-[620px] text-sm">
-                                <HeaderRow labels={['Provider', 'Status', 'Last sync', 'Latest metrics']} />
-                                {devices.length === 0 ? (
-                                    <EmptyRows message="No device connections recorded." colSpan={4} />
-                                ) : (
-                                    <tbody className="divide-y divide-stone-200">
-                                        {devices.map((device) => (
-                                            <tr key={device.id}>
-                                                <td className="px-4 py-4 text-stone-600">{device.provider}</td>
-                                                <td className="px-4 py-4">
-                                                    <Badge variant={badgeVariantForStatus(device.status)}>{humanizeStatus(device.status)}</Badge>
-                                                </td>
-                                                <td className="px-4 py-4 text-stone-600">{formatDate(device.lastSyncedAt)}</td>
-                                                <td className="px-4 py-4 text-stone-600">
-                                                    {formatDate(device.latestMetricDate)} · readiness {device.latestReadiness ?? 'N/A'}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                )}
-                            </table>
-                        </TableShell>
+                        <WorkspaceTable minWidth="min-w-[620px]">
+                            <WorkspaceTableHeader labels={['Provider', 'Status', 'Last sync', 'Latest metrics']} />
+                            {devices.length === 0 ? (
+                                <WorkspaceTableEmpty message="No device connections recorded." colSpan={4} />
+                            ) : (
+                                <tbody className="divide-y divide-stone-200">
+                                    {devices.map((device) => (
+                                        <tr key={device.id}>
+                                            <td className="px-4 py-4 text-stone-600">{device.provider}</td>
+                                            <td className="px-4 py-4">
+                                                <Badge variant={badgeVariantForStatus(device.status)}>{humanizeStatus(device.status)}</Badge>
+                                            </td>
+                                            <td className="px-4 py-4 text-stone-600">{formatDate(device.lastSyncedAt)}</td>
+                                            <td className="px-4 py-4 text-stone-600">
+                                                {formatDate(device.latestMetricDate)} · readiness {device.latestReadiness ?? 'N/A'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            )}
+                        </WorkspaceTable>
                     </WorkspacePanel>
 
                     <WorkspacePanel
@@ -474,96 +435,101 @@ export default function AdminUserShow({
                     >
                         <div>
                             <p className="mb-2 text-sm font-medium text-stone-950">As athlete</p>
-                            <TableShell>
-                                <table className="w-full min-w-[560px] text-sm">
-                                    <HeaderRow labels={['Coach', 'Status', 'Started', 'Goal']} />
-                                    {coachAssignments.length === 0 ? (
-                                        <EmptyRows message="No coach assignment history." colSpan={4} />
-                                    ) : (
-                                        <tbody className="divide-y divide-stone-200">
-                                            {coachAssignments.map((assignment) => (
-                                                <tr key={assignment.id}>
-                                                    <td className="px-4 py-4 text-stone-600">{assignment.coachName}</td>
-                                                    <td className="px-4 py-4">
-                                                        <Badge variant={badgeVariantForStatus(assignment.status)}>
-                                                            {humanizeStatus(assignment.status)}
-                                                        </Badge>
-                                                    </td>
-                                                    <td className="px-4 py-4 text-stone-600">{formatDate(assignment.startedAt)}</td>
-                                                    <td className="px-4 py-4 text-stone-600">{assignment.goal ?? 'No goal'}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    )}
-                                </table>
-                            </TableShell>
+                            <WorkspaceTable minWidth="min-w-[560px]">
+                                <WorkspaceTableHeader labels={['Coach', 'Status', 'Started', 'Goal']} />
+                                {coachAssignments.length === 0 ? (
+                                    <WorkspaceTableEmpty message="No coach assignment history." colSpan={4} />
+                                ) : (
+                                    <tbody className="divide-y divide-stone-200">
+                                        {coachAssignments.map((assignment) => (
+                                            <tr key={assignment.id}>
+                                                <td className="px-4 py-4 text-stone-600">{assignment.coachName}</td>
+                                                <td className="px-4 py-4">
+                                                    <Badge variant={badgeVariantForStatus(assignment.status)}>
+                                                        {humanizeStatus(assignment.status)}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-4 py-4 text-stone-600">{formatDate(assignment.startedAt)}</td>
+                                                <td className="px-4 py-4 text-stone-600">{assignment.goal ?? 'No goal'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                )}
+                            </WorkspaceTable>
                         </div>
 
                         <div>
                             <p className="mb-2 text-sm font-medium text-stone-950">As coach</p>
-                            <TableShell>
-                                <table className="w-full min-w-[560px] text-sm">
-                                    <HeaderRow labels={['Athlete', 'Status', 'Started', 'Goal']} />
-                                    {athleteAssignments.length === 0 ? (
-                                        <EmptyRows message="No athlete roster history." colSpan={4} />
-                                    ) : (
-                                        <tbody className="divide-y divide-stone-200">
-                                            {athleteAssignments.map((assignment) => (
-                                                <tr key={assignment.id}>
-                                                    <td className="px-4 py-4">
-                                                        <Link
-                                                            href={route('admin.users.show', assignment.athleteId)}
-                                                            className="font-medium text-stone-950 hover:text-stone-600"
-                                                        >
-                                                            {assignment.athleteName}
-                                                        </Link>
-                                                    </td>
-                                                    <td className="px-4 py-4">
-                                                        <Badge variant={badgeVariantForStatus(assignment.status)}>
-                                                            {humanizeStatus(assignment.status)}
-                                                        </Badge>
-                                                    </td>
-                                                    <td className="px-4 py-4 text-stone-600">{formatDate(assignment.startedAt)}</td>
-                                                    <td className="px-4 py-4 text-stone-600">{assignment.goal ?? 'No goal'}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    )}
-                                </table>
-                            </TableShell>
+                            <WorkspaceTable minWidth="min-w-[560px]">
+                                <WorkspaceTableHeader labels={['Athlete', 'Status', 'Started', 'Goal']} />
+                                {athleteAssignments.length === 0 ? (
+                                    <WorkspaceTableEmpty message="No athlete roster history." colSpan={4} />
+                                ) : (
+                                    <tbody className="divide-y divide-stone-200">
+                                        {athleteAssignments.map((assignment) => (
+                                            <tr key={assignment.id}>
+                                                <td className="px-4 py-4">
+                                                    <Link
+                                                        href={route('athletes.show', assignment.athleteId)}
+                                                        className="font-medium text-stone-950 underline-offset-4 hover:text-emerald-700 hover:underline"
+                                                    >
+                                                        {assignment.athleteName}
+                                                    </Link>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <Badge variant={badgeVariantForStatus(assignment.status)}>
+                                                        {humanizeStatus(assignment.status)}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-4 py-4 text-stone-600">{formatDate(assignment.startedAt)}</td>
+                                                <td className="px-4 py-4 text-stone-600">{assignment.goal ?? 'No goal'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                )}
+                            </WorkspaceTable>
                         </div>
                     </WorkspacePanel>
                 </section>
 
                 <WorkspacePanel title="Training programs" description="Programs connected to the user as an athlete or coach." contentClassName="p-0">
-                    <TableShell>
-                        <table className="w-full min-w-[760px] text-sm">
-                            <HeaderRow labels={['Program', 'Role', 'With', 'Status', 'Dates', 'Sessions']} />
-                            {programs.length === 0 ? (
-                                <EmptyRows message="No training programs recorded for this user." colSpan={6} />
-                            ) : (
-                                <tbody className="divide-y divide-stone-200">
-                                    {programs.map((program) => (
-                                        <tr key={`${program.role}-${program.id}`}>
-                                            <td className="px-4 py-4 font-medium text-stone-950">{program.title}</td>
-                                            <td className="px-4 py-4 text-stone-600">{humanizeStatus(program.role)}</td>
-                                            <td className="px-4 py-4 text-stone-600">{program.counterparty}</td>
-                                            <td className="px-4 py-4">
-                                                <Badge variant={badgeVariantForStatus(program.status)}>{humanizeStatus(program.status)}</Badge>
-                                            </td>
-                                            <td className="px-4 py-4 text-stone-600">
-                                                {formatDate(program.startDate)} to {formatDate(program.endDate)}
-                                            </td>
-                                            <td className="px-4 py-4 text-stone-600">
-                                                <Dumbbell className="mr-2 inline size-4" />
-                                                {program.sessionCount}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            )}
-                        </table>
-                    </TableShell>
+                    <WorkspaceTable minWidth="min-w-[760px]">
+                        <WorkspaceTableHeader labels={['Program', 'Role', 'With', 'Status', 'Dates', 'Sessions']} />
+                        {programs.length === 0 ? (
+                            <WorkspaceTableEmpty message="No training programs recorded for this user." colSpan={6} />
+                        ) : (
+                            <tbody className="divide-y divide-stone-200">
+                                {programs.map((program) => (
+                                    <tr key={`${program.role}-${program.id}`}>
+                                        <td className="px-4 py-4 font-medium text-stone-950">{program.title}</td>
+                                        <td className="px-4 py-4 text-stone-600">{humanizeStatus(program.role)}</td>
+                                        <td className="px-4 py-4">
+                                            <Link
+                                                href={
+                                                    program.counterpartyIsAthlete
+                                                        ? route('athletes.show', program.counterpartyId)
+                                                        : route('admin.users.show', program.counterpartyId)
+                                                }
+                                                className="font-medium text-stone-950 underline-offset-4 hover:text-emerald-700 hover:underline"
+                                            >
+                                                {program.counterparty}
+                                            </Link>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <Badge variant={badgeVariantForStatus(program.status)}>{humanizeStatus(program.status)}</Badge>
+                                        </td>
+                                        <td className="px-4 py-4 text-stone-600">
+                                            {formatDate(program.startDate)} to {formatDate(program.endDate)}
+                                        </td>
+                                        <td className="px-4 py-4 text-stone-600">
+                                            <Dumbbell className="mr-2 inline size-4" />
+                                            {program.sessionCount}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        )}
+                    </WorkspaceTable>
                 </WorkspacePanel>
             </div>
         </AppLayout>

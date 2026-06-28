@@ -35,6 +35,7 @@ The current build supports:
 - coach/admin athlete invitations with secure email accept links
 - public invitation acceptance for new and existing athlete accounts
 - coach-facing athlete profile drill-down pages
+- coach-facing athlete set-execution tables with target vs actual reps/load/RPE
 - athlete file uploads, downloads, category moves, visibility controls, and archive state
 - coach program assignment and session planning
 - structured workout prescriptions with sets, reps, load, rest, target, and note support
@@ -80,6 +81,23 @@ Regression so far:
 - Targeted feature tests: 17 passed, 112 assertions.
 - `npm run build:athlete`: passed.
 - `npx eslint resources/js --max-warnings=0`: passed.
+
+## 2026-06-28 profile drill-down and table consistency slice
+
+This slice makes coach/admin tracking less click-hungry.
+
+- The coach-facing athlete profile now exposes a dedicated workout set execution table.
+- Coaches can see the athlete's target reps/load/rest beside actual reps/load/RPE, completion timestamp, and set notes.
+- Training program rows now link directly to the athlete profile instead of forcing coaches back through roster search.
+- Admin user profiles now use the shared workspace table primitives instead of one-off local table wrappers.
+- Admin training counterparty links now route to the correct detail page:
+    - athletes open the coach-facing athlete profile
+    - staff users open the admin user profile
+
+Regression so far:
+
+- `php artisan test tests/Feature/AdminUserManagementTest.php tests/Feature/AthleteProfileAndFilesTest.php tests/Feature/TrainingIndexTest.php`: 18 passed, 210 assertions.
+- `npx eslint resources/js/pages/admin/users/show.tsx resources/js/pages/athletes/show.tsx resources/js/pages/training/index.tsx --max-warnings=0`: passed.
 
 ## 2026-06-27 athlete app and workout execution slice
 

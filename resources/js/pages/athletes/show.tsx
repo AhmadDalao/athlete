@@ -137,6 +137,24 @@ interface AthleteShowProps {
         completedSets: number;
         notes: string | null;
     }>;
+    setLogs: Array<{
+        id: number;
+        sessionId: number;
+        scheduledDate: string | null;
+        programTitle: string;
+        sessionTitle: string;
+        exerciseName: string;
+        exerciseIndex: number;
+        setNumber: number;
+        targetReps: string | null;
+        targetLoad: string | null;
+        targetRestSeconds: number | null;
+        actualReps: string | null;
+        actualLoad: string | null;
+        actualRpe: number | null;
+        completedAt: string | null;
+        notes: string | null;
+    }>;
     files: AthleteFileRow[];
     messages: Array<{
         id: number;
@@ -195,6 +213,21 @@ function formatSize(bytes: number) {
     }
 
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function formatRest(seconds: number | null) {
+    if (seconds === null) {
+        return 'N/A';
+    }
+
+    if (seconds < 60) {
+        return `${seconds}s`;
+    }
+
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+
+    return remainingSeconds === 0 ? `${minutes}m` : `${minutes}m ${remainingSeconds}s`;
 }
 
 function statusVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
@@ -344,7 +377,11 @@ function EditFileDialog({ file, fileOptions }: { file: AthleteFileRow; fileOptio
                 <form className="space-y-4" onSubmit={submit}>
                     <div className="grid gap-2">
                         <Label htmlFor={`file-name-${file.id}`}>Display name</Label>
-                        <Input id={`file-name-${file.id}`} value={data.display_name} onChange={(event) => setData('display_name', event.target.value)} />
+                        <Input
+                            id={`file-name-${file.id}`}
+                            value={data.display_name}
+                            onChange={(event) => setData('display_name', event.target.value)}
+                        />
                         <InputError message={errors.display_name} />
                     </div>
                     <div className="grid gap-4 md:grid-cols-3">
@@ -420,6 +457,7 @@ export default function AthleteShow({
     devices,
     progress,
     sessions,
+    setLogs,
     files,
     messages,
     fileOptions,
@@ -459,7 +497,9 @@ export default function AthleteShow({
                             <div className="rounded-[1.35rem] border border-white/70 bg-white/82 p-4">
                                 <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Contact</p>
                                 <p className="mt-3 font-semibold text-stone-950">{profile.email}</p>
-                                <p className="mt-1 text-sm text-stone-600">{profile.phone ?? 'No phone'} · {profile.preferredContactMethod ?? 'email'}</p>
+                                <p className="mt-1 text-sm text-stone-600">
+                                    {profile.phone ?? 'No phone'} · {profile.preferredContactMethod ?? 'email'}
+                                </p>
                             </div>
                             <div className="rounded-[1.35rem] border border-white/70 bg-white/82 p-4">
                                 <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Primary goal</p>
@@ -470,14 +510,33 @@ export default function AthleteShow({
                 />
 
                 <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <WorkspaceMetricCard title="Membership" value={summary.currentPlan} note={`${humanize(summary.membershipStatus)} · ${formatDays(summary.daysRemaining)}`} icon={UserRound} />
-                    <WorkspaceMetricCard title="Training" value={`${summary.completedSessions}/${summary.sessions}`} note={`${summary.partialSessions} partial and ${summary.missedSessions} missed sessions.`} icon={Dumbbell} />
-                    <WorkspaceMetricCard title="Latest check-in" value={profile.latestCheckInAt ?? 'None'} note="Food, weight, hydration, sleep, and readiness inputs." icon={LineChart} />
+                    <WorkspaceMetricCard
+                        title="Membership"
+                        value={summary.currentPlan}
+                        note={`${humanize(summary.membershipStatus)} · ${formatDays(summary.daysRemaining)}`}
+                        icon={UserRound}
+                    />
+                    <WorkspaceMetricCard
+                        title="Training"
+                        value={`${summary.completedSessions}/${summary.sessions}`}
+                        note={`${summary.partialSessions} partial and ${summary.missedSessions} missed sessions.`}
+                        icon={Dumbbell}
+                    />
+                    <WorkspaceMetricCard
+                        title="Latest check-in"
+                        value={profile.latestCheckInAt ?? 'None'}
+                        note="Food, weight, hydration, sleep, and readiness inputs."
+                        icon={LineChart}
+                    />
                     <WorkspaceMetricCard title="Files" value={summary.files.toString()} note="Active athlete documents and media." icon={FileText} />
                 </section>
 
                 <section className="space-y-4">
-                    <WorkspaceSectionHeading eyebrow="Roster and billing" title="Relationship and subscription tables." description="The first thing a coach needs is who owns the relationship and whether the account is commercially clean." />
+                    <WorkspaceSectionHeading
+                        eyebrow="Roster and billing"
+                        title="Relationship and subscription tables."
+                        description="The first thing a coach needs is who owns the relationship and whether the account is commercially clean."
+                    />
                     <div className="grid gap-4 xl:grid-cols-2">
                         <WorkspacePanel title="Coach assignments" description="Coach ownership history." contentClassName="space-y-4">
                             <WorkspaceTable minWidth="min-w-[720px]">
@@ -492,7 +551,9 @@ export default function AthleteShow({
                                                     <p className="font-medium text-stone-950">{assignment.coachName}</p>
                                                     <p className="text-xs text-stone-500">{assignment.coachEmail}</p>
                                                 </td>
-                                                <td className="px-4 py-3"><Badge variant={statusVariant(assignment.status)}>{humanize(assignment.status)}</Badge></td>
+                                                <td className="px-4 py-3">
+                                                    <Badge variant={statusVariant(assignment.status)}>{humanize(assignment.status)}</Badge>
+                                                </td>
                                                 <td className="px-4 py-3 text-sm text-stone-600">{assignment.goal ?? 'No goal'}</td>
                                                 <td className="px-4 py-3 text-sm text-stone-600">{assignment.startedAt ?? 'N/A'}</td>
                                                 <td className="px-4 py-3 text-sm text-stone-600">{assignment.endedAt ?? 'Live'}</td>
@@ -512,10 +573,16 @@ export default function AthleteShow({
                                         {memberships.map((membership) => (
                                             <tr key={membership.id}>
                                                 <td className="px-4 py-3 font-medium text-stone-950">{membership.planName}</td>
-                                                <td className="px-4 py-3"><Badge variant={statusVariant(membership.status)}>{humanize(membership.status)}</Badge></td>
-                                                <td className="px-4 py-3 text-sm text-stone-600">{membership.startsAt ?? 'N/A'} to {membership.endsAt ?? 'N/A'}</td>
+                                                <td className="px-4 py-3">
+                                                    <Badge variant={statusVariant(membership.status)}>{humanize(membership.status)}</Badge>
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-stone-600">
+                                                    {membership.startsAt ?? 'N/A'} to {membership.endsAt ?? 'N/A'}
+                                                </td>
                                                 <td className="px-4 py-3 text-sm text-stone-600">{formatDays(membership.daysRemaining)}</td>
-                                                <td className="px-4 py-3 text-sm text-stone-600">{membership.currency} {membership.price.toFixed(2)}</td>
+                                                <td className="px-4 py-3 text-sm text-stone-600">
+                                                    {membership.currency} {membership.price.toFixed(2)}
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -525,7 +592,11 @@ export default function AthleteShow({
                     </div>
                 </section>
 
-                <WorkspacePanel title="Training schedule and completed sessions" description="Assigned work, completion status, set counts, and coach notes." contentClassName="space-y-4">
+                <WorkspacePanel
+                    title="Training schedule and completed sessions"
+                    description="Assigned work, completion status, set counts, and coach notes."
+                    contentClassName="space-y-4"
+                >
                     <WorkspaceTable minWidth="min-w-[1120px]">
                         <WorkspaceTableHeader labels={['Date', 'Program', 'Session', 'Focus', 'Status', 'Sets', 'Performance', 'Notes']} />
                         {sessions.length === 0 ? (
@@ -538,9 +609,15 @@ export default function AthleteShow({
                                         <td className="px-4 py-3 font-medium text-stone-950">{session.programTitle}</td>
                                         <td className="px-4 py-3 text-sm text-stone-700">{session.title}</td>
                                         <td className="px-4 py-3 text-sm text-stone-600">{session.focus ?? 'General'}</td>
-                                        <td className="px-4 py-3"><Badge variant={statusVariant(session.completionStatus)}>{humanize(session.completionStatus)}</Badge></td>
-                                        <td className="px-4 py-3 text-sm text-stone-600">{session.completedSets}/{session.setCount}</td>
-                                        <td className="px-4 py-3 text-sm text-stone-600">{session.durationMinutes ?? 'No duration'} min · RPE {session.exertionRating ?? 'N/A'}</td>
+                                        <td className="px-4 py-3">
+                                            <Badge variant={statusVariant(session.completionStatus)}>{humanize(session.completionStatus)}</Badge>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-stone-600">
+                                            {session.completedSets}/{session.setCount}
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-stone-600">
+                                            {session.durationMinutes ?? 'No duration'} min · RPE {session.exertionRating ?? 'N/A'}
+                                        </td>
                                         <td className="px-4 py-3 text-sm text-stone-600">{session.notes ?? 'No notes'}</td>
                                     </tr>
                                 ))}
@@ -549,8 +626,59 @@ export default function AthleteShow({
                     </WorkspaceTable>
                 </WorkspacePanel>
 
+                <WorkspacePanel
+                    title="Workout set execution"
+                    description="The actual execution record from the athlete app: target prescription, what the athlete entered, RPE, completion time, and set notes."
+                    contentClassName="space-y-4"
+                >
+                    <WorkspaceTable minWidth="min-w-[1320px]">
+                        <WorkspaceTableHeader labels={['Date', 'Session', 'Exercise', 'Set', 'Target', 'Actual', 'RPE', 'Completed', 'Notes']} />
+                        {setLogs.length === 0 ? (
+                            <WorkspaceTableEmpty message="No per-set workout execution has been recorded yet." colSpan={9} />
+                        ) : (
+                            <tbody className="divide-y divide-stone-100">
+                                {setLogs.map((setLog) => (
+                                    <tr key={setLog.id} className="align-top">
+                                        <td className="px-4 py-3 text-sm text-stone-600">{setLog.scheduledDate ?? 'N/A'}</td>
+                                        <td className="px-4 py-3">
+                                            <p className="font-medium text-stone-950">{setLog.sessionTitle}</p>
+                                            <p className="mt-1 text-xs text-stone-500">{setLog.programTitle}</p>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <p className="font-medium text-stone-950">{setLog.exerciseName}</p>
+                                            <p className="mt-1 text-xs text-stone-500">Exercise {setLog.exerciseIndex + 1}</p>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm font-semibold text-stone-950">{setLog.setNumber}</td>
+                                        <td className="px-4 py-3 text-sm text-stone-600">
+                                            <p>Reps/time: {setLog.targetReps ?? 'N/A'}</p>
+                                            <p className="mt-1">Load: {setLog.targetLoad ?? 'N/A'}</p>
+                                            <p className="mt-1">Rest: {formatRest(setLog.targetRestSeconds)}</p>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-stone-600">
+                                            <p>Reps/time: {setLog.actualReps ?? 'N/A'}</p>
+                                            <p className="mt-1">Load: {setLog.actualLoad ?? 'N/A'}</p>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-stone-600">{setLog.actualRpe ?? 'N/A'}</td>
+                                        <td className="px-4 py-3">
+                                            <Badge variant={setLog.completedAt ? 'default' : 'outline'}>
+                                                {setLog.completedAt ? 'Completed' : 'Open'}
+                                            </Badge>
+                                            <p className="mt-2 text-xs text-stone-500">{setLog.completedAt ?? 'Not completed'}</p>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-stone-600">{setLog.notes ?? 'No notes'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        )}
+                    </WorkspaceTable>
+                </WorkspacePanel>
+
                 <section className="grid gap-4 xl:grid-cols-2">
-                    <WorkspacePanel title="Progress check-ins" description="Food, body, hydration, sleep, soreness, and energy." contentClassName="space-y-4">
+                    <WorkspacePanel
+                        title="Progress check-ins"
+                        description="Food, body, hydration, sleep, soreness, and energy."
+                        contentClassName="space-y-4"
+                    >
                         <WorkspaceTable minWidth="min-w-[980px]">
                             <WorkspaceTableHeader labels={['Date', 'Weight', 'Food', 'Hydration', 'Sleep', 'Feel', 'Notes']} />
                             {progress.length === 0 ? (
@@ -561,10 +689,15 @@ export default function AthleteShow({
                                         <tr key={row.id} className="align-top">
                                             <td className="px-4 py-3 text-sm text-stone-600">{row.loggedDate ?? 'N/A'}</td>
                                             <td className="px-4 py-3 text-sm text-stone-600">{row.weightKg ?? 'N/A'} kg</td>
-                                            <td className="px-4 py-3 text-sm text-stone-600">{row.caloriesConsumed ?? 'N/A'} kcal · P {row.proteinGrams ?? 'N/A'}g · C {row.carbsGrams ?? 'N/A'}g · F {row.fatGrams ?? 'N/A'}g</td>
+                                            <td className="px-4 py-3 text-sm text-stone-600">
+                                                {row.caloriesConsumed ?? 'N/A'} kcal · P {row.proteinGrams ?? 'N/A'}g · C {row.carbsGrams ?? 'N/A'}g ·
+                                                F {row.fatGrams ?? 'N/A'}g
+                                            </td>
                                             <td className="px-4 py-3 text-sm text-stone-600">{row.waterLiters ?? 'N/A'} L</td>
                                             <td className="px-4 py-3 text-sm text-stone-600">{row.sleepHours ?? 'N/A'} h</td>
-                                            <td className="px-4 py-3 text-sm text-stone-600">Energy {row.energyScore ?? 'N/A'} · Soreness {row.sorenessScore ?? 'N/A'}</td>
+                                            <td className="px-4 py-3 text-sm text-stone-600">
+                                                Energy {row.energyScore ?? 'N/A'} · Soreness {row.sorenessScore ?? 'N/A'}
+                                            </td>
                                             <td className="px-4 py-3 text-sm text-stone-600">{row.notes ?? 'No notes'}</td>
                                         </tr>
                                     ))}
@@ -582,7 +715,9 @@ export default function AthleteShow({
                                     {devices.map((device) => (
                                         <tr key={device.id}>
                                             <td className="px-4 py-3 font-medium text-stone-950">{device.provider}</td>
-                                            <td className="px-4 py-3"><Badge variant={statusVariant(device.status)}>{humanize(device.status)}</Badge></td>
+                                            <td className="px-4 py-3">
+                                                <Badge variant={statusVariant(device.status)}>{humanize(device.status)}</Badge>
+                                            </td>
                                             <td className="px-4 py-3 text-sm text-stone-600">{device.lastSyncedAt ?? 'Never'}</td>
                                             <td className="px-4 py-3 text-sm text-stone-600">{device.latestMetricDate ?? 'N/A'}</td>
                                             <td className="px-4 py-3 text-sm text-stone-600">{device.readiness ?? 'N/A'}</td>
@@ -596,7 +731,11 @@ export default function AthleteShow({
                     </WorkspacePanel>
                 </section>
 
-                <WorkspacePanel title="Athlete files" description="Documents, media, progress files, and admin-only records." contentClassName="space-y-4">
+                <WorkspacePanel
+                    title="Athlete files"
+                    description="Documents, media, progress files, and admin-only records."
+                    contentClassName="space-y-4"
+                >
                     <WorkspaceTable minWidth="min-w-[1180px]">
                         <WorkspaceTableHeader labels={['File', 'Category', 'Visibility', 'Status', 'Size', 'Uploaded', 'Notes', 'Actions']} />
                         {files.length === 0 ? (
@@ -611,9 +750,13 @@ export default function AthleteShow({
                                         </td>
                                         <td className="px-4 py-3 text-sm text-stone-600">{humanize(file.category)}</td>
                                         <td className="px-4 py-3 text-sm text-stone-600">{humanize(file.visibility)}</td>
-                                        <td className="px-4 py-3"><Badge variant={statusVariant(file.status)}>{humanize(file.status)}</Badge></td>
+                                        <td className="px-4 py-3">
+                                            <Badge variant={statusVariant(file.status)}>{humanize(file.status)}</Badge>
+                                        </td>
                                         <td className="px-4 py-3 text-sm text-stone-600">{formatSize(file.sizeBytes)}</td>
-                                        <td className="px-4 py-3 text-sm text-stone-600">{file.createdAt ?? 'N/A'} by {file.uploadedBy ?? 'System'}</td>
+                                        <td className="px-4 py-3 text-sm text-stone-600">
+                                            {file.createdAt ?? 'N/A'} by {file.uploadedBy ?? 'System'}
+                                        </td>
                                         <td className="px-4 py-3 text-sm text-stone-600">{file.notes ?? 'No notes'}</td>
                                         <td className="px-4 py-3">
                                             <div className="flex flex-col gap-2">
@@ -630,7 +773,9 @@ export default function AthleteShow({
                                                         variant="outline"
                                                         size="sm"
                                                         className="border-red-200 text-red-700 hover:bg-red-50"
-                                                        onClick={() => router.post(route('athlete-files.archive', file.id), {}, { preserveScroll: true })}
+                                                        onClick={() =>
+                                                            router.post(route('athlete-files.archive', file.id), {}, { preserveScroll: true })
+                                                        }
                                                     >
                                                         Archive
                                                     </Button>
@@ -656,8 +801,12 @@ export default function AthleteShow({
                                         <tr key={payment.id}>
                                             <td className="px-4 py-3 text-sm text-stone-600">{payment.eventAt ?? 'N/A'}</td>
                                             <td className="px-4 py-3 text-sm text-stone-600">{humanize(payment.type)}</td>
-                                            <td className="px-4 py-3"><Badge variant={statusVariant(payment.status)}>{humanize(payment.status)}</Badge></td>
-                                            <td className="px-4 py-3 text-sm text-stone-600">{payment.amount ?? 'N/A'} {payment.currency ?? ''}</td>
+                                            <td className="px-4 py-3">
+                                                <Badge variant={statusVariant(payment.status)}>{humanize(payment.status)}</Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-stone-600">
+                                                {payment.amount ?? 'N/A'} {payment.currency ?? ''}
+                                            </td>
                                             <td className="px-4 py-3 text-sm text-stone-600">{payment.reference ?? 'N/A'}</td>
                                         </tr>
                                     ))}
@@ -665,7 +814,11 @@ export default function AthleteShow({
                             )}
                         </WorkspaceTable>
                     </WorkspacePanel>
-                    <WorkspacePanel title="Recent messages" description="Latest coach-athlete messages connected to roster assignments." contentClassName="space-y-4">
+                    <WorkspacePanel
+                        title="Recent messages"
+                        description="Latest coach-athlete messages connected to roster assignments."
+                        contentClassName="space-y-4"
+                    >
                         <WorkspaceTable minWidth="min-w-[760px]">
                             <WorkspaceTableHeader labels={['Time', 'Coach', 'Sender', 'Message', 'Read']} />
                             {messages.length === 0 ? (

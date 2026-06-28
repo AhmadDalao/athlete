@@ -14,6 +14,7 @@ use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use App\Models\User;
 use App\Models\WorkoutLog;
+use App\Models\WorkoutSetLog;
 use App\Support\AthleteAccess;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -164,6 +165,10 @@ class ProfileShowController extends Controller
             'sessions' => $sessions
                 ->map(fn (array $pair): array => $this->sessionRow($pair[0], $pair[1]))
                 ->all(),
+            'setLogs' => $sessions
+                ->flatMap(fn (array $pair): array => $this->setLogRows($pair[0], $pair[1]))
+                ->values()
+                ->all(),
             'files' => $user->athleteFiles
                 ->sortByDesc(fn (AthleteFile $file) => $file->created_at?->timestamp ?? 0)
                 ->map(fn (AthleteFile $file): array => $this->fileRow($file))
@@ -209,6 +214,40 @@ class ProfileShowController extends Controller
             'completedSets' => $log?->setLogs?->whereNotNull('completed_at')->count() ?? 0,
             'notes' => $log?->notes,
         ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function setLogRows(TrainingProgram $program, TrainingSession $session): array
+    {
+        $log = $session->workoutLog;
+
+        if (! $log) {
+            return [];
+        }
+
+        return $log->setLogs
+            ->map(fn (WorkoutSetLog $setLog): array => [
+                'id' => $setLog->id,
+                'sessionId' => $session->id,
+                'scheduledDate' => $session->scheduled_date?->toDateString(),
+                'programTitle' => $program->title,
+                'sessionTitle' => $session->title,
+                'exerciseName' => $setLog->exercise_name,
+                'exerciseIndex' => $setLog->exercise_index,
+                'setNumber' => $setLog->set_number,
+                'targetReps' => $setLog->target_reps,
+                'targetLoad' => $setLog->target_load,
+                'targetRestSeconds' => $setLog->target_rest_seconds,
+                'actualReps' => $setLog->actual_reps,
+                'actualLoad' => $setLog->actual_load,
+                'actualRpe' => $setLog->actual_rpe,
+                'completedAt' => $setLog->completed_at?->toDateTimeString(),
+                'notes' => $setLog->notes,
+            ])
+            ->values()
+            ->all();
     }
 
     /**

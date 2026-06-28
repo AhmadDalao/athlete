@@ -64,9 +64,14 @@ Current state, no bullshit:
         - `/athletes/{user}`
         - `/admin/files`
         - secure public invite acceptance at `/invites/{token}`
+    - athlete profile drill-down:
+        - coach/admin profile tables for assignments, billing, devices, progress, sessions, files, payments, and messages
+        - set-by-set workout execution tables showing target versus actual reps/load/RPE
+        - direct profile links from training and admin user detail screens
 - Still not live-launch ready:
     - richer page-content / CMS-style admin controls beyond current Website control fields
     - deeper operator tooling for retries, reconnects, and billing/provider edge cases
+    - live browser smoke for the new profile drill-down routes after the next production deploy
 
 ## Strong Stack Recommendation
 
@@ -189,6 +194,7 @@ Core features:
 
 - athlete roster
 - athlete profile
+- athlete profile with set-by-set execution history
 - program builder
 - workout assignment
 - training log review

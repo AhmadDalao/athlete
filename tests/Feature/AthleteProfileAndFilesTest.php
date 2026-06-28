@@ -13,6 +13,7 @@ use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use App\Models\User;
 use App\Models\WorkoutLog;
+use App\Models\WorkoutSetLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -53,13 +54,29 @@ class AthleteProfileAndFilesTest extends TestCase
             'focus' => 'Strength',
             'sort_order' => 1,
         ]);
-        WorkoutLog::query()->create([
+        $workoutLog = WorkoutLog::query()->create([
             'training_session_id' => $session->id,
             'athlete_id' => $athlete->id,
             'completion_status' => WorkoutCompletionStatus::Completed,
             'performed_at' => now(),
             'duration_minutes' => 55,
             'exertion_rating' => 7,
+        ]);
+        WorkoutSetLog::query()->create([
+            'workout_log_id' => $workoutLog->id,
+            'training_session_id' => $session->id,
+            'athlete_id' => $athlete->id,
+            'exercise_index' => 0,
+            'exercise_name' => 'Back squat',
+            'set_number' => 1,
+            'target_reps' => '5',
+            'target_load' => '100kg',
+            'target_rest_seconds' => 120,
+            'actual_reps' => '5',
+            'actual_load' => '102.5kg',
+            'actual_rpe' => 8,
+            'completed_at' => now(),
+            'notes' => 'Moved well.',
         ]);
 
         $this->actingAs($coach)
@@ -71,6 +88,10 @@ class AthleteProfileAndFilesTest extends TestCase
                 ->where('summary.completedSessions', 1)
                 ->where('progress.0.weightKg', 82.4)
                 ->where('sessions.0.title', 'Lower Body')
+                ->where('sessions.0.completedSets', 1)
+                ->where('setLogs.0.exerciseName', 'Back squat')
+                ->where('setLogs.0.actualLoad', '102.5kg')
+                ->where('setLogs.0.actualRpe', 8)
             );
     }
 

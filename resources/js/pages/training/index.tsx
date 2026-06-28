@@ -34,7 +34,7 @@ import {
     Timer,
     TrendingUp,
 } from 'lucide-react';
-import { Fragment, type FormEvent, useEffect, useState } from 'react';
+import { Fragment, useEffect, useState, type FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -590,7 +590,13 @@ function ExerciseBuilder({
 
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-muted-foreground text-xs leading-5">{hint}</p>
-                <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => updateRows([...rows, emptyExerciseBuilderRow()])}>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={disabled}
+                    onClick={() => updateRows([...rows, emptyExerciseBuilderRow()])}
+                >
                     Add exercise row
                 </Button>
             </div>
@@ -1420,7 +1426,14 @@ export default function TrainingIndex({
                                                     <p className="font-semibold text-stone-950">{program.title}</p>
                                                     {program.goal && <p className="mt-1 text-xs text-stone-500">{program.goal}</p>}
                                                 </td>
-                                                <td className="px-4 py-4 font-medium text-stone-950">{program.athleteName}</td>
+                                                <td className="px-4 py-4">
+                                                    <Link
+                                                        href={route('athletes.show', program.athleteId)}
+                                                        className="font-medium text-stone-950 underline-offset-4 hover:text-emerald-700 hover:underline"
+                                                    >
+                                                        {program.athleteName}
+                                                    </Link>
+                                                </td>
                                                 <td className="px-4 py-4 text-sm text-stone-700">{program.coachName}</td>
                                                 <td className="px-4 py-4">
                                                     <Badge variant={badgeVariantForProgram(program.status)}>{humanizeStatus(program.status)}</Badge>
@@ -1455,7 +1468,10 @@ export default function TrainingIndex({
                                                                 labels={['Session', 'Scheduled', 'Focus', 'Video', 'Workout log', 'Exercises']}
                                                             />
                                                             {program.sessions.length === 0 ? (
-                                                                <WorkspaceTableEmpty message="No sessions have been added to this program yet." colSpan={6} />
+                                                                <WorkspaceTableEmpty
+                                                                    message="No sessions have been added to this program yet."
+                                                                    colSpan={6}
+                                                                />
                                                             ) : (
                                                                 <tbody className="divide-y divide-stone-100">
                                                                     {program.sessions.map((session) => (
@@ -1467,14 +1483,19 @@ export default function TrainingIndex({
                                                                                 </p>
                                                                                 {viewerRole === 'athlete' && (
                                                                                     <div className="mt-3">
-                                                                                        <WorkoutLogForm session={session} statusOptions={statusOptions} />
+                                                                                        <WorkoutLogForm
+                                                                                            session={session}
+                                                                                            statusOptions={statusOptions}
+                                                                                        />
                                                                                     </div>
                                                                                 )}
                                                                             </td>
                                                                             <td className="px-4 py-4 text-sm text-stone-700">
                                                                                 {session.scheduledDate ?? 'Not scheduled'}
                                                                             </td>
-                                                                            <td className="px-4 py-4 text-sm text-stone-700">{session.focus ?? 'General'}</td>
+                                                                            <td className="px-4 py-4 text-sm text-stone-700">
+                                                                                {session.focus ?? 'General'}
+                                                                            </td>
                                                                             <td className="px-4 py-4">
                                                                                 <WorkoutVideoPlayer url={session.videoUrl} />
                                                                             </td>
@@ -1511,10 +1532,20 @@ export default function TrainingIndex({
                                                                             <td className="px-4 py-4">
                                                                                 <WorkspaceTable minWidth="min-w-[720px]">
                                                                                     <WorkspaceTableHeader
-                                                                                        labels={['Exercise', 'Sets', 'Reps/time', 'Load', 'Rest', 'Target']}
+                                                                                        labels={[
+                                                                                            'Exercise',
+                                                                                            'Sets',
+                                                                                            'Reps/time',
+                                                                                            'Load',
+                                                                                            'Rest',
+                                                                                            'Target',
+                                                                                        ]}
                                                                                     />
                                                                                     {session.exercises.length === 0 ? (
-                                                                                        <WorkspaceTableEmpty message="No exercises listed." colSpan={6} />
+                                                                                        <WorkspaceTableEmpty
+                                                                                            message="No exercises listed."
+                                                                                            colSpan={6}
+                                                                                        />
                                                                                     ) : (
                                                                                         <tbody className="divide-y divide-stone-100">
                                                                                             {session.exercises.map((exercise, index) => (
