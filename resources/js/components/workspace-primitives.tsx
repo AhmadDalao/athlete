@@ -1,8 +1,17 @@
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
 import { ArrowRight, type LucideIcon } from 'lucide-react';
 import { type ReactNode } from 'react';
+
+export const workspaceTablePageSizeOptions = ['10', '25', '50', '100', 'all'] as const;
+
+export function normalizeWorkspaceTablePageSize(value: string | number | null | undefined) {
+    const normalized = String(value ?? '10').toLowerCase();
+
+    return workspaceTablePageSizeOptions.includes(normalized as (typeof workspaceTablePageSizeOptions)[number]) ? normalized : '10';
+}
 
 export function WorkspaceHero({
     eyebrow,
@@ -132,6 +141,35 @@ export function WorkspaceTable({
     return (
         <div className="overflow-x-auto rounded-[1.05rem] border border-stone-200 bg-white">
             <table className={cn('w-full border-collapse text-left text-sm', minWidth)}>{children}</table>
+        </div>
+    );
+}
+
+export function WorkspaceTablePageSize({
+    value,
+    onChange,
+    className,
+}: {
+    value: string | number | null | undefined;
+    onChange: (value: string) => void;
+    className?: string;
+}) {
+    return (
+        <div className={cn('flex flex-wrap items-center gap-3 text-sm font-black text-stone-700', className)}>
+            <span>Show</span>
+            <Select value={normalizeWorkspaceTablePageSize(value)} onValueChange={onChange}>
+                <SelectTrigger className="h-11 w-24 rounded-xl border-stone-200 bg-white font-black text-stone-950">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {workspaceTablePageSizeOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                            {option === 'all' ? 'All' : option}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <span>entries</span>
         </div>
     );
 }

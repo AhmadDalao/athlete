@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\PlatformAuditLog;
 use App\Models\User;
+use App\Support\TablePageSize;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -30,7 +31,7 @@ class AuditLogIndexController extends Controller
         $logs = (clone $query)
             ->with('actor')
             ->latest()
-            ->paginate(15)
+            ->paginate(TablePageSize::resolve($request, $query))
             ->withQueryString()
             ->through(fn (PlatformAuditLog $log): array => $this->row($log));
 
@@ -60,7 +61,7 @@ class AuditLogIndexController extends Controller
     }
 
     /**
-     * @return array{q:string|null,action:string|null,entity:string|null,date_from:string|null,date_to:string|null}
+     * @return array{q:string|null,action:string|null,entity:string|null,date_from:string|null,date_to:string|null,per_page:string}
      */
     private function filters(Request $request): array
     {
@@ -70,11 +71,12 @@ class AuditLogIndexController extends Controller
             'entity' => $request->string('entity')->trim()->value() ?: null,
             'date_from' => $request->date('date_from')?->toDateString(),
             'date_to' => $request->date('date_to')?->toDateString(),
+            'per_page' => TablePageSize::queryValue($request),
         ];
     }
 
     /**
-     * @param  array{q:string|null,action:string|null,entity:string|null,date_from:string|null,date_to:string|null}  $filters
+     * @param  array{q:string|null,action:string|null,entity:string|null,date_from:string|null,date_to:string|null,per_page:string}  $filters
      */
     private function filteredQuery(array $filters): Builder
     {

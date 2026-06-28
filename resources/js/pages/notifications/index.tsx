@@ -5,7 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { WorkspaceHero, WorkspacePanel, WorkspaceSectionHeading, WorkspaceTable, WorkspaceTableEmpty, WorkspaceTableHeader } from '@/components/workspace-primitives';
+import {
+    WorkspaceHero,
+    WorkspacePanel,
+    WorkspaceSectionHeading,
+    WorkspaceTable,
+    WorkspaceTableEmpty,
+    WorkspaceTableHeader,
+    WorkspaceTablePageSize,
+} from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
@@ -52,6 +60,7 @@ interface NotificationPaginator {
     prev_page_url: string | null;
     next_page_url: string | null;
     total: number;
+    per_page?: number | string;
 }
 
 interface NotificationsProps {
@@ -253,6 +262,10 @@ function NotificationComposer({ roleOptions, userOptions }: { roleOptions: Optio
 
 export default function NotificationsIndex({ notifications, canCreateNotifications, roleOptions, userOptions }: NotificationsProps) {
     const unreadCount = notifications.data.filter((notification) => !notification.readAt).length;
+    const perPage = String(notifications.per_page ?? '10');
+    const updatePerPage = (value: string) => {
+        router.get(route('notifications.index'), { per_page: value }, { only: ['notifications'], preserveScroll: true, preserveState: true, replace: true });
+    };
 
     const markRead = (id: number) => {
         router.post(route('notifications.read', id), {}, { preserveScroll: true });
@@ -321,6 +334,10 @@ export default function NotificationsIndex({ notifications, canCreateNotificatio
                         description={`${notifications.total} notification(s) visible.`}
                         contentClassName="space-y-3"
                     >
+                        <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
+                            <WorkspaceTablePageSize value={perPage} onChange={updatePerPage} />
+                            <p className="text-sm text-stone-500">Showing {notifications.data.length} of {notifications.total} matching notifications.</p>
+                        </div>
                         <WorkspaceTable minWidth="min-w-[980px]">
                             <WorkspaceTableHeader labels={['Notification', 'Target', 'Published', 'Creator', 'Read state', 'Active window', 'Actions']} />
                             {notifications.data.length === 0 ? (

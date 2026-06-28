@@ -9,11 +9,12 @@ import {
     WorkspaceTable,
     WorkspaceTableEmpty,
     WorkspaceTableHeader,
+    WorkspaceTablePageSize,
 } from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Activity, AlertTriangle, HeartPulse, MoonStar, ShieldCheck, Watch } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -127,6 +128,7 @@ interface WearablePaginator {
     prev_page_url: string | null;
     next_page_url: string | null;
     total: number;
+    per_page?: number | string;
 }
 
 interface WearablesPageProps {
@@ -134,6 +136,7 @@ interface WearablesPageProps {
     scopeLabel: string;
     filters: {
         status: string | null;
+        per_page: string;
     };
     summary: {
         totalConnections: number;
@@ -596,6 +599,14 @@ export default function WearablesIndex({
     sampleCurl,
 }: WearablesPageProps) {
     const page = usePage<SharedData>();
+    const perPage = filters.per_page ?? String(connections.per_page ?? '10');
+    const updatePerPage = (value: string) => {
+        router.get(
+            route('wearables.index'),
+            { ...(filters.status ? { status: filters.status } : {}), per_page: value },
+            { only: ['filters', 'summary', 'connections'], preserveScroll: true, preserveState: true, replace: true },
+        );
+    };
 
     if (viewerRole === 'athlete') {
         return <AthleteWearablesExperience summary={summary} connections={connections} whoopIntegration={whoopIntegration} />;
@@ -762,7 +773,10 @@ export default function WearablesIndex({
                                 {statusFilters.map((filter) => (
                                     <Link
                                         key={filter.label}
-                                        href={route('wearables.index', filter.value ? { status: filter.value } : {})}
+                                        href={route('wearables.index', {
+                                            ...(filter.value ? { status: filter.value } : {}),
+                                            per_page: perPage,
+                                        })}
                                         preserveScroll
                                         preserveState
                                         replace
@@ -778,6 +792,10 @@ export default function WearablesIndex({
                                     </Link>
                                 ))}
                             </div>
+                        </div>
+                        <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
+                            <WorkspaceTablePageSize value={perPage} onChange={updatePerPage} />
+                            <p className="text-sm text-stone-500">Showing {connections.data.length} of {connections.total} matching connections.</p>
                         </div>
 
                         <WorkspaceTable minWidth="min-w-[1320px]">

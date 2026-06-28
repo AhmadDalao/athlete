@@ -13,6 +13,7 @@ use App\Services\DeviceConnectionHealthReviewService;
 use App\Services\MetricAnalyticsService;
 use App\Services\Whoop\WhoopApiClient;
 use App\Services\Whoop\WhoopWebhookService;
+use App\Support\TablePageSize;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -35,9 +36,11 @@ class WearableIndexController extends Controller
         $normalizedStatusFilter = in_array($statusFilter, $allowedStatuses, true) ? $statusFilter : null;
 
         $baseQuery = $this->visibleConnectionsQuery($user);
-        $connections = (clone $baseQuery)
+        $tableQuery = (clone $baseQuery)
             ->with(['user.roles', 'latestSnapshot'])
-            ->when($normalizedStatusFilter, fn (Builder $query, string $status) => $query->where('status', $status))
+            ->when($normalizedStatusFilter, fn (Builder $query, string $status) => $query->where('status', $status));
+
+        $connections = $tableQuery
             ->orderByRaw(
                 "case status
                     when 'attention' then 0
@@ -47,7 +50,7 @@ class WearableIndexController extends Controller
                 end"
             )
             ->orderByDesc('last_synced_at')
-            ->paginate(12)
+            ->paginate(TablePageSize::resolve($request, $tableQuery))
             ->withQueryString()
             ->through(fn (DeviceConnection $connection): array => [
                 'id' => $connection->id,
@@ -122,6 +125,7 @@ class WearableIndexController extends Controller
             'scopeLabel' => $this->scopeLabel($user),
             'filters' => [
                 'status' => $normalizedStatusFilter,
+                'per_page' => TablePageSize::queryValue($request),
             ],
             'summary' => [
                 'totalConnections' => (clone $baseQuery)->count(),

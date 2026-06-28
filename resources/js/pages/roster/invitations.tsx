@@ -14,6 +14,7 @@ import {
     WorkspaceTable,
     WorkspaceTableEmpty,
     WorkspaceTableHeader,
+    WorkspaceTablePageSize,
 } from '@/components/workspace-primitives';
 import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
@@ -62,6 +63,7 @@ interface InvitationPaginator {
     prev_page_url: string | null;
     next_page_url: string | null;
     total: number;
+    per_page?: number | string;
 }
 
 interface InvitationPageProps {
@@ -70,6 +72,7 @@ interface InvitationPageProps {
         q: string | null;
         status: string | null;
         coach_id: string | null;
+        per_page: string;
     };
     summary: {
         total: number;
@@ -112,11 +115,12 @@ function statusVariant(status: string): 'default' | 'secondary' | 'destructive' 
     return 'outline';
 }
 
-function invitationFilterPayload({ q, status, coachId }: { q: string; status: string; coachId: string }) {
+function invitationFilterPayload({ q, status, coachId, perPage }: { q: string; status: string; coachId: string; perPage: string }) {
     return {
         q: q.trim() || undefined,
         status: status === 'all' ? undefined : status,
         coach_id: coachId === 'all' ? undefined : coachId,
+        per_page: perPage,
     };
 }
 
@@ -227,8 +231,9 @@ export default function InvitationIndex({ adminMode, filters, summary, invitatio
     const [q, setQ] = useState(filters.q ?? '');
     const [status, setStatus] = useState(filters.status ?? 'all');
     const [coachId, setCoachId] = useState(filters.coach_id ?? 'all');
+    const [perPage, setPerPage] = useState(filters.per_page ?? String(invitations.per_page ?? '10'));
     const baseRoute = adminMode ? route('admin.invitations.index') : route('roster.invitations.index');
-    const filterPayload = invitationFilterPayload({ q, status, coachId });
+    const filterPayload = invitationFilterPayload({ q, status, coachId, perPage });
 
     const applyFilters = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -335,6 +340,10 @@ export default function InvitationIndex({ adminMode, filters, summary, invitatio
                         description="This is the onboarding audit trail: who invited, who accepted, and what needs resend or cancellation."
                     />
                     <WorkspacePanel title="Invitations" description={`${invitations.total} invite record(s) match the current filters.`} contentClassName="space-y-4">
+                        <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
+                            <WorkspaceTablePageSize value={perPage} onChange={setPerPage} />
+                            <p className="text-sm text-stone-500">Showing {invitations.data.length} of {invitations.total} matching invitations.</p>
+                        </div>
                         <WorkspaceTable minWidth="min-w-[1180px]">
                             <WorkspaceTableHeader labels={['Athlete', 'Coach', 'Status', 'Goal', 'Dates', 'Accepted user', 'Actions']} />
                             {invitations.data.length === 0 ? (

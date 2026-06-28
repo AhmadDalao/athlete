@@ -6,10 +6,18 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { WorkspaceHero, WorkspaceMetricCard, WorkspacePanel, WorkspaceTable, WorkspaceTableEmpty, WorkspaceTableHeader } from '@/components/workspace-primitives';
+import {
+    WorkspaceHero,
+    WorkspaceMetricCard,
+    WorkspacePanel,
+    WorkspaceTable,
+    WorkspaceTableEmpty,
+    WorkspaceTableHeader,
+    WorkspaceTablePageSize,
+} from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { Activity, ArrowLeft, ArrowRight, Beef, ClipboardPen, Droplets, Dumbbell, Flame, LineChart, Scale, Shield, Users, Watch } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 
@@ -128,6 +136,7 @@ interface AthletePaginator {
     prev_page_url: string | null;
     next_page_url: string | null;
     total: number;
+    per_page?: number | string;
 }
 
 interface ProgressPageProps {
@@ -662,6 +671,10 @@ function CoachAdminProgressView({
     athletes: AthletePaginator;
 }) {
     const isAdmin = viewerRole === 'admin';
+    const perPage = String(athletes.per_page ?? '10');
+    const updatePerPage = (value: string) => {
+        router.get(route('progress.index'), { per_page: value }, { only: ['summary', 'athletes'], preserveScroll: true, preserveState: true, replace: true });
+    };
 
     return (
         <div className="space-y-6">
@@ -704,6 +717,10 @@ function CoachAdminProgressView({
                 description="Table-first tracking for fueling, body metrics, subjective state, compliance, wearable context, and alerts."
                 contentClassName="space-y-4"
             >
+                    <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
+                        <WorkspaceTablePageSize value={perPage} onChange={updatePerPage} />
+                        <p className="text-sm text-stone-500">Showing {athletes.data.length} of {athletes.total} matching athletes.</p>
+                    </div>
                     <WorkspaceTable minWidth="min-w-[1280px]">
                         <WorkspaceTableHeader
                             labels={['Athlete', 'Coach', 'Latest check-in', 'Weight', 'Fuel', 'State', 'Compliance', 'Wearable', 'Alerts', 'Actions']}
@@ -913,7 +930,7 @@ export default function ProgressIndex({ viewerRole, scopeLabel, canManageOwnChec
                     <CoachAdminProgressView
                         viewerRole={viewerRole}
                         summary={summary}
-                        athletes={athletes ?? { data: [], current_page: 1, last_page: 1, prev_page_url: null, next_page_url: null, total: 0 }}
+                        athletes={athletes ?? { data: [], current_page: 1, last_page: 1, prev_page_url: null, next_page_url: null, total: 0, per_page: '10' }}
                     />
                 )}
             </div>

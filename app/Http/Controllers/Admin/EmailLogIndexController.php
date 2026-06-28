@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\EmailDeliveryLog;
 use App\Models\User;
+use App\Support\TablePageSize;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -29,7 +30,7 @@ class EmailLogIndexController extends Controller
 
         $logs = (clone $query)
             ->latest()
-            ->paginate(15)
+            ->paginate(TablePageSize::resolve($request, $query))
             ->withQueryString()
             ->through(fn (EmailDeliveryLog $log): array => $this->row($log));
 
@@ -59,7 +60,7 @@ class EmailLogIndexController extends Controller
     }
 
     /**
-     * @return array{q:string|null,status:string|null,type:string|null,date_from:string|null,date_to:string|null}
+     * @return array{q:string|null,status:string|null,type:string|null,date_from:string|null,date_to:string|null,per_page:string}
      */
     private function filters(Request $request): array
     {
@@ -69,11 +70,12 @@ class EmailLogIndexController extends Controller
             'type' => $request->string('type')->trim()->value() ?: null,
             'date_from' => $request->date('date_from')?->toDateString(),
             'date_to' => $request->date('date_to')?->toDateString(),
+            'per_page' => TablePageSize::queryValue($request),
         ];
     }
 
     /**
-     * @param  array{q:string|null,status:string|null,type:string|null,date_from:string|null,date_to:string|null}  $filters
+     * @param  array{q:string|null,status:string|null,type:string|null,date_from:string|null,date_to:string|null,per_page:string}  $filters
      */
     private function filteredQuery(array $filters): Builder
     {

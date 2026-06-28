@@ -11,6 +11,7 @@ use App\Models\Membership;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Services\Billing\StripeBillingService;
+use App\Support\TablePageSize;
 use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,9 +28,11 @@ class MembershipIndexController extends Controller
         $currentMembership = $user->currentMembership();
 
         $baseQuery = Membership::query()->visibleTo($user);
-        $memberships = (clone $baseQuery)
+        $tableQuery = (clone $baseQuery)
             ->with(['user.roles', 'plan', 'paymentEvents.createdBy'])
-            ->when($normalizedStatusFilter, fn (Builder $query, string $status) => $query->where('status', $status))
+            ->when($normalizedStatusFilter, fn (Builder $query, string $status) => $query->where('status', $status));
+
+        $memberships = $tableQuery
             ->orderByRaw(
                 "case status
                     when 'past_due' then 0
@@ -43,7 +46,7 @@ class MembershipIndexController extends Controller
             )
             ->orderBy('renews_at')
             ->orderBy('ends_at')
-            ->paginate(12)
+            ->paginate(TablePageSize::resolve(request(), $tableQuery))
             ->withQueryString()
             ->through(fn (Membership $membership): array => [
                 'id' => $membership->id,
@@ -90,6 +93,7 @@ class MembershipIndexController extends Controller
             'scopeLabel' => $this->scopeLabel($user),
             'filters' => [
                 'status' => $normalizedStatusFilter,
+                'per_page' => TablePageSize::queryValue(request()),
             ],
             'summary' => [
                 'totalMemberships' => (clone $baseQuery)->count(),

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AthleteFile;
 use App\Models\User;
+use App\Support\TablePageSize;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -30,7 +31,7 @@ class AthleteFileIndexController extends Controller
         $files = (clone $query)
             ->with(['athlete', 'uploadedBy'])
             ->latest()
-            ->paginate(15)
+            ->paginate(TablePageSize::resolve($request, $query))
             ->withQueryString()
             ->through(fn (AthleteFile $file): array => $this->row($file));
 
@@ -66,7 +67,7 @@ class AthleteFileIndexController extends Controller
     }
 
     /**
-     * @return array{q:string|null,status:string|null,category:string|null,visibility:string|null,athlete_id:string|null}
+     * @return array{q:string|null,status:string|null,category:string|null,visibility:string|null,athlete_id:string|null,per_page:string}
      */
     private function filters(Request $request): array
     {
@@ -76,11 +77,12 @@ class AthleteFileIndexController extends Controller
             'category' => $request->string('category')->trim()->value() ?: null,
             'visibility' => $request->string('visibility')->trim()->value() ?: null,
             'athlete_id' => $request->string('athlete_id')->trim()->value() ?: null,
+            'per_page' => TablePageSize::queryValue($request),
         ];
     }
 
     /**
-     * @param  array{q:string|null,status:string|null,category:string|null,visibility:string|null,athlete_id:string|null}  $filters
+     * @param  array{q:string|null,status:string|null,category:string|null,visibility:string|null,athlete_id:string|null,per_page:string}  $filters
      */
     private function filteredQuery(array $filters): Builder
     {

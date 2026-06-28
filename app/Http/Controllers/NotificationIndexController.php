@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\RoleName;
 use App\Models\SystemNotification;
 use App\Models\User;
+use App\Support\TablePageSize;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -15,11 +16,13 @@ class NotificationIndexController extends Controller
         /** @var User $user */
         $user = request()->user()->loadMissing('roles');
 
-        $notifications = SystemNotification::query()
+        $query = SystemNotification::query()
             ->visibleTo($user)
-            ->with(['creator', 'reads' => fn ($query) => $query->where('user_id', $user->id)])
+            ->with(['creator', 'reads' => fn ($query) => $query->where('user_id', $user->id)]);
+
+        $notifications = $query
             ->latest()
-            ->paginate(12)
+            ->paginate(TablePageSize::resolve(request(), $query))
             ->withQueryString()
             ->through(fn (SystemNotification $notification): array => [
                 'id' => $notification->id,

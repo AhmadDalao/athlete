@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { WorkspaceMetricCard, WorkspacePanel, WorkspaceSectionHeading } from '@/components/workspace-primitives';
+import { WorkspaceMetricCard, WorkspacePanel, WorkspaceSectionHeading, WorkspaceTablePageSize } from '@/components/workspace-primitives';
 import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -38,6 +38,7 @@ interface EmailPaginator {
     prev_page_url: string | null;
     next_page_url: string | null;
     total: number;
+    per_page?: number | string;
 }
 
 interface EmailLogsProps {
@@ -47,6 +48,7 @@ interface EmailLogsProps {
         type: string | null;
         date_from: string | null;
         date_to: string | null;
+        per_page: string;
     };
     summary: {
         totalAttempts: number;
@@ -89,12 +91,14 @@ function emailLogFilterPayload({
     type,
     dateFrom,
     dateTo,
+    perPage,
 }: {
     q: string;
     status: string;
     type: string;
     dateFrom: string;
     dateTo: string;
+    perPage: string;
 }) {
     return {
         q: q.trim() || undefined,
@@ -102,6 +106,7 @@ function emailLogFilterPayload({
         type: type || undefined,
         date_from: dateFrom || undefined,
         date_to: dateTo || undefined,
+        per_page: perPage,
     };
 }
 
@@ -126,7 +131,8 @@ export default function EmailLogs({ filters, summary, statuses, types, logs }: E
     const [type, setType] = useState(filters.type ?? '');
     const [dateFrom, setDateFrom] = useState(filters.date_from ?? '');
     const [dateTo, setDateTo] = useState(filters.date_to ?? '');
-    const filterPayload = emailLogFilterPayload({ q, status, type, dateFrom, dateTo });
+    const [perPage, setPerPage] = useState(filters.per_page ?? String(logs.per_page ?? '10'));
+    const filterPayload = emailLogFilterPayload({ q, status, type, dateFrom, dateTo, perPage });
 
     const applyFilters = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -242,6 +248,10 @@ export default function EmailLogs({ filters, summary, statuses, types, logs }: E
                         title="Mailer delivery trail."
                         description="Use this before blaming users for not receiving a reset or onboarding email."
                     />
+                    <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
+                        <WorkspaceTablePageSize value={perPage} onChange={setPerPage} />
+                        <p className="text-sm text-stone-500">Showing {logs.data.length} of {logs.total} matching emails.</p>
+                    </div>
 
                     <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
                         <table className="w-full min-w-[980px] text-left text-sm">

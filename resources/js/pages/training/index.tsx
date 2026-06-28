@@ -14,10 +14,11 @@ import {
     WorkspaceTable,
     WorkspaceTableEmpty,
     WorkspaceTableHeader,
+    WorkspaceTablePageSize,
 } from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     AlertTriangle,
     ArrowLeft,
@@ -108,6 +109,7 @@ interface TrainingPaginator {
     prev_page_url: string | null;
     next_page_url: string | null;
     total: number;
+    per_page?: number | string;
 }
 
 interface TrainingSummary {
@@ -1336,6 +1338,11 @@ export default function TrainingIndex({
     statusOptions,
     exerciseFormatHint,
 }: TrainingPageProps) {
+    const perPage = String(programs.per_page ?? '10');
+    const updatePerPage = (value: string) => {
+        router.get(route('training.index'), { per_page: value }, { only: ['summary', 'programs'], preserveScroll: true, preserveState: true, replace: true });
+    };
+
     if (viewerRole === 'athlete') {
         return <AthleteTrainingExperience summary={summary} programs={programs} statusOptions={statusOptions} />;
     }
@@ -1435,6 +1442,10 @@ export default function TrainingIndex({
                         description={`${programs.total} program record(s) in the current view.`}
                         contentClassName="space-y-4"
                     >
+                        <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
+                            <WorkspaceTablePageSize value={perPage} onChange={updatePerPage} />
+                            <p className="text-sm text-stone-500">Showing {programs.data.length} of {programs.total} matching programs.</p>
+                        </div>
                         <WorkspaceTable minWidth="min-w-[1180px]">
                             <WorkspaceTableHeader labels={['Program', 'Athlete', 'Coach', 'Status', 'Dates', 'Sessions', 'Next', 'Notes']} />
                             {programs.data.length === 0 ? (

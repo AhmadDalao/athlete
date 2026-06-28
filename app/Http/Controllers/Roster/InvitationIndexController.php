@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AthleteInvitation;
 use App\Models\User;
 use App\Support\AthleteAccess;
+use App\Support\TablePageSize;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -37,7 +38,7 @@ class InvitationIndexController extends Controller
         $invitations = (clone $query)
             ->with(['coach', 'invitedBy', 'acceptedUser'])
             ->latest()
-            ->paginate(15)
+            ->paginate(TablePageSize::resolve($request, $query))
             ->withQueryString()
             ->through(fn (AthleteInvitation $invitation): array => $this->row($invitation));
 
@@ -69,7 +70,7 @@ class InvitationIndexController extends Controller
     }
 
     /**
-     * @return array{q:string|null,status:string|null,coach_id:string|null}
+     * @return array{q:string|null,status:string|null,coach_id:string|null,per_page:string}
      */
     private function filters(Request $request): array
     {
@@ -77,11 +78,12 @@ class InvitationIndexController extends Controller
             'q' => $request->string('q')->trim()->value() ?: null,
             'status' => $request->string('status')->trim()->value() ?: null,
             'coach_id' => $request->string('coach_id')->trim()->value() ?: null,
+            'per_page' => TablePageSize::queryValue($request),
         ];
     }
 
     /**
-     * @param  array{q:string|null,status:string|null,coach_id:string|null}  $filters
+     * @param  array{q:string|null,status:string|null,coach_id:string|null,per_page:string}  $filters
      */
     private function filteredQuery(User $viewer, array $filters, bool $adminMode): Builder
     {

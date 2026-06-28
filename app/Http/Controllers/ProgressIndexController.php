@@ -9,6 +9,7 @@ use App\Models\AthleteCheckIn;
 use App\Models\TrainingProgram;
 use App\Models\User;
 use App\Services\AthleteProgressAnalyticsService;
+use App\Support\TablePageSize;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -140,15 +141,17 @@ class ProgressIndexController extends Controller
      */
     private function athletesPayload(User $viewer, AthleteProgressAnalyticsService $progressAnalytics): array
     {
-        $athletes = $this->visibleAthletesQuery($viewer)
+        $query = $this->visibleAthletesQuery($viewer)
             ->with([
                 'latestAthleteCheckIn',
                 'deviceConnections.latestSnapshot',
                 'athleteAssignments.coach.roles',
                 'trainingProgramsAsAthlete.coach.roles',
-            ])
+            ]);
+
+        $athletes = $query
             ->orderBy('name')
-            ->paginate(10)
+            ->paginate(TablePageSize::resolve(request(), $query))
             ->withQueryString()
             ->through(function (User $athlete) use ($progressAnalytics): array {
                 $progressReport = $progressAnalytics->forUser($athlete);
@@ -188,6 +191,7 @@ class ProgressIndexController extends Controller
             'prev_page_url' => $athletes->previousPageUrl(),
             'next_page_url' => $athletes->nextPageUrl(),
             'total' => $athletes->total(),
+            'per_page' => TablePageSize::queryValue(request()),
         ];
     }
 

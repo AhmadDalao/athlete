@@ -14,6 +14,7 @@ import {
     WorkspaceTable,
     WorkspaceTableEmpty,
     WorkspaceTableHeader,
+    WorkspaceTablePageSize,
 } from '@/components/workspace-primitives';
 import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
@@ -59,6 +60,7 @@ interface FilePaginator {
     prev_page_url: string | null;
     next_page_url: string | null;
     total: number;
+    per_page?: number | string;
 }
 
 interface AdminFilesProps {
@@ -68,6 +70,7 @@ interface AdminFilesProps {
         category: string | null;
         visibility: string | null;
         athlete_id: string | null;
+        per_page: string;
     };
     summary: {
         total: number;
@@ -127,12 +130,14 @@ function fileFilterPayload({
     category,
     visibility,
     athleteId,
+    perPage,
 }: {
     q: string;
     status: string;
     category: string;
     visibility: string;
     athleteId: string;
+    perPage: string;
 }) {
     return {
         q: q.trim() || undefined,
@@ -140,6 +145,7 @@ function fileFilterPayload({
         category: category === 'all' ? undefined : category,
         visibility: visibility === 'all' ? undefined : visibility,
         athlete_id: athleteId === 'all' ? undefined : athleteId,
+        per_page: perPage,
     };
 }
 
@@ -303,7 +309,8 @@ export default function AdminFiles({ filters, summary, files, athleteOptions, fi
     const [category, setCategory] = useState(filters.category ?? 'all');
     const [visibility, setVisibility] = useState(filters.visibility ?? 'all');
     const [athleteId, setAthleteId] = useState(filters.athlete_id ?? 'all');
-    const filterPayload = fileFilterPayload({ q, status, category, visibility, athleteId });
+    const [perPage, setPerPage] = useState(filters.per_page ?? String(files.per_page ?? '10'));
+    const filterPayload = fileFilterPayload({ q, status, category, visibility, athleteId, perPage });
 
     const applyFilters = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -439,6 +446,10 @@ export default function AdminFiles({ filters, summary, files, athleteOptions, fi
                         description="Open the athlete profile, download the file, or move/archive it without guessing where it lives."
                     />
                     <WorkspacePanel title="Files" description={`${files.total} file record(s) match the current filters.`} contentClassName="space-y-4">
+                        <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
+                            <WorkspaceTablePageSize value={perPage} onChange={setPerPage} />
+                            <p className="text-sm text-stone-500">Showing {files.data.length} of {files.total} matching files.</p>
+                        </div>
                         <WorkspaceTable minWidth="min-w-[1260px]">
                             <WorkspaceTableHeader labels={['Athlete', 'File', 'Category', 'Visibility', 'Status', 'Size', 'Uploaded', 'Notes', 'Actions']} />
                             {files.data.length === 0 ? (

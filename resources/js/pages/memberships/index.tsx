@@ -14,11 +14,12 @@ import {
     WorkspaceTable,
     WorkspaceTableEmpty,
     WorkspaceTableHeader,
+    WorkspaceTablePageSize,
 } from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { AlertTriangle, ArrowLeft, ArrowRight, CreditCard, ReceiptText, Settings2, ShieldCheck, Timer } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 
@@ -82,6 +83,7 @@ interface MembershipPaginator {
     prev_page_url: string | null;
     next_page_url: string | null;
     total: number;
+    per_page?: number | string;
 }
 
 interface Option {
@@ -95,6 +97,7 @@ interface MembershipPageProps {
     scopeLabel: string;
     filters: {
         status: string | null;
+        per_page: string;
     };
     summary: {
         totalMemberships: number;
@@ -664,6 +667,14 @@ export default function MembershipIndex({
     paymentEventTypes,
     paymentEventStatuses,
 }: MembershipPageProps) {
+    const perPage = filters.per_page ?? String(memberships.per_page ?? '10');
+    const updatePerPage = (value: string) => {
+        router.get(
+            route('memberships.index'),
+            { ...(filters.status ? { status: filters.status } : {}), per_page: value },
+            { only: ['filters', 'summary', 'memberships'], preserveScroll: true, preserveState: true, replace: true },
+        );
+    };
     const primaryMembership = memberships.data[0] ?? null;
     const recentPaymentActivity = memberships.data
         .flatMap((membership) =>
@@ -864,7 +875,10 @@ export default function MembershipIndex({
                                 {statusFilters.map((filter) => (
                                     <Link
                                         key={filter.label}
-                                        href={route('memberships.index', filter.value ? { status: filter.value } : {})}
+                                        href={route('memberships.index', {
+                                            ...(filter.value ? { status: filter.value } : {}),
+                                            per_page: perPage,
+                                        })}
                                         preserveScroll
                                         preserveState
                                         replace
@@ -880,6 +894,10 @@ export default function MembershipIndex({
                                     </Link>
                                 ))}
                             </div>
+                        </div>
+                        <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
+                            <WorkspaceTablePageSize value={perPage} onChange={updatePerPage} />
+                            <p className="text-sm text-stone-500">Showing {memberships.data.length} of {memberships.total} matching memberships.</p>
                         </div>
 
                         <WorkspaceTable minWidth="min-w-[1180px]">

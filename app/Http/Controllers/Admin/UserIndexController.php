@@ -8,6 +8,7 @@ use App\Enums\SignupMethod;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\PermissionCatalog;
+use App\Support\TablePageSize;
 use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -51,7 +52,7 @@ class UserIndexController extends Controller
 
         $users = (clone $baseQuery)
             ->latest()
-            ->paginate(12)
+            ->paginate(TablePageSize::resolve(request(), $baseQuery))
             ->withQueryString()
             ->through(function (User $user): array {
                 $currentMembership = $user->currentMembership();
@@ -91,6 +92,7 @@ class UserIndexController extends Controller
                 'q' => $search,
                 'role' => $roleFilter,
                 'channel' => $channelFilter,
+                'per_page' => TablePageSize::queryValue(request()),
             ],
             'summary' => [
                 'totalUsers' => User::query()->count(),

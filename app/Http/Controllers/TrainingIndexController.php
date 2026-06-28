@@ -10,6 +10,7 @@ use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use App\Models\User;
 use App\Models\WorkoutLog;
+use App\Support\TablePageSize;
 use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -41,7 +42,7 @@ class TrainingIndexController extends Controller
                 end"
             )
             ->orderByDesc('start_date')
-            ->paginate(8)
+            ->paginate(TablePageSize::resolve(request(), $baseQuery))
             ->withQueryString()
             ->through(fn (TrainingProgram $program): array => [
                 'id' => $program->id,

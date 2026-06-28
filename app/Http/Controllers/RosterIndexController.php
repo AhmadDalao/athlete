@@ -11,6 +11,7 @@ use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use App\Models\User;
 use App\Services\CoachWeeklyBriefService;
+use App\Support\TablePageSize;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -44,7 +45,7 @@ class RosterIndexController extends Controller
                 end"
             )
             ->orderByDesc('started_at')
-            ->paginate(8)
+            ->paginate(TablePageSize::resolve($request, $baseQuery))
             ->withQueryString()
             ->through(fn (CoachAthleteAssignment $assignment): array => $this->assignmentPayload($assignment, $coachWeeklyBriefs));
 

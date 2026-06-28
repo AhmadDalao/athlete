@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { WorkspaceMetricCard, WorkspacePanel, WorkspaceSectionHeading } from '@/components/workspace-primitives';
+import { WorkspaceMetricCard, WorkspacePanel, WorkspaceSectionHeading, WorkspaceTablePageSize } from '@/components/workspace-primitives';
 import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -35,6 +35,7 @@ interface AuditPaginator {
     prev_page_url: string | null;
     next_page_url: string | null;
     total: number;
+    per_page?: number | string;
 }
 
 interface AuditLogProps {
@@ -44,6 +45,7 @@ interface AuditLogProps {
         entity: string | null;
         date_from: string | null;
         date_to: string | null;
+        per_page: string;
     };
     summary: {
         totalEvents: number;
@@ -70,12 +72,14 @@ function auditFilterPayload({
     entity,
     dateFrom,
     dateTo,
+    perPage,
 }: {
     q: string;
     action: string;
     entity: string;
     dateFrom: string;
     dateTo: string;
+    perPage: string;
 }) {
     return {
         q: q.trim() || undefined,
@@ -83,6 +87,7 @@ function auditFilterPayload({
         entity: entity || undefined,
         date_from: dateFrom || undefined,
         date_to: dateTo || undefined,
+        per_page: perPage,
     };
 }
 
@@ -107,7 +112,8 @@ export default function AuditLog({ filters, summary, actions, entities, logs }: 
     const [entity, setEntity] = useState(filters.entity ?? '');
     const [dateFrom, setDateFrom] = useState(filters.date_from ?? '');
     const [dateTo, setDateTo] = useState(filters.date_to ?? '');
-    const filterPayload = auditFilterPayload({ q, action, entity, dateFrom, dateTo });
+    const [perPage, setPerPage] = useState(filters.per_page ?? String(logs.per_page ?? '10'));
+    const filterPayload = auditFilterPayload({ q, action, entity, dateFrom, dateTo, perPage });
 
     const applyFilters = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -228,6 +234,10 @@ export default function AuditLog({ filters, summary, actions, entities, logs }: 
                         title="Recorded platform actions."
                         description="This table is intentionally boring: who changed what, when, and from where."
                     />
+                    <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
+                        <WorkspaceTablePageSize value={perPage} onChange={setPerPage} />
+                        <p className="text-sm text-stone-500">Showing {logs.data.length} of {logs.total} matching events.</p>
+                    </div>
 
                     <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
                         <table className="w-full min-w-[980px] text-left text-sm">

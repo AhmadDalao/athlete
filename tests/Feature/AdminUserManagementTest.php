@@ -52,6 +52,42 @@ class AdminUserManagementTest extends TestCase
             );
     }
 
+    public function test_admin_user_index_supports_table_page_size_options(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(RoleName::Admin);
+
+        User::factory()
+            ->count(14)
+            ->create()
+            ->each(fn (User $user) => $user->assignRole(RoleName::Athlete));
+
+        $this->actingAs($admin)
+            ->get('/admin/users?per_page=10')
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('admin/users/index')
+                ->where('filters.per_page', '10')
+                ->where('users.total', 15)
+                ->has('users.data', 10)
+            );
+
+        $this->actingAs($admin)
+            ->get('/admin/users?per_page=25')
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('filters.per_page', '25')
+                ->where('users.total', 15)
+                ->has('users.data', 15)
+            );
+
+        $this->actingAs($admin)
+            ->get('/admin/users?per_page=all')
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('filters.per_page', 'all')
+                ->where('users.total', 15)
+                ->has('users.data', 15)
+            );
+    }
+
     public function test_owner_can_see_owner_role_in_the_admin_user_index(): void
     {
         $owner = User::factory()->create();

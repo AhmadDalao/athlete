@@ -14,6 +14,7 @@ import {
     WorkspaceTable,
     WorkspaceTableEmpty,
     WorkspaceTableHeader,
+    WorkspaceTablePageSize,
 } from '@/components/workspace-primitives';
 import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
@@ -36,6 +37,7 @@ interface Paginated<T> {
     to: number | null;
     prev_page_url: string | null;
     next_page_url: string | null;
+    per_page?: number | string;
 }
 
 interface AthleteFileRow {
@@ -55,20 +57,32 @@ interface AthleteFileRow {
 }
 
 interface FilterState {
-    assignments: { q: string | null; status: string | null };
-    memberships: { q: string | null; status: string | null };
-    payments: { q: string | null; status: string | null; type: string | null; from: string | null; to: string | null };
-    devices: { q: string | null; status: string | null; provider: string | null };
-    sessions: { q: string | null; status: string | null; from: string | null; to: string | null };
-    setLogs: { q: string | null; completed: string | null; from: string | null; to: string | null };
-    progress: { q: string | null; from: string | null; to: string | null };
-    files: { q: string | null; status: string | null; category: string | null; visibility: string | null };
-    messages: { q: string | null; read: string | null };
+    assignments: { q: string | null; status: string | null; per_page: string };
+    memberships: { q: string | null; status: string | null; per_page: string };
+    payments: { q: string | null; status: string | null; type: string | null; from: string | null; to: string | null; per_page: string };
+    devices: { q: string | null; status: string | null; provider: string | null; per_page: string };
+    sessions: { q: string | null; status: string | null; from: string | null; to: string | null; per_page: string };
+    setLogs: { q: string | null; completed: string | null; from: string | null; to: string | null; per_page: string };
+    progress: { q: string | null; from: string | null; to: string | null; per_page: string };
+    files: { q: string | null; status: string | null; category: string | null; visibility: string | null; per_page: string };
+    messages: { q: string | null; read: string | null; per_page: string };
 }
 
 interface QueryPayload {
     [key: string]: string;
 }
+
+const tableSectionPageSizeKeys: Record<string, string> = {
+    assignments: 'assignments_per_page',
+    memberships: 'memberships_per_page',
+    payments: 'payments_per_page',
+    devices: 'devices_per_page',
+    sessions: 'sessions_per_page',
+    'set-logs': 'sets_per_page',
+    progress: 'progress_per_page',
+    files: 'files_per_page',
+    messages: 'messages_per_page',
+};
 
 interface AthleteShowProps {
     profile: {
@@ -358,33 +372,42 @@ function initialQuery(filters: FilterState): QueryPayload {
     return {
         assignments_q: filters.assignments.q ?? '',
         assignments_status: filters.assignments.status ?? 'all',
+        assignments_per_page: filters.assignments.per_page ?? '10',
         memberships_q: filters.memberships.q ?? '',
         memberships_status: filters.memberships.status ?? 'all',
+        memberships_per_page: filters.memberships.per_page ?? '10',
         payments_q: filters.payments.q ?? '',
         payments_status: filters.payments.status ?? 'all',
         payments_type: filters.payments.type ?? 'all',
         payments_from: filters.payments.from ?? '',
         payments_to: filters.payments.to ?? '',
+        payments_per_page: filters.payments.per_page ?? '10',
         devices_q: filters.devices.q ?? '',
         devices_status: filters.devices.status ?? 'all',
         devices_provider: filters.devices.provider ?? 'all',
+        devices_per_page: filters.devices.per_page ?? '10',
         sessions_q: filters.sessions.q ?? '',
         sessions_status: filters.sessions.status ?? 'all',
         sessions_from: filters.sessions.from ?? '',
         sessions_to: filters.sessions.to ?? '',
+        sessions_per_page: filters.sessions.per_page ?? '10',
         sets_q: filters.setLogs.q ?? '',
         sets_completed: filters.setLogs.completed ?? 'all',
         sets_from: filters.setLogs.from ?? '',
         sets_to: filters.setLogs.to ?? '',
+        sets_per_page: filters.setLogs.per_page ?? '10',
         progress_q: filters.progress.q ?? '',
         progress_from: filters.progress.from ?? '',
         progress_to: filters.progress.to ?? '',
+        progress_per_page: filters.progress.per_page ?? '10',
         files_q: filters.files.q ?? '',
         files_status: filters.files.status ?? 'all',
         files_category: filters.files.category ?? 'all',
         files_visibility: filters.files.visibility ?? 'all',
+        files_per_page: filters.files.per_page ?? '10',
         messages_q: filters.messages.q ?? '',
         messages_read: filters.messages.read ?? 'all',
+        messages_per_page: filters.messages.per_page ?? '10',
     };
 }
 
@@ -733,6 +756,8 @@ function TableSection<T>({
     empty: string;
     children: ReactNode;
 }) {
+    const perPageKey = tableSectionPageSizeKeys[section] ?? `${section}_per_page`;
+
     return (
         <WorkspacePanel
             title={title}
@@ -741,12 +766,18 @@ function TableSection<T>({
         >
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <Filters controls={controls} query={query} setField={setField} />
-                <Button asChild variant="outline" className="w-full shrink-0 border-stone-300 bg-white lg:w-auto">
-                    <a href={route('athletes.exports.show', { user: query.user_id, section, ...query })}>
-                        <Download className="size-4" />
-                        Export CSV
-                    </a>
-                </Button>
+                <div className="flex w-full shrink-0 flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
+                    <WorkspaceTablePageSize
+                        value={query[perPageKey] ?? paginator.per_page ?? '10'}
+                        onChange={(value) => setField(perPageKey, value)}
+                    />
+                    <Button asChild variant="outline" className="w-full border-stone-300 bg-white sm:w-auto">
+                        <a href={route('athletes.exports.show', { user: query.user_id, section, ...query })}>
+                            <Download className="size-4" />
+                            Export CSV
+                        </a>
+                    </Button>
+                </div>
             </div>
             <WorkspaceTable minWidth={minWidth}>
                 <WorkspaceTableHeader labels={headers} />

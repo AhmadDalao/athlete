@@ -43,10 +43,12 @@ class AthleteProfileTables
             'assignments' => [
                 'q' => $this->clean($request, 'assignments_q'),
                 'status' => $this->clean($request, 'assignments_status'),
+                'per_page' => TablePageSize::queryValue($request, 'assignments_per_page'),
             ],
             'memberships' => [
                 'q' => $this->clean($request, 'memberships_q'),
                 'status' => $this->clean($request, 'memberships_status'),
+                'per_page' => TablePageSize::queryValue($request, 'memberships_per_page'),
             ],
             'payments' => [
                 'q' => $this->clean($request, 'payments_q'),
@@ -54,38 +56,45 @@ class AthleteProfileTables
                 'type' => $this->clean($request, 'payments_type'),
                 'from' => $this->clean($request, 'payments_from'),
                 'to' => $this->clean($request, 'payments_to'),
+                'per_page' => TablePageSize::queryValue($request, 'payments_per_page'),
             ],
             'devices' => [
                 'q' => $this->clean($request, 'devices_q'),
                 'status' => $this->clean($request, 'devices_status'),
                 'provider' => $this->clean($request, 'devices_provider'),
+                'per_page' => TablePageSize::queryValue($request, 'devices_per_page'),
             ],
             'sessions' => [
                 'q' => $this->clean($request, 'sessions_q'),
                 'status' => $this->clean($request, 'sessions_status'),
                 'from' => $this->clean($request, 'sessions_from'),
                 'to' => $this->clean($request, 'sessions_to'),
+                'per_page' => TablePageSize::queryValue($request, 'sessions_per_page'),
             ],
             'setLogs' => [
                 'q' => $this->clean($request, 'sets_q'),
                 'completed' => $this->clean($request, 'sets_completed'),
                 'from' => $this->clean($request, 'sets_from'),
                 'to' => $this->clean($request, 'sets_to'),
+                'per_page' => TablePageSize::queryValue($request, 'sets_per_page'),
             ],
             'progress' => [
                 'q' => $this->clean($request, 'progress_q'),
                 'from' => $this->clean($request, 'progress_from'),
                 'to' => $this->clean($request, 'progress_to'),
+                'per_page' => TablePageSize::queryValue($request, 'progress_per_page'),
             ],
             'files' => [
                 'q' => $this->clean($request, 'files_q'),
                 'status' => $this->clean($request, 'files_status'),
                 'category' => $this->clean($request, 'files_category'),
                 'visibility' => $this->clean($request, 'files_visibility'),
+                'per_page' => TablePageSize::queryValue($request, 'files_per_page'),
             ],
             'messages' => [
                 'q' => $this->clean($request, 'messages_q'),
                 'read' => $this->clean($request, 'messages_read'),
+                'per_page' => TablePageSize::queryValue($request, 'messages_per_page'),
             ],
         ];
     }
@@ -96,57 +105,67 @@ class AthleteProfileTables
      */
     public function tables(User $viewer, User $athlete, array $filters): array
     {
+        $assignmentsQuery = $this->assignmentsQuery($viewer, $athlete, $filters['assignments'])
+            ->latest('started_at');
+        $membershipsQuery = $this->membershipsQuery($athlete, $filters['memberships'])
+            ->with('plan')
+            ->latest('starts_at');
+        $paymentsQuery = $this->paymentsQuery($athlete, $filters['payments'])
+            ->latest('event_at');
+        $devicesQuery = $this->devicesQuery($athlete, $filters['devices'])
+            ->with('latestSnapshot')
+            ->latest();
+        $sessionsQuery = $this->sessionsQuery($viewer, $athlete, $filters['sessions'])
+            ->with(['program.coach', 'workoutLog.setLogs'])
+            ->orderByDesc('scheduled_date')
+            ->orderByDesc('id');
+        $setLogsQuery = $this->setLogsQuery($viewer, $athlete, $filters['setLogs'])
+            ->with(['session.program.coach'])
+            ->orderByDesc('id');
+        $progressQuery = $this->progressQuery($athlete, $filters['progress'])
+            ->latest('logged_date');
+        $filesQuery = $this->filesQuery($viewer, $athlete, $filters['files'])
+            ->with('uploadedBy')
+            ->latest();
+        $messagesQuery = $this->messagesQuery($viewer, $athlete, $filters['messages'])
+            ->with(['assignment.coach', 'sender'])
+            ->latest();
+
         return [
-            'assignments' => $this->assignmentsQuery($viewer, $athlete, $filters['assignments'])
-                ->latest('started_at')
-                ->paginate(8, ['*'], 'assignments_page')
+            'assignments' => $assignmentsQuery
+                ->paginate(TablePageSize::resolveValue($filters['assignments']['per_page'], $assignmentsQuery), ['*'], 'assignments_page')
                 ->withQueryString()
                 ->through(fn (CoachAthleteAssignment $assignment): array => $this->assignmentRow($assignment)),
-            'memberships' => $this->membershipsQuery($athlete, $filters['memberships'])
-                ->with('plan')
-                ->latest('starts_at')
-                ->paginate(8, ['*'], 'memberships_page')
+            'memberships' => $membershipsQuery
+                ->paginate(TablePageSize::resolveValue($filters['memberships']['per_page'], $membershipsQuery), ['*'], 'memberships_page')
                 ->withQueryString()
                 ->through(fn (Membership $membership): array => $this->membershipRow($membership)),
-            'payments' => $this->paymentsQuery($athlete, $filters['payments'])
-                ->latest('event_at')
-                ->paginate(8, ['*'], 'payments_page')
+            'payments' => $paymentsQuery
+                ->paginate(TablePageSize::resolveValue($filters['payments']['per_page'], $paymentsQuery), ['*'], 'payments_page')
                 ->withQueryString()
                 ->through(fn (PaymentEvent $event): array => $this->paymentRow($event)),
-            'devices' => $this->devicesQuery($athlete, $filters['devices'])
-                ->with('latestSnapshot')
-                ->latest()
-                ->paginate(8, ['*'], 'devices_page')
+            'devices' => $devicesQuery
+                ->paginate(TablePageSize::resolveValue($filters['devices']['per_page'], $devicesQuery), ['*'], 'devices_page')
                 ->withQueryString()
                 ->through(fn (DeviceConnection $connection): array => $this->deviceRow($connection)),
-            'sessions' => $this->sessionsQuery($viewer, $athlete, $filters['sessions'])
-                ->with(['program.coach', 'workoutLog.setLogs'])
-                ->orderByDesc('scheduled_date')
-                ->orderByDesc('id')
-                ->paginate(10, ['*'], 'sessions_page')
+            'sessions' => $sessionsQuery
+                ->paginate(TablePageSize::resolveValue($filters['sessions']['per_page'], $sessionsQuery), ['*'], 'sessions_page')
                 ->withQueryString()
                 ->through(fn (TrainingSession $session): array => $this->sessionRow($session)),
-            'setLogs' => $this->setLogsQuery($viewer, $athlete, $filters['setLogs'])
-                ->with(['session.program.coach'])
-                ->orderByDesc('id')
-                ->paginate(10, ['*'], 'sets_page')
+            'setLogs' => $setLogsQuery
+                ->paginate(TablePageSize::resolveValue($filters['setLogs']['per_page'], $setLogsQuery), ['*'], 'sets_page')
                 ->withQueryString()
                 ->through(fn (WorkoutSetLog $setLog): array => $this->setLogRow($setLog)),
-            'progress' => $this->progressQuery($athlete, $filters['progress'])
-                ->latest('logged_date')
-                ->paginate(10, ['*'], 'progress_page')
+            'progress' => $progressQuery
+                ->paginate(TablePageSize::resolveValue($filters['progress']['per_page'], $progressQuery), ['*'], 'progress_page')
                 ->withQueryString()
                 ->through(fn (AthleteCheckIn $checkIn): array => $this->progressRow($checkIn)),
-            'files' => $this->filesQuery($viewer, $athlete, $filters['files'])
-                ->with('uploadedBy')
-                ->latest()
-                ->paginate(10, ['*'], 'files_page')
+            'files' => $filesQuery
+                ->paginate(TablePageSize::resolveValue($filters['files']['per_page'], $filesQuery), ['*'], 'files_page')
                 ->withQueryString()
                 ->through(fn (AthleteFile $file): array => $this->fileRow($file)),
-            'messages' => $this->messagesQuery($viewer, $athlete, $filters['messages'])
-                ->with(['assignment.coach', 'sender'])
-                ->latest()
-                ->paginate(10, ['*'], 'messages_page')
+            'messages' => $messagesQuery
+                ->paginate(TablePageSize::resolveValue($filters['messages']['per_page'], $messagesQuery), ['*'], 'messages_page')
                 ->withQueryString()
                 ->through(fn (CoachAthleteMessage $message): array => $this->messageRow($message)),
         ];

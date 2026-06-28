@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { WorkspaceHero, WorkspacePanel } from '@/components/workspace-primitives';
+import { WorkspaceHero, WorkspacePanel, WorkspaceTablePageSize } from '@/components/workspace-primitives';
 import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -76,6 +76,7 @@ interface UserPaginator {
     prev_page_url: string | null;
     next_page_url: string | null;
     total: number;
+    per_page?: number | string;
 }
 
 interface AdminUsersPageProps {
@@ -83,6 +84,7 @@ interface AdminUsersPageProps {
         q: string | null;
         role: string | null;
         channel: string | null;
+        per_page: string;
     };
     summary: {
         totalUsers: number;
@@ -151,11 +153,12 @@ function formatDate(value: string | null) {
     return value ?? 'Not set';
 }
 
-function userFilterPayload({ search, role, channel }: { search: string; role: string; channel: string }) {
+function userFilterPayload({ search, role, channel, perPage }: { search: string; role: string; channel: string; perPage: string }) {
     return {
         q: search.trim() || undefined,
         role: role === 'all' ? undefined : role,
         channel: channel === 'all' ? undefined : channel,
+        per_page: perPage,
     };
 }
 
@@ -635,8 +638,9 @@ export default function AdminUsersIndex({
     const [search, setSearch] = useState(filters.q ?? '');
     const [role, setRole] = useState(filters.role ?? 'all');
     const [channel, setChannel] = useState(filters.channel ?? 'all');
+    const [perPage, setPerPage] = useState(filters.per_page ?? String(users.per_page ?? '10'));
     const baseRoute = route('admin.users.index');
-    const filterPayload = userFilterPayload({ search, role, channel });
+    const filterPayload = userFilterPayload({ search, role, channel, perPage });
 
     const applyFilters = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -759,6 +763,11 @@ export default function AdminUsersIndex({
                                 </p>
                             </div>
                         ) : (
+                            <>
+                            <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
+                                <WorkspaceTablePageSize value={perPage} onChange={setPerPage} />
+                                <p className="text-sm text-stone-500">Showing {users.data.length} of {users.total} matching users.</p>
+                            </div>
                             <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
                                 <table className="w-full min-w-[1080px] text-left text-sm">
                                     <thead className="bg-stone-50 text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
@@ -850,6 +859,7 @@ export default function AdminUsersIndex({
                                     </tbody>
                                 </table>
                             </div>
+                            </>
                         )}
                     </WorkspacePanel>
 
