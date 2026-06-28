@@ -150,6 +150,37 @@ Post-deploy smoke passed:
 - production migration status shows both new log migrations as `Ran`
 - route cache exposes `search.index`, `admin.audit-log.index`, and `admin.email-logs.index`
 
+## 2026-06-28 athlete app/workout execution deploy note
+
+Athlete web app, workout execution, messaging, API access, billing scaffolding, owner/admin permissions, and the latest light-mode dashboard overhaul were deployed to production.
+
+Runtime changes shipped:
+
+- full PHP runtime source slice deployed to `/throughline-athlete-app`
+- compiled Vite build deployed with `/build/` asset base
+- compiled build synced to both app `public/build` and subdomain `public_html/athlete/build`
+- Composer autoload refreshed through `/opt/alt/php85/usr/bin/php /usr/local/bin/composer2.phar`
+- trusted database backup created before migrations at `/home/u867436826/db-backups/athlete-20260628064145.sql.gz`
+- source snapshot created at `/home/u867436826/db-backups/athlete-source-20260628064049.tar.gz`
+- Laravel config, route, and view caches rebuilt successfully
+
+Migrations applied:
+
+- `2026_06_27_000000_add_owner_permissions_to_users`
+- `2026_06_27_010000_create_workout_set_logs_table`
+- `2026_06_27_020000_add_journal_fields_to_workout_logs_table`
+- `2026_06_27_030000_create_coach_athlete_messages_table`
+
+Post-deploy smoke passed:
+
+- public home, login, register, contact, and live manifest returned `200`
+- protected `/dashboard`, `/app`, `/messages`, and `/api-access` redirect unauthenticated users to `/login`
+- production migration status shows all four new migrations as `Ran`
+- route cache exposes athlete workout execution, messages, notifications, admin user profile, and system settings routes
+- live manifest checksum matches local and both remote build directories
+- authenticated Laravel route smoke returned `200` for admin dashboard/control center/users/settings, coach roster/training/messages, and athlete app/progress/messages/workout execution
+- public browser smoke passed on mobile width with no console errors
+
 ## Cron jobs
 
 Hostinger shared hosting does not expose `crontab` over SSH here, so add these in hPanel:

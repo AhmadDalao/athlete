@@ -694,3 +694,31 @@ This slice filled the missing operational controls that were still not product-r
 - Three new migrations applied: platform settings, system notifications, and training session video URL.
 - Laravel config, route, and view caches rebuilt.
 - Live smoke passed for public pages, protected dashboard redirect, live manifest, new route names, and public browser console checks.
+
+## 2026-06-28 athlete app and operational overhaul deployment
+
+This release shipped the athlete app workflow and the latest operational dashboard/backend slice to production at `https://athlete.ahmaddalao.com`.
+
+### Shipped
+
+- Athlete app routes for `/app` and workout execution at `/app/workouts/{trainingSession}`.
+- Per-set workout logging with completion, partial, missed, journal, and media support.
+- Coach-athlete messaging route at `/messages`.
+- API execution endpoints for future mobile/app integration.
+- Admin user profiles, owner/admin permission controls, system settings, notifications, API access, billing scaffolding, and table-first workspace improvements.
+- Light-mode dashboard compositions and updated athlete/coach/admin navigation.
+
+### Production deploy result
+
+- GitHub `main` pushed at commit `c230a02`.
+- Production DB backup created at `/home/u867436826/db-backups/athlete-20260628064145.sql.gz`.
+- Production source snapshot created at `/home/u867436826/db-backups/athlete-source-20260628064049.tar.gz`.
+- Four migrations applied: owner permissions, workout set logs, workout journal fields, and coach-athlete messages.
+- Composer autoload refreshed, Laravel caches cleared, and config/routes/views rebuilt.
+- Live manifest checksum matched local and both remote build directories.
+
+### Regression result
+
+- Local pre-push checks passed: `npm run build:athlete`, `npx eslint resources/js --max-warnings=0`, and `php artisan test`.
+- Full Laravel suite passed: 131 tests, 1223 assertions.
+- Production smoke passed for public pages, protected redirects, route cache, manifest assets, admin/coach/athlete authenticated route rendering, and mobile public browser console checks.
