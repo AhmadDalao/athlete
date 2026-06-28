@@ -19,7 +19,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { Archive, Download, Files, FileText, Search, UserRoundCheck } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Admin files', href: '/admin/files' },
@@ -117,6 +117,28 @@ function statusVariant(status: string): 'default' | 'secondary' | 'destructive' 
     }
 
     return 'outline';
+}
+
+function fileFilterPayload({
+    q,
+    status,
+    category,
+    visibility,
+    athleteId,
+}: {
+    q: string;
+    status: string;
+    category: string;
+    visibility: string;
+    athleteId: string;
+}) {
+    return {
+        q: q.trim() || undefined,
+        status: status === 'all' ? undefined : status,
+        category: category === 'all' ? undefined : category,
+        visibility: visibility === 'all' ? undefined : visibility,
+        athlete_id: athleteId === 'all' ? undefined : athleteId,
+    };
 }
 
 function EditFileDialog({ file, athleteOptions, fileOptions }: { file: FileRow; athleteOptions: Option[]; fileOptions: AdminFilesProps['fileOptions'] }) {
@@ -240,26 +262,37 @@ function EditFileDialog({ file, athleteOptions, fileOptions }: { file: FileRow; 
 }
 
 export default function AdminFiles({ filters, summary, files, athleteOptions, fileOptions }: AdminFilesProps) {
+    const baseRoute = route('admin.files.index');
     const [q, setQ] = useState(filters.q ?? '');
     const [status, setStatus] = useState(filters.status ?? 'all');
     const [category, setCategory] = useState(filters.category ?? 'all');
     const [visibility, setVisibility] = useState(filters.visibility ?? 'all');
     const [athleteId, setAthleteId] = useState(filters.athlete_id ?? 'all');
+    const didHydrate = useRef(false);
 
     const applyFilters = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        router.get(
-            route('admin.files.index'),
-            {
-                q: q || undefined,
-                status: status === 'all' ? undefined : status,
-                category: category === 'all' ? undefined : category,
-                visibility: visibility === 'all' ? undefined : visibility,
-                athlete_id: athleteId === 'all' ? undefined : athleteId,
-            },
-            { preserveScroll: true, preserveState: true },
-        );
+        router.get(baseRoute, fileFilterPayload({ q, status, category, visibility, athleteId }), { preserveScroll: true, preserveState: true, replace: true });
     };
+
+    useEffect(() => {
+        if (!didHydrate.current) {
+            didHydrate.current = true;
+
+            return;
+        }
+
+        const timeout = window.setTimeout(() => {
+            router.get(baseRoute, fileFilterPayload({ q, status, category, visibility, athleteId }), {
+                only: ['filters', 'summary', 'files'],
+                preserveScroll: true,
+                preserveState: true,
+                replace: true,
+            });
+        }, 150);
+
+        return () => window.clearTimeout(timeout);
+    }, [athleteId, baseRoute, category, q, status, visibility]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -279,7 +312,7 @@ export default function AdminFiles({ filters, summary, files, athleteOptions, fi
                                 </Link>
                             </Button>
                             <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white">
-                                <a href={route('admin.files.index', { export: 1 })}>
+                                <a href={route('admin.files.index', { ...fileFilterPayload({ q, status, category, visibility, athleteId }), export: 1 })}>
                                     <Download className="size-4" />
                                     Export CSV
                                 </a>
@@ -375,7 +408,7 @@ export default function AdminFiles({ filters, summary, files, athleteOptions, fi
                         </div>
                         <div className="flex items-end">
                             <Button asChild type="button" variant="outline" className="w-full rounded-full border-stone-300 bg-white">
-                                <Link href={route('admin.files.index')}>Reset</Link>
+                                <Link href={baseRoute}>Reset</Link>
                             </Button>
                         </div>
                     </form>

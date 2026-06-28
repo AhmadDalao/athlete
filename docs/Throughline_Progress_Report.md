@@ -767,3 +767,60 @@ This release shipped the athlete app workflow and the latest operational dashboa
 - Local pre-push checks passed: `npm run build:athlete`, `npx eslint resources/js --max-warnings=0`, and `php artisan test`.
 - Full Laravel suite passed: 131 tests, 1223 assertions.
 - Production smoke passed for public pages, protected redirects, route cache, manifest assets, admin/coach/athlete authenticated route rendering, and mobile public browser console checks.
+
+## 2026-06-28 production QA role cycle and table filter polish
+
+This cycle added dedicated production QA accounts/data and improved the table-first admin workflows that operators will use most while checking athlete ownership.
+
+### Production QA data created
+
+- Created a dedicated QA admin account for authenticated production smoke testing.
+- Created QA coach and QA athlete accounts.
+- Linked the QA coach and athlete through an active roster assignment.
+- Seeded realistic linked records:
+    - active membership and payment event
+    - WHOOP-style device connection and recovery snapshot
+    - food/body/hydration/sleep check-in
+    - active training program
+    - today's assigned workout
+    - completed historical workout with per-set execution logs
+    - coach-athlete message
+    - athlete file visible to coach and athlete
+
+### Live verification
+
+- QA admin live browser smoke passed for:
+    - dashboard
+    - control center
+    - users
+    - roster
+    - roster invites
+    - training
+    - progress
+    - memberships
+    - wearables
+    - admin invitations
+    - admin files
+    - system settings
+    - audit logs
+    - email logs
+    - API access
+- QA coach live browser smoke passed for roster, invites, training, athlete profile, progress, memberships, wearables, and messages.
+- QA athlete live browser smoke passed for `/app`, workout execution, dashboard, training, progress, memberships, wearables, messages, and their athlete profile.
+- Workout execution was tested through the live athlete UI:
+    - one set was saved from `/app/workouts/{trainingSession}`
+    - database verified the workout log as `partial`
+    - database verified 8 target set rows and 1 completed set
+
+### UI behavior improved
+
+- Admin files now auto-apply filters with an Inertia preserve-state request.
+- Roster/admin invitations now auto-apply filters with an Inertia preserve-state request.
+- Export CSV links now preserve the current filtered table state instead of exporting the unfiltered view by accident.
+
+### Regression result
+
+- `git diff --check`: passed.
+- `npx eslint resources/js --max-warnings=0`: passed.
+- `npm run build:athlete`: passed.
+- `php artisan test`: 140 tests passed, 1287 assertions.

@@ -621,6 +621,32 @@ Latest local gate before this report:
 - `php artisan test`: 140 tests passed, 1287 assertions
 - `npm run build:athlete`: passed
 
+## 2026-06-28 Live QA Cycle
+
+Dedicated production QA accounts were created for admin, coach, and athlete role testing.
+
+The QA dataset includes:
+
+- active coach-athlete assignment
+- membership and payment event
+- WHOOP-style device connection and recovery snapshot
+- food/body/hydration/sleep check-in
+- active training program
+- assigned workout for today
+- completed workout with set-level execution records
+- coach-athlete message
+- athlete file visible to coach and athlete
+
+Live role smoke passed for:
+
+- admin operations pages
+- coach roster, athlete profile, training, progress, membership, wearable, and message views
+- athlete `/app`, workout execution, training, progress, membership, wearable, message, and profile views
+
+Workout execution was verified live by saving a set from the athlete workout UI and confirming the database wrote a `partial` workout log with set-level rows.
+
+Admin files and invitations now auto-apply filters through Inertia preserve-state requests, and CSV export links include the active filter state.
+
 ## What Still Needs Work
 
 ### Must do before proper launch
@@ -639,7 +665,7 @@ Latest local gate before this report:
 
 ### Product work still needed
 
-1. Make admin/coach table filters more AJAX-like where they still require explicit submit.
+1. Continue converting remaining admin/coach table filters to instant Inertia behavior where they still require explicit submit.
 2. Add more export buttons to high-value tables:
     - athlete profile set logs
     - progress check-ins
@@ -696,4 +722,3 @@ Next phase should be boring and valuable:
 8. Start launch hardening.
 
 No new major feature should be started before live role testing proves the current cycle works end to end.
-
