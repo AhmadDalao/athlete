@@ -1,6 +1,6 @@
 # Throughline API
 
-Date: 2026-06-27
+Date: 2026-06-28
 
 ## What is live
 
@@ -10,6 +10,8 @@ The API is now split into two parts:
 - public ingest for device metric delivery
 
 This is not an OpenAPI dump yet. It is the developer doc for what is actually implemented right now.
+
+The 2026-06-28 coach ownership slice also adds internal Inertia web routes for athlete invitations, athlete profiles, and athlete files. Those routes are not external JSON API endpoints yet.
 
 ## Base rules
 
@@ -154,6 +156,28 @@ That matters:
 Production absolute base for every route in this section:
 
 `https://athlete.ahmaddalao.com`
+
+## Internal web routes for coach-owned athlete onboarding
+
+These are normal Laravel/Inertia web routes, not `/api/v1` JSON routes.
+
+| Route | Purpose | Access |
+| --- | --- | --- |
+| `GET /roster/invites` | Coach invitation table | coach/admin with `roster.invite` |
+| `POST /roster/invites` | Create athlete invitation | coach/admin with `roster.invite` |
+| `POST /roster/invites/{invitation}/resend` | Resend invite link | owning coach or admin |
+| `POST /roster/invites/{invitation}/cancel` | Cancel pending invite | owning coach or admin |
+| `GET /admin/invitations` | Platform-wide invitation table | admin with `admin.invitations.view` |
+| `GET /invites/{token}` | Public invite acceptance form | public token route |
+| `POST /invites/{token}` | Accept invite and create/link athlete | public token route |
+| `GET /athletes/{user}` | Athlete profile/detail table | assigned coach or admin |
+| `POST /athletes/{user}/files` | Upload athlete file | assigned coach/admin with file manage permission |
+| `GET /athlete-files/{athleteFile}/download` | Private file download | authorized viewer |
+| `PATCH /athlete-files/{athleteFile}` | Move/edit file metadata | assigned coach/admin; athlete move is admin-only |
+| `POST /athlete-files/{athleteFile}/archive` | Archive file | assigned coach/admin |
+| `GET /admin/files` | Platform-wide file library | admin with `athlete.files.view` |
+
+Invitation tokens are stored only as hashes. Athlete files are stored privately and downloaded through authorization checks.
 
 ### `GET /api/v1/dashboard`
 

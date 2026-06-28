@@ -1,7 +1,8 @@
 <?php
 
-use App\Http\Controllers\Admin\ControlCenterController;
 use App\Http\Controllers\Admin\AuditLogIndexController;
+use App\Http\Controllers\Admin\AthleteFileIndexController;
+use App\Http\Controllers\Admin\ControlCenterController;
 use App\Http\Controllers\Admin\EmailLogIndexController;
 use App\Http\Controllers\Admin\SystemSettingsController;
 use App\Http\Controllers\Admin\UserIndexController;
@@ -14,6 +15,11 @@ use App\Http\Controllers\ApiAccessTokenStoreController;
 use App\Http\Controllers\AthleteCheckInStoreController;
 use App\Http\Controllers\AthleteCheckInUpdateController;
 use App\Http\Controllers\AthleteAppController;
+use App\Http\Controllers\Athlete\FileArchiveController as AthleteFileArchiveController;
+use App\Http\Controllers\Athlete\FileDownloadController as AthleteFileDownloadController;
+use App\Http\Controllers\Athlete\FileStoreController as AthleteFileStoreController;
+use App\Http\Controllers\Athlete\FileUpdateController as AthleteFileUpdateController;
+use App\Http\Controllers\Athlete\ProfileShowController as AthleteProfileShowController;
 use App\Http\Controllers\AthleteWorkoutCompleteController;
 use App\Http\Controllers\AthleteWorkoutSetStoreController;
 use App\Http\Controllers\AthleteWorkoutShowController;
@@ -24,6 +30,8 @@ use App\Http\Controllers\CoachDirectoryController;
 use App\Http\Controllers\ContactPageController;
 use App\Http\Controllers\ContactSubmissionStoreController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Invitation\AcceptShowController as InvitationAcceptShowController;
+use App\Http\Controllers\Invitation\AcceptStoreController as InvitationAcceptStoreController;
 use App\Http\Controllers\MembershipIndexController;
 use App\Http\Controllers\MembershipUpdateController;
 use App\Http\Controllers\MessageIndexController;
@@ -36,6 +44,10 @@ use App\Http\Controllers\PaymentEventStoreController;
 use App\Http\Controllers\ProgressIndexController;
 use App\Http\Controllers\RosterAssignmentStoreController;
 use App\Http\Controllers\RosterAssignmentUpdateController;
+use App\Http\Controllers\Roster\InvitationCancelController as RosterInvitationCancelController;
+use App\Http\Controllers\Roster\InvitationIndexController as RosterInvitationIndexController;
+use App\Http\Controllers\Roster\InvitationResendController as RosterInvitationResendController;
+use App\Http\Controllers\Roster\InvitationStoreController as RosterInvitationStoreController;
 use App\Http\Controllers\SearchIndexController;
 use App\Http\Controllers\RosterIndexController;
 use App\Http\Controllers\TrainingIndexController;
@@ -62,6 +74,8 @@ Route::post('webhooks/stripe', StripeWebhookController::class)
 Route::post('webhooks/whoop', WhoopWebhookController::class)
     ->withoutMiddleware(ValidateCsrfToken::class)
     ->name('wearables.whoop.webhook');
+Route::get('invites/{token}', InvitationAcceptShowController::class)->name('invitations.accept.show');
+Route::post('invites/{token}', InvitationAcceptStoreController::class)->name('invitations.accept.store');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('api-access', ApiAccessController::class)->name('api-access.index');
@@ -85,8 +99,17 @@ Route::middleware(['auth'])->group(function () {
     Route::post('progress/check-ins', AthleteCheckInStoreController::class)->name('progress.check-ins.store');
     Route::patch('progress/check-ins/{athleteCheckIn}', AthleteCheckInUpdateController::class)->name('progress.check-ins.update');
     Route::get('roster', RosterIndexController::class)->name('roster.index');
+    Route::get('roster/invites', RosterInvitationIndexController::class)->name('roster.invitations.index');
+    Route::post('roster/invites', RosterInvitationStoreController::class)->name('roster.invitations.store');
+    Route::post('roster/invites/{invitation}/resend', RosterInvitationResendController::class)->name('roster.invitations.resend');
+    Route::post('roster/invites/{invitation}/cancel', RosterInvitationCancelController::class)->name('roster.invitations.cancel');
     Route::post('roster/assignments', RosterAssignmentStoreController::class)->name('roster.assignments.store');
     Route::patch('roster/assignments/{assignment}', RosterAssignmentUpdateController::class)->name('roster.assignments.update');
+    Route::get('athletes/{user}', AthleteProfileShowController::class)->name('athletes.show');
+    Route::post('athletes/{user}/files', AthleteFileStoreController::class)->name('athletes.files.store');
+    Route::patch('athlete-files/{athleteFile}', AthleteFileUpdateController::class)->name('athlete-files.update');
+    Route::post('athlete-files/{athleteFile}/archive', AthleteFileArchiveController::class)->name('athlete-files.archive');
+    Route::get('athlete-files/{athleteFile}/download', AthleteFileDownloadController::class)->name('athlete-files.download');
     Route::get('training', TrainingIndexController::class)->name('training.index');
     Route::post('training/programs', TrainingProgramStoreController::class)->name('training.programs.store');
     Route::post('training/programs/{trainingProgram}/sessions', TrainingSessionStoreController::class)->name('training.programs.sessions.store');
@@ -98,6 +121,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('wearables/whoop/connect', WhoopConnectController::class)->name('wearables.whoop.connect');
     Route::get('wearables/whoop/callback', WhoopCallbackController::class)->name('wearables.whoop.callback');
     Route::get('admin/control-center', ControlCenterController::class)->name('admin.control-center');
+    Route::get('admin/invitations', RosterInvitationIndexController::class)->name('admin.invitations.index');
+    Route::get('admin/files', AthleteFileIndexController::class)->name('admin.files.index');
     Route::get('admin/audit-log', AuditLogIndexController::class)->name('admin.audit-log.index');
     Route::get('admin/email-logs', EmailLogIndexController::class)->name('admin.email-logs.index');
     Route::get('admin/system-settings', [SystemSettingsController::class, 'index'])->name('admin.system-settings.index');

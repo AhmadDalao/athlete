@@ -21,6 +21,9 @@ Recovery-aware coaching platform for coaches and serious recreational athletes.
 - live Google and Apple OAuth with role-aware account creation and account linking
 - live phone OTP sign-up and login with session-safe verification
 - coach and athlete dashboards backed by real membership, roster, training, and device data
+- coach athlete invitations with secure accept links and automatic roster assignment
+- coach-facing athlete profiles for schedules, completed sessions, progress, devices, membership, messages, and files
+- athlete file library with private downloads, admin move/archive controls, and audit logging
 - admin user control for roles, permissions, onboarding metadata, and account contact settings
 - phone-first athlete dashboard slice for today workout, wearable prompt, exercise rows, journal/media actions, and workout logging handoff
 - training workspace for coach program assignment, session planning, and athlete workout logs

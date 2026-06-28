@@ -1,6 +1,6 @@
 # Throughline Progress Report
 
-Date: 2026-06-27
+Date: 2026-06-28
 
 ## Current build status
 
@@ -17,6 +17,8 @@ The MVP now has these real product surfaces:
 - wearable control
 - admin control center
 - admin user control
+- admin invitation control
+- admin file library
 - global workspace search
 - admin audit log
 - admin email delivery log
@@ -30,6 +32,10 @@ The current build supports:
 - live Apple sign-in and sign-up with the same role-aware account creation path
 - live phone OTP sign-up and login with session-safe challenge verification
 - coach and admin roster assignment control
+- coach/admin athlete invitations with secure email accept links
+- public invitation acceptance for new and existing athlete accounts
+- coach-facing athlete profile drill-down pages
+- athlete file uploads, downloads, category moves, visibility controls, and archive state
 - coach program assignment and session planning
 - structured workout prescriptions with sets, reps, load, rest, target, and note support
 - athlete workout logging with one log per session
@@ -53,6 +59,27 @@ The current build supports:
 - phone-first athlete app direction based on the reference app video: today workout, wearable prompt, exercise rows, journal/media actions, and sticky bottom navigation
 - admin ops triage for renewals, payment failures, coach load, coverage gaps, and stale progress logging
 - KONA-style operational navigation with topbar search, table-first admin logs, CSV exports, and direct next-action cards
+
+## 2026-06-28 coach athlete ownership and admin control slice
+
+This slice closes the missing coach-owned athlete workflow.
+
+- Added `athlete_invitations` and `athlete_files`.
+- Added `/roster/invites`, `/admin/invitations`, `/invites/{token}`, `/athletes/{user}`, and `/admin/files`.
+- Coaches can invite athletes by email and track pending, accepted, expired, and cancelled states.
+- Existing athlete accounts can accept an invite by confirming their password, so the app does not create duplicate users.
+- New athlete accounts created from invites are automatically assigned the `athlete` role and linked to the inviting coach.
+- Coaches are blocked from hijacking athletes already active under another coach. Admins can override by creating the invitation.
+- Invitation subject, body, sender label, and expiry days are editable in Website Control.
+- The coach-facing athlete profile now shows contact details, assignments, memberships, payments, devices, progress check-ins, scheduled/completed sessions, set counts, messages, and files.
+- The athlete file library supports private upload/download, category moves, visibility control, archive state, and admin moves between athlete profiles.
+- Added permissions: `roster.invite`, `athletes.view`, `athlete.files.view`, `athlete.files.manage`, `admin.invitations.view`, and `admin.invitations.manage`.
+
+Regression so far:
+
+- Targeted feature tests: 17 passed, 112 assertions.
+- `npm run build:athlete`: passed.
+- `npx eslint resources/js --max-warnings=0`: passed.
 
 ## 2026-06-27 athlete app and workout execution slice
 

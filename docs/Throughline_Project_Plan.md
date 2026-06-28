@@ -12,7 +12,7 @@ The winning MVP is narrower:
 
 That is the product. Everything else is support.
 
-## Delivery Status (2026-06-27)
+## Delivery Status (2026-06-28)
 
 Current state, no bullshit:
 
@@ -20,6 +20,9 @@ Current state, no bullshit:
     - role-aware auth and registration
     - coach, athlete, and admin dashboards
     - coach/admin roster workspace and assignment control
+    - coach/admin athlete invitation flow
+    - coach-facing athlete profile pages
+    - athlete file library with admin move/archive control
     - training assignment and workout logging
     - memberships with days-remaining tracking
     - manual payment-event control
@@ -55,6 +58,12 @@ Current state, no bullshit:
         - set-by-set workout tracking
         - journal and media tabs
         - simple coach-athlete messaging
+    - coach ownership workflow:
+        - `/roster/invites`
+        - `/admin/invitations`
+        - `/athletes/{user}`
+        - `/admin/files`
+        - secure public invite acceptance at `/invites/{token}`
 - Still not live-launch ready:
     - richer page-content / CMS-style admin controls beyond current Website control fields
     - deeper operator tooling for retries, reconnects, and billing/provider edge cases

@@ -56,6 +56,30 @@ class PlatformSetting extends Model
                 'help' => 'Where replies should go when support automations are added.',
                 'default' => 'support@athlete.ahmaddalao.com',
             ],
+            'athlete_invite_subject' => [
+                'group' => 'Invitations',
+                'label' => 'Athlete invite subject',
+                'help' => 'Subject line used when a coach or admin invites an athlete.',
+                'default' => 'You have been invited to Throughline',
+            ],
+            'athlete_invite_body' => [
+                'group' => 'Invitations',
+                'label' => 'Athlete invite body',
+                'help' => 'Main invitation copy. The coach name, goal, expiry, and accept button are added automatically.',
+                'default' => 'Create your athlete account, accept the coach connection, and start tracking training, recovery, progress, and assigned workouts in one place.',
+            ],
+            'athlete_invite_sender_label' => [
+                'group' => 'Invitations',
+                'label' => 'Invite sender label',
+                'help' => 'Small label shown above the invitation headline.',
+                'default' => 'Throughline coaching invite',
+            ],
+            'athlete_invite_expiry_days' => [
+                'group' => 'Invitations',
+                'label' => 'Invite expiry days',
+                'help' => 'How many days invitation links stay valid.',
+                'default' => '14',
+            ],
             'home_eyebrow' => [
                 'group' => 'Public text',
                 'label' => 'Home eyebrow',

@@ -136,6 +136,26 @@ class User extends Authenticatable
         return $this->hasMany(WorkoutSetLog::class, 'athlete_id');
     }
 
+    public function athleteInvitationsAsCoach(): HasMany
+    {
+        return $this->hasMany(AthleteInvitation::class, 'coach_id');
+    }
+
+    public function athleteInvitationsSent(): HasMany
+    {
+        return $this->hasMany(AthleteInvitation::class, 'invited_by_user_id');
+    }
+
+    public function athleteFiles(): HasMany
+    {
+        return $this->hasMany(AthleteFile::class, 'athlete_id');
+    }
+
+    public function uploadedAthleteFiles(): HasMany
+    {
+        return $this->hasMany(AthleteFile::class, 'uploaded_by_user_id');
+    }
+
     public function sentCoachAthleteMessages(): HasMany
     {
         return $this->hasMany(CoachAthleteMessage::class, 'sender_id');

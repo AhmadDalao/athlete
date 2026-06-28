@@ -50,7 +50,11 @@ interface SettingsFormData {
 }
 
 function inputFor(setting: SettingRow, value: string, update: (value: string) => void) {
-    const longText = setting.key.includes('headline') || setting.key.includes('notice') || setting.key.includes('note');
+    const longText =
+        setting.key.includes('headline') ||
+        setting.key.includes('notice') ||
+        setting.key.includes('note') ||
+        setting.key.includes('body');
 
     if (longText) {
         return <Textarea id={setting.key} value={value} onChange={(event) => update(event.target.value)} rows={4} />;

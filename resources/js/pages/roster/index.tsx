@@ -18,7 +18,20 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Activity, Archive, ArrowLeft, ArrowRight, ClipboardList, Dumbbell, PauseCircle, Shield, UserRoundPlus, Users, Watch } from 'lucide-react';
+import {
+    Activity,
+    Archive,
+    ArrowLeft,
+    ArrowRight,
+    ClipboardList,
+    Dumbbell,
+    MailPlus,
+    PauseCircle,
+    Shield,
+    UserRoundPlus,
+    Users,
+    Watch,
+} from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -518,6 +531,12 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                                 statusOptions={statusOptions}
                             />
                             <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
+                                <Link href={route('roster.invitations.index')}>
+                                    <MailPlus className="mr-2 size-4" />
+                                    Invite athletes
+                                </Link>
+                            </Button>
+                            <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
                                 <Link href="/training">
                                     <Dumbbell className="mr-2 size-4" />
                                     Open training
@@ -628,6 +647,9 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                                                     <p className="mt-2 line-clamp-2 max-w-[16rem] text-xs text-stone-600">
                                                         {assignment.goal ?? assignment.athlete.primaryGoal ?? 'No goal set.'}
                                                     </p>
+                                                    <Button asChild variant="link" size="sm" className="mt-2 h-auto p-0 text-stone-950">
+                                                        <Link href={route('athletes.show', assignment.athlete.id)}>View athlete profile</Link>
+                                                    </Button>
                                                 </td>
                                                 <td className="px-4 py-4">
                                                     <p className="font-medium text-stone-950">{assignment.coach.name}</p>
@@ -703,6 +725,9 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                                                 </td>
                                                 <td className="px-4 py-4">
                                                     <div className="flex flex-col gap-2">
+                                                        <Button asChild variant="default" size="sm">
+                                                            <Link href={route('athletes.show', assignment.athlete.id)}>Open profile</Link>
+                                                        </Button>
                                                         <EditAssignmentDialog assignment={assignment} statusOptions={statusOptions} />
                                                         <Button asChild variant="outline" size="sm">
                                                             <Link href="/training">
@@ -804,6 +829,12 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                             description="Move from roster status to execution without taking the scenic route."
                             contentClassName="space-y-2"
                         >
+                            <Button asChild variant="outline" className="w-full justify-between">
+                                <Link href={route('roster.invitations.index')}>
+                                    Invitation table
+                                    <MailPlus className="size-4" />
+                                </Link>
+                            </Button>
                             <Button asChild variant="outline" className="w-full justify-between">
                                 <Link href="/training">
                                     Training workspace

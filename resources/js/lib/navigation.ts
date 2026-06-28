@@ -4,10 +4,12 @@ import {
     Cable,
     CreditCard,
     Dumbbell,
+    Files,
     FileClock,
     LayoutGrid,
     LineChart,
     MailCheck,
+    MailPlus,
     MessageCircle,
     Settings2,
     Shield,
@@ -59,6 +61,15 @@ export function buildMainNavGroups(user: User | null): NavGroup[] {
                                   title: 'Roster',
                                   url: '/roster',
                                   icon: Users,
+                              },
+                          ]
+                        : []),
+                    ...(can('admin.invitations.view')
+                        ? [
+                              {
+                                  title: 'Invitations',
+                                  url: '/admin/invitations',
+                                  icon: MailPlus,
                               },
                           ]
                         : []),
@@ -135,6 +146,15 @@ export function buildMainNavGroups(user: User | null): NavGroup[] {
                               },
                           ]
                         : []),
+                    ...(can('athlete.files.view')
+                        ? [
+                              {
+                                  title: 'Files',
+                                  url: '/admin/files',
+                                  icon: Files,
+                              },
+                          ]
+                        : []),
                 ],
             },
             {
@@ -178,6 +198,15 @@ export function buildMainNavGroups(user: User | null): NavGroup[] {
                         url: '/roster',
                         icon: Users,
                     },
+                    ...(can('roster.invite')
+                        ? [
+                              {
+                                  title: 'Invitations',
+                                  url: '/roster/invites',
+                                  icon: MailPlus,
+                              },
+                          ]
+                        : []),
                     {
                         title: 'Notifications',
                         url: '/notifications',

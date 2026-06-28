@@ -181,6 +181,34 @@ Post-deploy smoke passed:
 - authenticated Laravel route smoke returned `200` for admin dashboard/control center/users/settings, coach roster/training/messages, and athlete app/progress/messages/workout execution
 - public browser smoke passed on mobile width with no console errors
 
+## Next deploy note: coach athlete ownership and file library
+
+This local slice adds database migrations and new route/controller/page assets. Before deploying it to production:
+
+- create a trusted database backup
+- deploy PHP source and compiled Vite build together
+- run `php artisan migrate --force`
+- run `php artisan optimize:clear`
+- rebuild config, route, and view caches
+- smoke test `/roster/invites`, `/admin/invitations`, `/athletes/{id}`, `/admin/files`, and `/invites/{token}` with real authenticated roles
+
+New migrations:
+
+- `2026_06_28_090000_create_athlete_invitations_table`
+- `2026_06_28_091000_create_athlete_files_table`
+
+New protected routes:
+
+- `/roster/invites`
+- `/admin/invitations`
+- `/athletes/{user}`
+- `/admin/files`
+- `/athlete-files/{athleteFile}/download`
+
+New public route:
+
+- `/invites/{token}`
+
 ## Cron jobs
 
 Hostinger shared hosting does not expose `crontab` over SSH here, so add these in hPanel:

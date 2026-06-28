@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Enums\CoachAthleteStatus;
 use App\Enums\RoleName;
 use App\Models\User;
+use App\Support\AthleteAccess;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -74,6 +75,13 @@ class RosterAssignmentStoreRequest extends FormRequest
 
             if ($coachId > 0 && $coachId === $athleteId) {
                 $validator->errors()->add('athlete_id', 'A coach cannot be assigned to themself as an athlete.');
+            }
+
+            $coach = $coachId > 0 ? User::query()->find($coachId) : null;
+            $athlete = $athleteId > 0 ? User::query()->find($athleteId) : null;
+
+            if ($coach instanceof User && $athlete instanceof User && ! $viewer->hasRole(RoleName::Admin) && AthleteAccess::hasActiveOtherCoach($coach, $athlete)) {
+                $validator->errors()->add('athlete_id', 'This athlete already has an active coach. Ask an admin to move them.');
             }
         });
     }
