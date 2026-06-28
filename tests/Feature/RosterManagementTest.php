@@ -56,6 +56,8 @@ class RosterManagementTest extends TestCase
                 ->where('summary.availableAthletes', 2)
                 ->where('assignments.data.0.athlete.name', $athleteOne->name)
                 ->where('assignments.data.0.coach.name', $coachOne->name)
+                ->where('assignments.data.0.weeklyBrief.priority', fn (string $priority) => in_array($priority, ['high', 'medium', 'stable'], true))
+                ->where('assignments.data.0.weeklyBrief.reasons', fn ($reasons) => count($reasons) >= 1)
             );
     }
 

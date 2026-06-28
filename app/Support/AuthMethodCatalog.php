@@ -3,12 +3,14 @@
 namespace App\Support;
 
 use App\Enums\SignupMethod;
+use App\Services\PhoneAuthService;
 use App\Services\SocialAuthService;
 
 class AuthMethodCatalog
 {
     public function __construct(
         private readonly SocialAuthService $socialAuth,
+        private readonly PhoneAuthService $phoneAuth,
     ) {}
 
     /**
@@ -23,6 +25,7 @@ class AuthMethodCatalog
                 $enabled = match (true) {
                     $method === SignupMethod::Email => true,
                     $method->isOauthProvider() => $this->socialAuth->isProviderEnabled($method),
+                    $method === SignupMethod::Phone => $this->phoneAuth->isReady(),
                     default => (bool) ($config['enabled'] ?? false),
                 };
 
@@ -32,9 +35,13 @@ class AuthMethodCatalog
                     'headline' => $config['headline'] ?? $method->label(),
                     'description' => $config['description'] ?? '',
                     'enabled' => $enabled,
-                    'authorizationUrl' => $method->isOauthProvider() && $enabled
-                        ? route('auth.oauth.redirect', ['provider' => $method->value, 'intent' => $intent], absolute: false)
-                        : null,
+                    'authorizationUrl' => match (true) {
+                        $method->isOauthProvider() && $enabled
+                            => route('auth.oauth.redirect', ['provider' => $method->value, 'intent' => $intent], absolute: false),
+                        $method === SignupMethod::Phone && $enabled
+                            => route('auth.phone.create', ['intent' => $intent], absolute: false),
+                        default => null,
+                    },
                 ];
             })
             ->values()

@@ -10,6 +10,7 @@ use App\Models\CoachAthleteAssignment;
 use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use App\Models\User;
+use App\Services\CoachWeeklyBriefService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,7 +18,7 @@ use Inertia\Response;
 
 class RosterIndexController extends Controller
 {
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request, CoachWeeklyBriefService $coachWeeklyBriefs): Response
     {
         /** @var User $viewer */
         $viewer = $request->user()?->loadMissing('roles');
@@ -45,7 +46,7 @@ class RosterIndexController extends Controller
             ->orderByDesc('started_at')
             ->paginate(8)
             ->withQueryString()
-            ->through(fn (CoachAthleteAssignment $assignment): array => $this->assignmentPayload($assignment));
+            ->through(fn (CoachAthleteAssignment $assignment): array => $this->assignmentPayload($assignment, $coachWeeklyBriefs));
 
         return Inertia::render('roster/index', [
             'viewerRole' => $viewer->primaryRoleName(),
@@ -159,7 +160,7 @@ class RosterIndexController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function assignmentPayload(CoachAthleteAssignment $assignment): array
+    private function assignmentPayload(CoachAthleteAssignment $assignment, CoachWeeklyBriefService $coachWeeklyBriefs): array
     {
         $athlete = $assignment->athlete;
         $membership = $athlete->currentMembership();
@@ -175,6 +176,7 @@ class RosterIndexController extends Controller
         $latestCheckIn = $athlete->latestAthleteCheckIn;
         $currentProgram = $this->currentProgramFor($assignment);
         $nextSession = $currentProgram ? $this->nextSessionFor($currentProgram) : null;
+        $weeklyBrief = $coachWeeklyBriefs->forAthlete($athlete);
 
         return [
             'id' => $assignment->id,
@@ -226,6 +228,7 @@ class RosterIndexController extends Controller
                     ->whereNull('workoutLog')
                     ->count(),
             ] : null,
+            'weeklyBrief' => $weeklyBrief,
         ];
     }
 

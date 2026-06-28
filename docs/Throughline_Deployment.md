@@ -1,6 +1,6 @@
 # Throughline Deployment Contract
 
-Date: 2026-06-15
+Date: 2026-06-21
 
 ## Production target
 
@@ -22,7 +22,11 @@ ASSET_URL=
 VITE_ASSET_BASE=/build/
 
 GOOGLE_REDIRECT_URI=https://athlete.ahmaddalao.com/auth/google/callback
+APPLE_REDIRECT_URI=https://athlete.ahmaddalao.com/auth/apple/callback
 WHOOP_REDIRECT_URI=https://athlete.ahmaddalao.com/wearables/whoop/callback
+WHOOP_WEBHOOK_SECRET=your-whoop-webhook-secret
+PHONE_AUTH_ENABLED=false
+PHONE_AUTH_DRIVER=log
 ```
 
 Notes:
@@ -56,12 +60,95 @@ Current deployment shape:
 - public web root for `athlete.ahmaddalao.com`: `/home/u867436826/domains/ahmaddalao.com/public_html/athlete`
 - database name: `u867436826_athlete`
 
+Frontend deploy rule:
+
+- sync the compiled `public/build` directory to both:
+- `/home/u867436826/domains/ahmaddalao.com/throughline-athlete-app/public/build`
+- `/home/u867436826/domains/ahmaddalao.com/public_html/athlete/build`
+
+If those two build directories drift apart, the app serves stale chunks or broken hashes. That is exactly what caused the old dark dashboard to stay live after the local refactor was already done.
+
+Backend deploy rule:
+
+- when a release adds or renames controllers, named routes, middleware wiring, or shared Inertia props, deploy the PHP app code in `/throughline-athlete-app` in the same release window
+- after that, clear Laravel's cached bootstrap state with `/opt/alt/php85/usr/bin/php artisan optimize:clear`
+
+If you only ship the Vite bundle and skip the PHP layer, Ziggy will happily crash the frontend with missing-route errors. That already happened with `coaches.index`. Once is enough.
+
 ## PHP requirement
 
-- app dependency floor: `PHP 8.4.1+`
-- deployed Hostinger runtime: `PHP 8.5`
+- app dependency floor: `PHP 8.2+`
+- set the Hostinger site runtime and CLI cron binary to the same PHP family
+- as of `2026-06-22`, the live `athlete.ahmaddalao.com` app is serving `PHP 8.5.4`, so artisan and cron commands should use the Hostinger `php85` binary, not `php82`
+- as of `2026-06-23`, Hostinger PHP 8.5 CLI does not expose `ext-sodium`; Composer install currently needs `--ignore-platform-req=ext-sodium` because Apple OAuth is staged, not part of the active MVP login flow
 
-Do not downgrade the site to PHP `8.2` and then act surprised when Composer or Symfony explodes.
+Do not point cron at a different PHP binary than the one serving the site. That is how shared-hosting deploys get weird fast.
+
+## 2026-06-23 live deploy note
+
+Dashboard/user-profile deployment shipped these runtime changes:
+
+- full PHP runtime source slice deployed to `/throughline-athlete-app`
+- compiled Vite build deployed with `/build/` asset base
+- Composer installed production dependencies through `/opt/alt/php85/usr/bin/php`
+- trusted database backup created before migrations at `/home/u867436826/db-backups/athlete-20260623-072725.sql.gz`
+- four pending migrations applied: Stripe billing fields, device sync review fields, WHOOP webhook events, and phone auth challenges
+- Laravel config, route, and view caches rebuilt successfully
+
+Post-deploy smoke passed for public routes, protected dashboard redirect, live asset manifest, authenticated admin dashboard payload, and admin user profile payload.
+
+## 2026-06-23 admin-control/workout-media deploy note
+
+Admin control, notifications, settings, workout video, and responsive shell fixes were deployed to production.
+
+Runtime changes shipped:
+
+- full PHP runtime source slice deployed to `/throughline-athlete-app`
+- compiled Vite build deployed with `/build/` asset base
+- compiled build synced to both app `public/build` and subdomain `public_html/athlete/build`
+- Composer optimized autoload refreshed through `/opt/alt/php85/usr/bin/php`
+- trusted database backup created before migrations at `/home/u867436826/db-backups/athlete-20260623112837.sql.gz`
+- Laravel config, route, and view caches rebuilt successfully
+
+Migrations applied:
+
+- `2026_06_23_000000_create_platform_settings_table`
+- `2026_06_23_010000_create_system_notifications_tables`
+- `2026_06_23_020000_add_video_url_to_training_sessions_table`
+
+Post-deploy smoke passed:
+
+- public home, login, register, contact, and live manifest returned `200`
+- protected `/dashboard` returned `302` to `/login`
+- production migration status shows all three new migrations as `Ran`
+- route cache exposes `admin.system-settings.index`, `notifications.index`, and `admin.users.store`
+- live public browser smoke passed with no console errors, failed app requests, blank pages, or mobile horizontal overflow
+
+## 2026-06-23 operational-search/logs deploy note
+
+KONA-style operational search, audit logs, and email logs were deployed to production.
+
+Runtime changes shipped:
+
+- full PHP runtime source slice deployed to `/throughline-athlete-app`
+- compiled Vite build deployed with `/build/` asset base
+- compiled build synced to both app `public/build` and subdomain `public_html/athlete/build`
+- Composer autoload refreshed through `/opt/alt/php85/usr/bin/php /usr/local/bin/composer2.phar`
+- trusted database backup created before migrations at `/home/u867436826/db-backups/athlete-20260623085447.sql.gz`
+- Laravel config, route, and view caches rebuilt successfully
+
+Migrations applied:
+
+- `2026_06_23_030000_create_platform_audit_logs_table`
+- `2026_06_23_040000_create_email_delivery_logs_table`
+
+Post-deploy smoke passed:
+
+- public home returned `200`
+- protected `/search`, `/admin/audit-log`, and `/admin/email-logs` returned `302` to `/login`
+- live `/build/manifest.json` returned `200`
+- production migration status shows both new log migrations as `Ran`
+- route cache exposes `search.index`, `admin.audit-log.index`, and `admin.email-logs.index`
 
 ## Cron jobs
 
@@ -85,7 +172,9 @@ Run this once after a fresh seeded deploy so the public demo passwords stop bein
 Use these exact production callbacks in provider dashboards:
 
 - Google: `https://athlete.ahmaddalao.com/auth/google/callback`
+- Apple: `https://athlete.ahmaddalao.com/auth/apple/callback`
 - WHOOP: `https://athlete.ahmaddalao.com/wearables/whoop/callback`
+- WHOOP webhook: `https://athlete.ahmaddalao.com/webhooks/whoop`
 
 ## API URLs
 

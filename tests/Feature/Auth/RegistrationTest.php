@@ -45,7 +45,7 @@ class RegistrationTest extends TestCase
         $this->assertSame('Build consistency', auth()->user()->primary_goal);
         $this->assertSame('phone', auth()->user()->preferred_contact_method);
         $this->assertSame(SignupMethod::Email->value, auth()->user()->registration_channel);
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('athlete.app.index', absolute: false));
     }
 
     public function test_phone_contact_preference_requires_a_phone_number()
@@ -65,5 +65,24 @@ class RegistrationTest extends TestCase
         $response->assertRedirect('/register');
         $response->assertSessionHasErrors('phone');
         $this->assertGuest();
+    }
+
+    public function test_new_coaches_land_in_roster_after_registration()
+    {
+        $response = $this->post('/register', [
+            'name' => 'Coach User',
+            'email' => 'coach-user@example.com',
+            'phone' => '+966511111111',
+            'account_type' => RoleName::Coach->value,
+            'primary_goal' => 'Build a better roster',
+            'preferred_contact_method' => 'email',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'terms_accepted' => true,
+        ]);
+
+        $this->assertAuthenticated();
+        $this->assertTrue(auth()->user()->hasRole(RoleName::Coach));
+        $response->assertRedirect('/roster');
     }
 }

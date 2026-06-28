@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Enums\RoleName;
 use App\Enums\SignupMethod;
 use App\Models\User;
+use App\Support\PermissionCatalog;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -22,6 +23,8 @@ class UserUpdateRequest extends FormRequest
                 ->filter(fn ($role) => is_string($role) && $role !== '')
                 ->values()
                 ->all(),
+            'permissions' => PermissionCatalog::sanitize((array) $this->input('permissions', [])),
+            'position' => trim((string) $this->input('position', '')),
         ]);
     }
 
@@ -51,10 +54,13 @@ class UserUpdateRequest extends FormRequest
                 Rule::unique(User::class)->ignore($targetUser->id),
             ],
             'primary_goal' => ['nullable', 'string', 'max:255'],
+            'position' => ['nullable', 'string', 'max:80'],
             'preferred_contact_method' => ['required', 'string', Rule::in(['email', 'phone'])],
             'registration_channel' => ['required', 'string', Rule::in(collect(SignupMethod::cases())->map->value->all())],
             'roles' => ['required', 'array', 'min:1'],
             'roles.*' => ['required', 'string', Rule::in(collect(RoleName::cases())->map->value->all())],
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['required', 'string', Rule::in(PermissionCatalog::keys())],
         ];
     }
 

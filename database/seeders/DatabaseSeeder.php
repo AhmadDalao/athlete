@@ -49,6 +49,7 @@ class DatabaseSeeder extends Seeder
                 'duration_days' => 30,
                 'price' => 79,
                 'currency' => 'USD',
+                'stripe_price_id' => env('STRIPE_PRICE_COACH_PRO_MONTHLY'),
                 'is_active' => true,
             ],
         );
@@ -62,6 +63,7 @@ class DatabaseSeeder extends Seeder
                 'duration_days' => 30,
                 'price' => 129,
                 'currency' => 'USD',
+                'stripe_price_id' => env('STRIPE_PRICE_ATHLETE_PERFORMANCE_MONTHLY'),
                 'is_active' => true,
             ],
         );
@@ -73,6 +75,7 @@ class DatabaseSeeder extends Seeder
                 'phone' => '+15550000001',
                 'password' => Hash::make('password'),
                 'primary_goal' => 'Keep platform operations clean',
+                'position' => 'Owner / General Manager',
                 'preferred_contact_method' => 'email',
                 'registration_channel' => 'email',
             ],
@@ -84,6 +87,7 @@ class DatabaseSeeder extends Seeder
                 'phone' => '+15550000011',
                 'password' => Hash::make('password'),
                 'primary_goal' => 'Scale a high-touch roster without losing quality',
+                'position' => 'Head Coach',
                 'preferred_contact_method' => 'email',
                 'registration_channel' => 'email',
             ],
@@ -95,6 +99,7 @@ class DatabaseSeeder extends Seeder
                 'phone' => '+15550000012',
                 'password' => Hash::make('password'),
                 'primary_goal' => 'Run clear return-to-performance programs',
+                'position' => 'Performance Coach',
                 'preferred_contact_method' => 'phone',
                 'registration_channel' => 'email',
             ],
@@ -133,7 +138,8 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        $admin->assignRole(RoleName::Admin);
+        $admin->syncRoles([RoleName::Owner, RoleName::Admin]);
+        $admin->syncPermissions([], $admin);
         $coachOne->assignRole(RoleName::Coach);
         $coachTwo->assignRole(RoleName::Coach);
         $athleteOne->assignRole(RoleName::Athlete);

@@ -10,11 +10,12 @@ use App\Http\Requests\MembershipUpdateRequest;
 use App\Models\Membership;
 use App\Models\PaymentEvent;
 use App\Models\User;
+use App\Services\PlatformAuditLogger;
 use Illuminate\Http\RedirectResponse;
 
 class MembershipUpdateController extends Controller
 {
-    public function __invoke(MembershipUpdateRequest $request, Membership $membership): RedirectResponse
+    public function __invoke(MembershipUpdateRequest $request, Membership $membership, PlatformAuditLogger $auditLogger): RedirectResponse
     {
         $viewer = $this->manageableMembership($request->user(), $membership);
 
@@ -80,6 +81,19 @@ class MembershipUpdateController extends Controller
                 ],
             ]);
         }
+
+        $auditLogger->record(
+            $request,
+            'membership.updated',
+            $membership,
+            "Updated {$membership->user->name}'s membership: ".($changeSummary === [] ? 'no tracked field changes' : implode('; ', $changeSummary)).'.',
+            [
+                'membership_id' => $membership->id,
+                'user_id' => $membership->user_id,
+                'status' => $membership->status->value,
+                'auto_renew' => $membership->auto_renew,
+            ],
+        );
 
         return back();
     }

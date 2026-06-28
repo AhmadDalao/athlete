@@ -7,6 +7,7 @@ use App\Enums\RoleName;
 use App\Enums\SignupMethod;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\PermissionCatalog;
 use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,7 +19,7 @@ class UserIndexController extends Controller
         /** @var User $viewer */
         $viewer = request()->user()->loadMissing('roles');
 
-        abort_unless($viewer->hasRole(RoleName::Admin), 403);
+        abort_unless($viewer->hasPermission('admin.users.view'), 403);
 
         $search = request()->string('q')->trim()->value() ?: null;
         $role = request()->string('role')->value() ?: null;
@@ -30,7 +31,7 @@ class UserIndexController extends Controller
         $channelFilter = in_array($channel, $allowedChannels, true) ? $channel : null;
 
         $baseQuery = User::query()
-            ->with(['roles', 'memberships.plan'])
+            ->with(['roles', 'permissions', 'memberships.plan'])
             ->withCount([
                 'memberships',
                 'deviceConnections',
@@ -63,15 +64,21 @@ class UserIndexController extends Controller
                     'primaryGoal' => $user->primary_goal,
                     'preferredContactMethod' => $user->preferred_contact_method,
                     'registrationChannel' => $user->registration_channel,
+                    'position' => $user->position,
                     'emailVerifiedAt' => $user->email_verified_at?->toDateTimeString(),
                     'phoneVerifiedAt' => $user->phone_verified_at?->toDateTimeString(),
                     'roles' => $user->roleNames(),
                     'primaryRole' => $user->primaryRoleName(),
+                    'permissions' => $user->permissionKeys(),
+                    'permissionCount' => count($user->permissionKeys()),
                     'membershipsCount' => $user->memberships_count,
                     'deviceConnectionsCount' => $user->device_connections_count,
                     'currentMembership' => $currentMembership ? [
                         'status' => $currentMembership->status->value,
                         'planName' => $currentMembership->plan?->name ?? 'Custom plan',
+                        'startsAt' => $currentMembership->starts_at?->toDateString(),
+                        'renewsAt' => $currentMembership->renews_at?->toDateString(),
+                        'endsAt' => $currentMembership->effectiveEndDate()?->toDateString(),
                         'daysRemaining' => $currentMembership->daysRemaining(),
                     ] : null,
                     'activeAthleteCount' => $user->hasRole(RoleName::Coach) ? $user->active_athlete_count : 0,
@@ -87,6 +94,7 @@ class UserIndexController extends Controller
             ],
             'summary' => [
                 'totalUsers' => User::query()->count(),
+                'owners' => User::query()->role(RoleName::Owner)->count(),
                 'admins' => User::query()->role(RoleName::Admin)->count(),
                 'coaches' => User::query()->role(RoleName::Coach)->count(),
                 'athletes' => User::query()->role(RoleName::Athlete)->count(),
@@ -96,9 +104,25 @@ class UserIndexController extends Controller
             ],
             'users' => $users,
             'roleOptions' => collect(RoleName::cases())
+                ->reject(fn (RoleName $case) => $case === RoleName::Owner && ! $viewer->hasRole(RoleName::Owner))
                 ->map(fn (RoleName $case) => ['value' => $case->value, 'label' => $case->label()])
                 ->values()
                 ->all(),
+            'permissionGroups' => collect(PermissionCatalog::groups())
+                ->map(fn (array $group, string $key): array => [
+                    'key' => $key,
+                    'label' => $group['label'],
+                    'permissions' => collect($group['permissions'])
+                        ->map(fn (string $description, string $permissionKey): array => [
+                            'key' => $permissionKey,
+                            'description' => $description,
+                        ])
+                        ->values()
+                        ->all(),
+                ])
+                ->values()
+                ->all(),
+            'canManageOwner' => $viewer->hasRole(RoleName::Owner),
             'channelOptions' => collect(SignupMethod::cases())
                 ->map(fn (SignupMethod $case) => ['value' => $case->value, 'label' => $case->label()])
                 ->values()

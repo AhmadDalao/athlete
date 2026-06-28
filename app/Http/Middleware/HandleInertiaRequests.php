@@ -2,8 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SystemNotification;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Throwable;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -44,8 +46,11 @@ class HandleInertiaRequests extends Middleware
             ],
             'auth' => [
                 'user' => $request->user()
-                    ? $this->transformUser($request->user()->loadMissing('roles', 'socialAccounts'))
+                    ? $this->transformUser($request->user()->loadMissing('roles', 'permissions', 'socialAccounts'))
                     : null,
+            ],
+            'notifications' => [
+                'unreadCount' => $request->user() ? $this->unreadNotificationCount($request) : 0,
             ],
         ]);
     }
@@ -67,9 +72,26 @@ class HandleInertiaRequests extends Middleware
             'updated_at' => $user->updated_at,
             'role_names' => $user->roleNames(),
             'primary_role' => $user->primaryRoleName(),
+            'position' => $user->position,
+            'permissions' => $user->permissionKeys(),
             'primary_goal' => $user->primary_goal,
             'preferred_contact_method' => $user->preferred_contact_method,
             'registration_channel' => $user->registration_channel,
+            'landing_path' => $user->landingPath(),
         ];
+    }
+
+    private function unreadNotificationCount(Request $request): int
+    {
+        $user = $request->user()->loadMissing('roles');
+
+        try {
+            return SystemNotification::query()
+                ->visibleTo($user)
+                ->whereDoesntHave('reads', fn ($query) => $query->where('user_id', $user->id))
+                ->count();
+        } catch (Throwable) {
+            return 0;
+        }
     }
 }

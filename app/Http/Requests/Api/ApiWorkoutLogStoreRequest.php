@@ -19,6 +19,10 @@ class ApiWorkoutLogStoreRequest extends FormRequest
             'performed_at' => ['nullable', 'date'],
             'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:600'],
             'exertion_rating' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'energy_score' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'soreness_score' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'stress_score' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'sleep_quality_score' => ['nullable', 'integer', 'min:1', 'max:10'],
             'notes' => ['nullable', 'string'],
         ];
     }

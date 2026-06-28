@@ -20,14 +20,18 @@ use App\Models\TrainingSession;
 use App\Models\User;
 use App\Models\WorkoutLog;
 use App\Services\AthleteProgressAnalyticsService;
+use App\Services\CoachWeeklyBriefService;
 use App\Services\MetricAnalyticsService;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(MetricAnalyticsService $metricAnalytics, AthleteProgressAnalyticsService $progressAnalytics): Response
-    {
+    public function __invoke(
+        MetricAnalyticsService $metricAnalytics,
+        AthleteProgressAnalyticsService $progressAnalytics,
+        CoachWeeklyBriefService $coachWeeklyBriefs
+    ): Response {
         /** @var User $user */
         $user = request()->user()->load([
             'roles',
@@ -59,7 +63,7 @@ class DashboardController extends Controller
                 'primaryRole' => $user->primaryRoleName(),
             ],
             'admin' => $user->hasRole(RoleName::Admin) ? $this->adminOverview() : null,
-            'coach' => $user->hasRole(RoleName::Coach) ? $this->coachOverview($user) : null,
+            'coach' => $user->hasRole(RoleName::Coach) ? $this->coachOverview($user, $coachWeeklyBriefs) : null,
             'athlete' => $user->hasRole(RoleName::Athlete) ? $this->athleteOverview($user, $metricAnalytics, $progressAnalytics) : null,
         ]);
     }
@@ -174,13 +178,129 @@ class DashboardController extends Controller
                 ])
                 ->values()
                 ->all(),
+            'recentUsers' => $this->adminRecentUsers(),
+            'athleteTable' => $this->adminAthleteRows(),
+            'subscriptionTable' => $this->adminSubscriptionRows(),
         ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function adminRecentUsers(): array
+    {
+        return User::query()
+            ->with(['roles', 'memberships.plan'])
+            ->withCount(['memberships', 'deviceConnections'])
+            ->latest()
+            ->take(8)
+            ->get()
+            ->map(function (User $user): array {
+                $membership = $user->currentMembership();
+
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'primaryRole' => $user->primaryRoleName(),
+                    'registrationChannel' => $user->registration_channel,
+                    'createdAt' => $user->created_at?->toDateString(),
+                    'membershipsCount' => $user->memberships_count,
+                    'deviceConnectionsCount' => $user->device_connections_count,
+                    'currentMembership' => $membership ? [
+                        'status' => $membership->status->value,
+                        'planName' => $membership->plan?->name ?? 'Custom plan',
+                        'subscribedAt' => $membership->starts_at?->toDateString(),
+                        'daysRemaining' => $membership->daysRemaining(),
+                    ] : null,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function adminAthleteRows(): array
+    {
+        return User::query()
+            ->role(RoleName::Athlete)
+            ->with([
+                'roles',
+                'memberships.plan',
+                'latestAthleteCheckIn',
+                'deviceConnections',
+                'athleteAssignments.coach.roles',
+            ])
+            ->withCount(['memberships', 'deviceConnections', 'trainingProgramsAsAthlete'])
+            ->latest()
+            ->take(8)
+            ->get()
+            ->map(function (User $athlete): array {
+                $membership = $athlete->currentMembership();
+                $activeCoachNames = $athlete->athleteAssignments
+                    ->filter(fn ($assignment) => $assignment->status === CoachAthleteStatus::Active)
+                    ->map(fn ($assignment) => $assignment->coach->name)
+                    ->values()
+                    ->all();
+
+                return [
+                    'id' => $athlete->id,
+                    'name' => $athlete->name,
+                    'email' => $athlete->email,
+                    'goal' => $athlete->primary_goal,
+                    'createdAt' => $athlete->created_at?->toDateString(),
+                    'coachNames' => $activeCoachNames,
+                    'deviceConnectionsCount' => $athlete->device_connections_count,
+                    'trainingProgramsCount' => $athlete->training_programs_as_athlete_count,
+                    'latestCheckInAt' => $athlete->latestAthleteCheckIn?->logged_date?->toDateString(),
+                    'currentMembership' => $membership ? [
+                        'status' => $membership->status->value,
+                        'planName' => $membership->plan?->name ?? 'Custom plan',
+                        'subscribedAt' => $membership->starts_at?->toDateString(),
+                        'daysRemaining' => $membership->daysRemaining(),
+                    ] : null,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function adminSubscriptionRows(): array
+    {
+        return Membership::query()
+            ->with(['user.roles', 'plan'])
+            ->latest('starts_at')
+            ->take(8)
+            ->get()
+            ->map(fn (Membership $membership): array => [
+                'id' => $membership->id,
+                'userId' => $membership->user->id,
+                'userName' => $membership->user->name,
+                'userEmail' => $membership->user->email,
+                'planName' => $membership->plan?->name ?? 'Custom plan',
+                'status' => $membership->status->value,
+                'startsAt' => $membership->starts_at?->toDateString(),
+                'renewsAt' => $membership->renews_at?->toDateString(),
+                'endsAt' => $membership->effectiveEndDate()?->toDateString(),
+                'daysRemaining' => $membership->daysRemaining(),
+                'price' => (float) $membership->price,
+                'currency' => $membership->currency,
+                'billingProvider' => $membership->billing_provider,
+                'autoRenew' => $membership->auto_renew,
+            ])
+            ->values()
+            ->all();
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function coachOverview(User $coach): array
+    private function coachOverview(User $coach, CoachWeeklyBriefService $coachWeeklyBriefs): array
     {
         $coachProgramIds = TrainingProgram::query()
             ->where('coach_id', $coach->id)
@@ -188,7 +308,7 @@ class DashboardController extends Controller
 
         $roster = $coach->coachAssignments
             ->filter(fn ($assignment) => $assignment->status === CoachAthleteStatus::Active)
-            ->map(function ($assignment): array {
+            ->map(function ($assignment) use ($coachWeeklyBriefs): array {
                 $athlete = $assignment->athlete;
                 $membership = $athlete->currentMembership();
                 $daysRemaining = $this->daysRemaining($membership);
@@ -242,6 +362,8 @@ class DashboardController extends Controller
                     $flags[] = 'Protein low';
                 }
 
+                $weeklyBrief = $coachWeeklyBriefs->forAthlete($athlete);
+
                 return [
                     'id' => $athlete->id,
                     'name' => $athlete->name,
@@ -273,6 +395,7 @@ class DashboardController extends Controller
                         'pendingLogs' => $pendingLogs,
                         'lastWorkoutStatus' => $latestWorkoutLog?->completion_status?->value,
                     ] : null,
+                    'weeklyBrief' => $weeklyBrief,
                     'flags' => $flags,
                 ];
             })
@@ -301,6 +424,17 @@ class DashboardController extends Controller
                 ->filter(fn (array $athlete) => count($athlete['flags']) > 0)
                 ->take(5)
                 ->values()
+                ->all(),
+            'weeklyBriefs' => $roster
+                ->sortByDesc(fn (array $athlete) => $athlete['weeklyBrief']['score'])
+                ->take(3)
+                ->values()
+                ->map(fn (array $athlete): array => [
+                    'id' => $athlete['id'],
+                    'name' => $athlete['name'],
+                    'goal' => $athlete['goal'],
+                    'weeklyBrief' => $athlete['weeklyBrief'],
+                ])
                 ->all(),
             'upcomingSessions' => TrainingSession::query()
                 ->whereIn('training_program_id', $coachProgramIds)
@@ -401,6 +535,7 @@ class DashboardController extends Controller
                     'scheduledDate' => $nextSession->scheduled_date?->toDateString(),
                     'focus' => $nextSession->focus,
                     'instructions' => $nextSession->instructions,
+                    'videoUrl' => $nextSession->video_url,
                     'exercises' => $this->normalizeExercises($nextSession->exercises ?? []),
                 ] : null,
                 'upcomingSessions' => $currentProgram->sessions
@@ -411,6 +546,7 @@ class DashboardController extends Controller
                         'title' => $session->title,
                         'scheduledDate' => $session->scheduled_date?->toDateString(),
                         'focus' => $session->focus,
+                        'videoUrl' => $session->video_url,
                         'exerciseCount' => count($session->exercises ?? []),
                     ])
                     ->values()

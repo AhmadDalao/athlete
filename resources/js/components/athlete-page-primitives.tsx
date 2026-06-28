@@ -15,22 +15,24 @@ interface AthleteHeroProps {
 
 export function AthleteHero({ eyebrow, title, description, badges = [], actions, children }: AthleteHeroProps) {
     return (
-        <section className="relative overflow-hidden rounded-[2rem] border border-stone-200/70 bg-[linear-gradient(135deg,rgba(255,247,237,0.96),rgba(240,253,250,0.96)_52%,rgba(248,250,252,0.98))] shadow-[0_30px_80px_-45px_rgba(15,23,42,0.45)]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.24),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(20,184,166,0.18),transparent_30%),linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[length:auto,auto,34px_34px,34px_34px]" />
+        <section className="relative overflow-hidden rounded-[2.2rem] border border-white/80 bg-[linear-gradient(135deg,rgba(255,247,237,0.96),rgba(255,255,255,0.98)_46%,rgba(236,253,245,0.94))] shadow-[0_36px_90px_-52px_rgba(15,23,42,0.42)]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.24),transparent_30%),radial-gradient(circle_at_80%_20%,rgba(20,184,166,0.18),transparent_28%),linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[length:auto,auto,38px_38px,38px_38px]" />
             <div className="relative grid gap-8 p-6 lg:grid-cols-[1.15fr_0.85fr] lg:p-8">
-                <div className="space-y-5">
+                <div className="space-y-6">
                     <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-stone-300/70 bg-white/85 px-3 py-1 text-[0.68rem] font-semibold tracking-[0.24em] text-stone-600 uppercase">
+                        <span className="rounded-full border border-white/80 bg-white/88 px-3 py-1 text-[0.68rem] font-semibold tracking-[0.24em] text-stone-600 uppercase shadow-sm">
                             {eyebrow}
                         </span>
                         {badges.map((badge) => (
-                            <Badge key={badge} variant="outline" className="border-stone-300/70 bg-white/75 text-stone-700">
+                            <Badge key={badge} variant="outline" className="border-white/80 bg-white/75 text-stone-700">
                                 {badge}
                             </Badge>
                         ))}
                     </div>
                     <div className="max-w-3xl space-y-3">
-                        <h1 className="max-w-2xl text-4xl leading-none font-semibold tracking-[-0.04em] text-stone-950 sm:text-5xl">{title}</h1>
+                        <h1 className="max-w-2xl font-['Space_Grotesk'] text-4xl leading-none font-bold tracking-[-0.05em] text-stone-950 sm:text-5xl">
+                            {title}
+                        </h1>
                         <p className="max-w-2xl text-sm leading-7 text-stone-600 sm:text-base">{description}</p>
                     </div>
                     {actions && <div className="flex flex-wrap gap-3">{actions}</div>}
@@ -65,7 +67,7 @@ export function AthleteMetricCard({
             <CardHeader className="flex flex-row items-start justify-between space-y-0">
                 <div>
                     <CardDescription className="text-stone-500">{title}</CardDescription>
-                    <CardTitle className="mt-3 text-3xl tracking-tight text-stone-950">{value}</CardTitle>
+                    <CardTitle className="mt-3 text-3xl tracking-[-0.04em] text-stone-950">{value}</CardTitle>
                 </div>
                 <div className="rounded-full border border-white/70 bg-white/80 p-2 text-stone-700 shadow-sm">
                     <Icon className="size-4" />
@@ -94,7 +96,7 @@ export function AthletePanel({
     return (
         <Card className={cn('border-stone-200/75 bg-white/92 shadow-[0_24px_60px_-46px_rgba(15,23,42,0.65)]', className)}>
             <CardHeader>
-                <CardTitle className="text-xl tracking-tight text-stone-950">{title}</CardTitle>
+                <CardTitle className="text-xl tracking-[-0.03em] text-stone-950">{title}</CardTitle>
                 {description && <CardDescription className="max-w-3xl leading-6 text-stone-600">{description}</CardDescription>}
             </CardHeader>
             <CardContent className={contentClassName}>{children}</CardContent>
@@ -107,7 +109,7 @@ export function AthleteSectionHeading({ eyebrow, title, description }: { eyebrow
         <div className="space-y-2">
             <p className="text-[0.68rem] font-semibold tracking-[0.24em] text-stone-500 uppercase">{eyebrow}</p>
             <div className="space-y-1">
-                <h2 className="text-2xl font-semibold tracking-[-0.03em] text-stone-950">{title}</h2>
+                <h2 className="font-['Space_Grotesk'] text-2xl font-bold tracking-[-0.04em] text-stone-950">{title}</h2>
                 <p className="max-w-3xl text-sm leading-7 text-stone-600">{description}</p>
             </div>
         </div>
@@ -126,9 +128,9 @@ export function ReadinessDial({ score, label, note, detail }: { score: number | 
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
                     <div className="grid size-28 place-items-center rounded-full p-2 shadow-inner" style={dialStyle}>
-                        <div className="grid size-full place-items-center rounded-full bg-stone-950 text-center text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                        <div className="grid size-full place-items-center rounded-full bg-white text-center text-stone-950 shadow-[0_16px_32px_-24px_rgba(15,23,42,0.45),inset_0_1px_0_rgba(255,255,255,0.9)]">
                             <span className="text-3xl font-semibold tracking-tight">{score === null ? '--' : normalized}</span>
-                            <span className="text-[0.63rem] tracking-[0.28em] text-stone-300 uppercase">Readiness</span>
+                            <span className="text-[0.63rem] tracking-[0.28em] text-stone-400 uppercase">Readiness</span>
                         </div>
                     </div>
                     <div className="space-y-1">

@@ -10,6 +10,14 @@ export default [
     js.configs.recommended,
     ...typescript.configs.recommended,
     {
+        files: ['*.config.js', 'vite.config.js'],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
+        },
+    },
+    {
         ...react.configs.flat.recommended,
         ...react.configs.flat['jsx-runtime'], // Required for React 17+
         languageOptions: {

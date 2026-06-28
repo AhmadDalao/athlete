@@ -114,6 +114,7 @@ class AdminControlCenterTest extends TestCase
                 ->where('queues.membershipQueue.0.userName', $athlete->name)
                 ->where('queues.paymentQueue.0.reference', 'cc_fail_001')
                 ->where('queues.deviceQueue.0.provider', DeviceProvider::Whoop->label())
+                ->where('queues.deviceQueue.0.issue', 'No normalized snapshot exists yet.')
                 ->where('signupMix.1.method', SignupMethod::Google->value)
                 ->where('signupMix.1.count', 1)
             );

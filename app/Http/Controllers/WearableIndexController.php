@@ -8,19 +8,29 @@ use App\Enums\DeviceProvider;
 use App\Enums\RoleName;
 use App\Models\DeviceConnection;
 use App\Models\User;
+use App\Models\WhoopWebhookEvent;
+use App\Services\DeviceConnectionHealthReviewService;
 use App\Services\MetricAnalyticsService;
 use App\Services\Whoop\WhoopApiClient;
+use App\Services\Whoop\WhoopWebhookService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class WearableIndexController extends Controller
 {
-    public function __invoke(MetricAnalyticsService $metricAnalytics, WhoopApiClient $whoopClient): Response
+    public function __invoke(
+        Request $request,
+        MetricAnalyticsService $metricAnalytics,
+        WhoopApiClient $whoopClient,
+        DeviceConnectionHealthReviewService $healthReview,
+        WhoopWebhookService $whoopWebhooks,
+    ): Response
     {
         /** @var User $user */
-        $user = request()->user()->loadMissing('roles');
-        $statusFilter = request()->string('status')->value();
+        $user = $request->user()->loadMissing('roles');
+        $statusFilter = $request->string('status')->value();
         $allowedStatuses = collect(DeviceConnectionStatus::cases())->map->value->all();
         $normalizedStatusFilter = in_array($statusFilter, $allowedStatuses, true) ? $statusFilter : null;
 
@@ -75,7 +85,37 @@ class WearableIndexController extends Controller
                     'skinTemperatureCelsius' => $connection->latestSnapshot->skin_temperature_celsius,
                 ] : null,
                 'analytics' => $metricAnalytics->forConnection($connection),
+                'review' => $healthReview->review($connection),
             ]);
+
+        $reviewQueue = (clone $baseQuery)
+            ->with(['user.roles', 'latestSnapshot'])
+            ->get()
+            ->map(function (DeviceConnection $connection) use ($healthReview): array {
+                $review = $healthReview->review($connection);
+
+                return [
+                    'id' => $connection->id,
+                    'userName' => $connection->user->name,
+                    'providerLabel' => $connection->provider->label(),
+                    'status' => $connection->status->value,
+                    ...$review,
+                ];
+            })
+            ->filter(fn (array $entry) => $entry['severity'] !== 'stable')
+            ->sortByDesc(fn (array $entry) => [
+                match ($entry['severity']) {
+                    'high' => 3,
+                    'medium' => 2,
+                    'low' => 1,
+                    default => 0,
+                },
+                $entry['syncFailuresCount'],
+                $entry['staleHours'] ?? 0,
+            ])
+            ->values()
+            ->take(6)
+            ->all();
 
         return Inertia::render('wearables/index', [
             'viewerRole' => $user->primaryRoleName(),
@@ -91,6 +131,7 @@ class WearableIndexController extends Controller
                 'averageReadiness' => $this->averageReadiness($baseQuery),
             ],
             'connections' => $connections,
+            'reviewQueue' => $reviewQueue,
             'whoopIntegration' => [
                 'oauthReady' => $whoopClient->isConfigured(),
                 'connectUrl' => route('wearables.whoop.connect'),
@@ -100,7 +141,25 @@ class WearableIndexController extends Controller
                 'connectedCount' => DeviceConnection::query()
                     ->where('provider', DeviceProvider::Whoop->value)
                     ->count(),
+                'failingCount' => DeviceConnection::query()
+                    ->where('provider', DeviceProvider::Whoop->value)
+                    ->where(function (Builder $query): void {
+                        $query
+                            ->whereNotNull('last_error_at')
+                            ->orWhereIn('status', [DeviceConnectionStatus::Attention->value, DeviceConnectionStatus::Disconnected->value]);
+                    })
+                    ->count(),
+                'webhookReady' => $whoopWebhooks->webhookEnabled(),
+                'webhookUrl' => route('wearables.whoop.webhook', absolute: true),
+                'pendingEvents' => WhoopWebhookEvent::query()
+                    ->where('processing_status', 'pending')
+                    ->count(),
+                'failedEvents' => WhoopWebhookEvent::query()
+                    ->where('processing_status', 'failed')
+                    ->count(),
+                'lastReceivedAt' => WhoopWebhookEvent::query()->max('received_at'),
                 'syncCommand' => 'php artisan throughline:whoop:sync',
+                'webhookProcessCommand' => 'php artisan throughline:whoop:webhooks:process',
             ],
             'sampleCurl' => 'curl -X POST "$APP_URL/api/device-connections/{public_id}/ingest" -H "X-Throughline-Key: {ingest_key}" -H "Content-Type: application/json" -d \'{"metric_date":"2026-06-10","metrics":{"readiness_score":82,"sleep_minutes":445,"strain_score":13.4}}\'',
         ]);

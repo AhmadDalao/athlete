@@ -90,7 +90,7 @@ class GoogleAuthenticationTest extends TestCase
             ])
             ->get(route('auth.oauth.callback', ['provider' => SignupMethod::Google->value], absolute: false));
 
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('athlete.app.index', absolute: false));
         $this->assertAuthenticated();
         $this->assertTrue(auth()->user()->hasRole(RoleName::Athlete));
         $this->assertSame(SignupMethod::Google->value, auth()->user()->registration_channel);
@@ -127,7 +127,7 @@ class GoogleAuthenticationTest extends TestCase
             ])
             ->get(route('auth.oauth.callback', ['provider' => SignupMethod::Google->value], absolute: false));
 
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect('/roster');
         $this->assertAuthenticatedAs($user->fresh());
         $this->assertDatabaseHas('social_accounts', [
             'provider' => SignupMethod::Google->value,

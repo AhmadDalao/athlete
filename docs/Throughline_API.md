@@ -1,6 +1,6 @@
 # Throughline API
 
-Date: 2026-06-15
+Date: 2026-06-27
 
 ## What is live
 
@@ -133,8 +133,8 @@ These are the abilities currently implemented:
 | `profile:read`    | Read `/me` and token metadata                           | admin, coach, athlete |
 | `dashboard:read`  | Read role-aware dashboard data                          | admin, coach, athlete |
 | `roster:read`     | Read coach-athlete assignments                          | admin, coach          |
-| `training:read`   | Read programs, sessions, and logs                       | admin, coach, athlete |
-| `training:write`  | Submit athlete workout logs                             | athlete               |
+| `training:read`   | Read programs, sessions, logs, and workout execution    | admin, coach, athlete |
+| `training:write`  | Submit athlete workout logs and set execution           | athlete               |
 | `progress:read`   | Read athlete check-ins and progress analytics           | admin, coach, athlete |
 | `progress:write`  | Create or update athlete check-ins                      | athlete               |
 | `membership:read` | Read memberships and recent payment history             | admin, coach, athlete |
@@ -223,6 +223,94 @@ Rules:
 - the authenticated athlete must own the session through the training program
 - one workout log per athlete per session
 
+### `GET /api/v1/training/sessions/{trainingSession}/execution`
+
+Athlete only in this slice.
+
+Returns the mobile-ready workout execution payload:
+
+- session title, focus, schedule, instructions, and video URL
+- parent training program
+- assigned coach
+- normalized exercise rows
+- one target set row per prescribed set
+- existing actual set log data if the athlete already started
+- existing workout log and journal values if present
+
+Rules:
+
+- requires `training:read`
+- the authenticated athlete must own the session
+- coaches/admins can still view training data through the broader training surfaces, but they do not edit athlete execution data
+
+### `POST /api/v1/training/sessions/{trainingSession}/sets`
+
+Athlete only.
+
+Creates or updates set-level execution rows.
+
+Request:
+
+```json
+{
+    "sets": [
+        {
+            "exercise_index": 0,
+            "set_number": 1,
+            "actual_reps": "6",
+            "actual_load": "120 kg",
+            "actual_rpe": 8,
+            "completed": true,
+            "notes": "Moved well."
+        }
+    ]
+}
+```
+
+Rules:
+
+- requires `training:write`
+- the authenticated athlete must own the session
+- rows must match a prescribed exercise/set target
+- saving any set data creates/updates the session workout log
+- if all target sets are completed, the workout log becomes `completed`
+- otherwise it remains `partial`
+
+### `POST /api/v1/training/sessions/{trainingSession}/complete`
+
+Athlete only.
+
+Marks the workout status and saves journal fields.
+
+Request:
+
+```json
+{
+    "completion_status": "completed",
+    "performed_at": "2026-06-27",
+    "duration_minutes": 52,
+    "exertion_rating": 8,
+    "energy_score": 7,
+    "soreness_score": 4,
+    "stress_score": 3,
+    "sleep_quality_score": 8,
+    "notes": "Completed from the athlete app."
+}
+```
+
+Allowed `completion_status` values:
+
+- `completed`
+- `partial`
+- `missed`
+
+Rules:
+
+- requires `training:write`
+- the authenticated athlete must own the session
+- `completed` backfills missing target set rows as completed for MVP consistency
+- `missed` records the opt-out/missed state
+
 ### `GET /api/v1/progress`
 
 Returns the progress surface.
@@ -300,6 +388,124 @@ Visibility:
 - admin sees all
 - coach sees own membership plus assigned-athlete memberships
 - athlete sees only their own membership
+
+## Authenticated web billing endpoints
+
+These are not part of API v1 because they are browser-driven app routes, not token APIs. They still matter for integrations and launch docs.
+
+## Authenticated web API access page
+
+### `GET /api-access`
+
+Auth:
+
+- session-authenticated user
+
+What it does:
+
+- shows allowed API abilities for the current user
+- lets the user create and revoke personal bearer tokens
+- shows manageable device ingest endpoints and keys
+- provides copy-ready curl examples for common integration paths
+
+### `POST /api-access/tokens`
+
+Auth:
+
+- session-authenticated user
+
+Request fields:
+
+- `token_name`
+- `abilities[]`
+
+What it does:
+
+- creates a Laravel Sanctum personal access token for the authenticated user
+- constrains requested abilities to the role-allowed set
+- returns the plain text token through the redirected page once
+
+### `DELETE /api-access/tokens/{tokenId}`
+
+Auth:
+
+- session-authenticated user
+
+What it does:
+
+- revokes one token belonging to the authenticated user
+- does not allow deleting another user's token
+
+### `POST /billing/checkout`
+
+Auth:
+
+- session-authenticated user
+
+Request:
+
+```json
+{
+    "plan_id": 2
+}
+```
+
+What it does:
+
+- validates that the plan exists and is active
+- creates a Stripe Checkout session
+- redirects the browser to Stripe
+
+### `POST /billing/portal`
+
+Auth:
+
+- session-authenticated user with a saved `stripe_customer_id`
+
+What it does:
+
+- creates a Stripe Billing Portal session
+- redirects the browser to Stripe
+
+## Public billing webhook endpoint
+
+### `POST /webhooks/stripe`
+
+Auth:
+
+- `Stripe-Signature` header verified against `STRIPE_WEBHOOK_SECRET`
+
+Handled events:
+
+- `checkout.session.completed`
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.payment_succeeded`
+- `invoice.payment_failed`
+
+What it does:
+
+- stores the webhook id for replay protection
+- syncs membership state from Stripe subscriptions
+- records invoice outcomes in `payment_events`
+
+## Public WHOOP webhook endpoint
+
+### `POST /webhooks/whoop`
+
+Auth:
+
+- `X-WHOOP-Signature`
+- `X-WHOOP-Signature-Timestamp`
+
+What it does:
+
+- verifies the WHOOP HMAC signature and timestamp window
+- validates the webhook payload shape
+- stores one `whoop_webhook_events` row per unique `trace_id`
+- returns a fast success response for shared-hosting-safe intake
+- relies on `php artisan throughline:whoop:webhooks:process` for targeted reconciliation sync
 
 ### `GET /api/v1/wearables`
 
@@ -425,11 +631,25 @@ Password for all demo users:
 
 These are not API features yet, and pretending otherwise would be dumb:
 
-- billing provider webhooks
 - public partner registration flow
 - roster write endpoints
 - training-program creation/update via API
-- Apple auth
-- phone auth
 
 Those can be added next, but they are not part of the live API surface today.
+
+## Training media note
+
+Training session payloads now include nullable workout video metadata:
+
+```json
+{
+    "videoUrl": "https://www.youtube.com/watch?v=example"
+}
+```
+
+Clients should render supported providers directly when possible:
+
+- YouTube watch, short, or `youtu.be` URLs
+- Vimeo page URLs
+- direct MP4/WebM/Ogg video URLs
+- any other URL as a normal external video link

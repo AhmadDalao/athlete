@@ -31,6 +31,7 @@ class TrainingProgramStoreTest extends TestCase
             'first_session_date' => now()->addDay()->toDateString(),
             'first_session_focus' => 'Threshold work',
             'first_session_instructions' => 'Relax into pace before you push.',
+            'first_session_video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
             'first_session_exercises' => "Back squat | 4 | 6 | 120 kg | 150s | RPE 8 | Full depth\nBike flush | 1 | 10 min zone 1 | Easy spin | 0s | Nasal breathing | Calm exit",
         ]);
 
@@ -47,6 +48,7 @@ class TrainingProgramStoreTest extends TestCase
         $session = $program->sessions()->firstOrFail();
 
         $this->assertSame('Run intervals', $session->title);
+        $this->assertSame('https://www.youtube.com/watch?v=dQw4w9WgXcQ', $session->video_url);
         $this->assertSame('Back squat', $session->exercises[0]['name']);
         $this->assertSame(4, $session->exercises[0]['sets']);
         $this->assertSame('6', $session->exercises[0]['reps']);
@@ -76,6 +78,7 @@ class TrainingProgramStoreTest extends TestCase
             'scheduled_date' => now()->addDays(2)->toDateString(),
             'focus' => 'Low-intensity volume',
             'instructions' => 'Keep breathing easy.',
+            'video_url' => 'https://cdn.example.com/workouts/aerobic-reset.mp4',
             'exercises' => "Bike | 40 min zone 2 | No surges\nMobility | 3 rounds | Move slowly",
         ]);
 
@@ -84,6 +87,7 @@ class TrainingProgramStoreTest extends TestCase
         $session = TrainingSession::query()->where('training_program_id', $program->id)->firstOrFail();
 
         $this->assertSame('Aerobic reset', $session->title);
+        $this->assertSame('https://cdn.example.com/workouts/aerobic-reset.mp4', $session->video_url);
         $this->assertSame('Bike', $session->exercises[0]['name']);
         $this->assertSame('40 min zone 2', $session->exercises[0]['prescription']);
         $this->assertNull($session->exercises[0]['sets']);

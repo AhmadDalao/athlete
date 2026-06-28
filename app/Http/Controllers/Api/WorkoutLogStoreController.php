@@ -36,6 +36,10 @@ class WorkoutLogStoreController extends Controller
                 'performed_at' => $request->validated('performed_at') ?? now(),
                 'duration_minutes' => $request->validated('duration_minutes'),
                 'exertion_rating' => $request->validated('exertion_rating'),
+                'energy_score' => $request->validated('energy_score'),
+                'soreness_score' => $request->validated('soreness_score'),
+                'stress_score' => $request->validated('stress_score'),
+                'sleep_quality_score' => $request->validated('sleep_quality_score'),
                 'notes' => $request->validated('notes'),
             ],
         );

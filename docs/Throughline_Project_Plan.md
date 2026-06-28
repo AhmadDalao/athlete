@@ -12,7 +12,7 @@ The winning MVP is narrower:
 
 That is the product. Everything else is support.
 
-## Delivery Status (2026-06-15)
+## Delivery Status (2026-06-27)
 
 Current state, no bullshit:
 
@@ -26,17 +26,38 @@ Current state, no bullshit:
     - wearable ingest and normalized metric storage
     - admin user management
     - admin control center
-- Phase 2 recovery intelligence is underway:
+    - owner/admin account model with explicit permission groups
+- Phase 2 recovery intelligence and auth/integration hardening are functionally complete for MVP scope:
     - WHOOP OAuth scaffolding and sync flow
     - 7-day analytics and recovery alerts
     - athlete progress workspace with manual check-ins for food, body, hydration, soreness, stress, sleep quality, and energy
     - athlete-first premium dashboard, training, and recovery surfaces
+    - coach weekly briefs driven by recovery, compliance, and manual check-in signal
+    - wearable sync review queue with stored failure state and repair guidance
+    - signed WHOOP webhooks with replay protection and cron-safe processing
+    - live Apple OAuth
+    - live phone OTP auth
+- Phase 3 has started:
+    - public coach discovery page
+    - cleaner shell, auth, and guest-entry UX
+    - consistent light-only design system and simplified navigation
+    - roster and training workspace simplification so high-volume coach tasks read faster
+    - KONA-style operational admin patterns:
+        - global workspace search
+        - audit log
+        - email delivery log
+        - Website control naming
+        - table-first admin pages with filters and CSV export
+    - phone-first athlete app based on the reference workout app video:
+        - `/app` athlete home
+        - `/app/workouts/{trainingSession}` execution screen
+        - sticky mobile bottom navigation
+        - set-by-set workout tracking
+        - journal and media tabs
+        - simple coach-athlete messaging
 - Still not live-launch ready:
-    - Apple auth
-    - phone / OTP auth
-    - real billing provider integration
-    - provider webhook hardening
-    - richer page-content / CMS-style admin controls
+    - richer page-content / CMS-style admin controls beyond current Website control fields
+    - deeper operator tooling for retries, reconnects, and billing/provider edge cases
 
 ## Strong Stack Recommendation
 
@@ -138,12 +159,16 @@ If analytics volume later gets ugly, then we add Redis, a warehouse, or a column
 
 Roles for v1:
 
+- Owner
 - Admin
 - Coach
 - Athlete
 
 Rules:
 
+- owners can create owner/admin accounts and always have every permission
+- the app must keep at least one owner account active
+- admins can manage normal users and assigned operational permissions, but cannot create or edit owners
 - one user account can own multiple roles later
 - coaches only see assigned athletes
 - athletes only see their own data
@@ -166,14 +191,15 @@ Core features:
 
 Core features:
 
-- today's session
-- session logging
+- phone-first today's session
+- session execution with set-by-set actual reps/load/RPE, completion checks, rest timer, media, and journal notes
 - goal tracking
 - membership status
 - progress view with weight, nutrition, body, and recovery trends
 - advanced metrics view
 - device connection status
 - coach-assigned program detail with sets, reps, load, rest, target, and notes
+- bottom-nav web app model for Feed, Board, Workout, Messaging, and Profile
 
 Important rule:
 
@@ -237,6 +263,9 @@ Admin controls for v1:
 - review subscription states
 - view device sync health
 - manage page content and platform settings
+- search across users, athletes, plans, programs, devices, and notifications
+- audit important admin, billing, roster, training, API-token, and check-in changes
+- review password reset and workflow email delivery logs
 
 ## Architecture Direction
 
@@ -445,13 +474,15 @@ Completed inside early Phase 2:
 - 7-day wearable trend analytics for dashboard and wearable views
 - athlete progress workspace with manual daily check-ins and coach/admin progress visibility
 - live Google auth
+- coach weekly briefs for roster triage
+- stored sync-failure review for device connections
 
 Still missing before a cleaner launch:
 
 - live Apple auth
 - live phone auth
-- billing-provider integration
-- webhook hardening and provider failure review
+- WHOOP webhook hardening
+- richer page-content / CMS-style admin controls
 
 ## First Build Order
 
@@ -529,9 +560,9 @@ Current implemented MVP slices:
 Current regression status:
 
 - migrations and seeders pass cleanly
-- full feature test suite passes: 79 tests, 657 assertions
+- full feature test suite passes: 107 tests, 922 assertions
 - production Vite build passes
-- browser validation completed across dashboard, roster, progress, wearables, and auth
+- live browser validation for this latest Phase 3 UX slice is still pending
 
 ## Non-Negotiables
 

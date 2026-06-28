@@ -33,7 +33,7 @@ class TrainingIndexController extends Controller
             ->with([
                 'coach.roles',
                 'athlete.roles',
-                'sessions.workoutLog',
+                'sessions.workoutLog.setLogs',
             ])
             ->orderByRaw(
                 "case status

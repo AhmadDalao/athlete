@@ -1,19 +1,42 @@
 <?php
 
 use App\Http\Controllers\Admin\ControlCenterController;
+use App\Http\Controllers\Admin\AuditLogIndexController;
+use App\Http\Controllers\Admin\EmailLogIndexController;
+use App\Http\Controllers\Admin\SystemSettingsController;
 use App\Http\Controllers\Admin\UserIndexController;
+use App\Http\Controllers\Admin\UserShowController;
+use App\Http\Controllers\Admin\UserStoreController;
 use App\Http\Controllers\Admin\UserUpdateController;
+use App\Http\Controllers\ApiAccessController;
+use App\Http\Controllers\ApiAccessTokenDestroyController;
+use App\Http\Controllers\ApiAccessTokenStoreController;
 use App\Http\Controllers\AthleteCheckInStoreController;
 use App\Http\Controllers\AthleteCheckInUpdateController;
+use App\Http\Controllers\AthleteAppController;
+use App\Http\Controllers\AthleteWorkoutCompleteController;
+use App\Http\Controllers\AthleteWorkoutSetStoreController;
+use App\Http\Controllers\AthleteWorkoutShowController;
+use App\Http\Controllers\Billing\CheckoutSessionStoreController;
+use App\Http\Controllers\Billing\PortalSessionStoreController;
+use App\Http\Controllers\Billing\StripeWebhookController;
+use App\Http\Controllers\CoachDirectoryController;
 use App\Http\Controllers\ContactPageController;
 use App\Http\Controllers\ContactSubmissionStoreController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MembershipIndexController;
 use App\Http\Controllers\MembershipUpdateController;
+use App\Http\Controllers\MessageIndexController;
+use App\Http\Controllers\MessageStoreController;
+use App\Http\Controllers\NotificationIndexController;
+use App\Http\Controllers\NotificationReadAllController;
+use App\Http\Controllers\NotificationReadController;
+use App\Http\Controllers\NotificationStoreController;
 use App\Http\Controllers\PaymentEventStoreController;
 use App\Http\Controllers\ProgressIndexController;
 use App\Http\Controllers\RosterAssignmentStoreController;
 use App\Http\Controllers\RosterAssignmentUpdateController;
+use App\Http\Controllers\SearchIndexController;
 use App\Http\Controllers\RosterIndexController;
 use App\Http\Controllers\TrainingIndexController;
 use App\Http\Controllers\TrainingProgramStoreController;
@@ -22,17 +45,42 @@ use App\Http\Controllers\WearableIndexController;
 use App\Http\Controllers\WebsiteHomeController;
 use App\Http\Controllers\WhoopCallbackController;
 use App\Http\Controllers\WhoopConnectController;
+use App\Http\Controllers\WhoopWebhookController;
 use App\Http\Controllers\WorkoutLogStoreController;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::any('/', WebsiteHomeController::class)->name('home');
+Route::get('coaches', CoachDirectoryController::class)->name('coaches.index');
 Route::get('contact', ContactPageController::class)->name('contact.show');
 Route::post('contact', ContactSubmissionStoreController::class)
     ->middleware('throttle:6,1')
     ->name('contact.store');
+Route::post('webhooks/stripe', StripeWebhookController::class)
+    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->name('billing.webhooks.stripe');
+Route::post('webhooks/whoop', WhoopWebhookController::class)
+    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->name('wearables.whoop.webhook');
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('api-access', ApiAccessController::class)->name('api-access.index');
+    Route::post('api-access/tokens', ApiAccessTokenStoreController::class)->name('api-access.tokens.store');
+    Route::delete('api-access/tokens/{tokenId}', ApiAccessTokenDestroyController::class)->name('api-access.tokens.destroy');
+    Route::post('billing/checkout', CheckoutSessionStoreController::class)->name('billing.checkout.store');
+    Route::post('billing/portal', PortalSessionStoreController::class)->name('billing.portal.store');
+    Route::get('search', SearchIndexController::class)->name('search.index');
+    Route::get('app', AthleteAppController::class)->name('athlete.app.index');
+    Route::get('app/workouts/{trainingSession}', AthleteWorkoutShowController::class)->name('athlete.workouts.show');
+    Route::post('app/workouts/{trainingSession}/sets', AthleteWorkoutSetStoreController::class)->name('athlete.workouts.sets.store');
+    Route::post('app/workouts/{trainingSession}/complete', AthleteWorkoutCompleteController::class)->name('athlete.workouts.complete');
+    Route::get('messages', MessageIndexController::class)->name('messages.index');
+    Route::post('messages', MessageStoreController::class)->name('messages.store');
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::get('notifications', NotificationIndexController::class)->name('notifications.index');
+    Route::post('notifications', NotificationStoreController::class)->name('notifications.store');
+    Route::post('notifications/read-all', NotificationReadAllController::class)->name('notifications.read-all');
+    Route::post('notifications/{notification}/read', NotificationReadController::class)->name('notifications.read');
     Route::get('progress', ProgressIndexController::class)->name('progress.index');
     Route::post('progress/check-ins', AthleteCheckInStoreController::class)->name('progress.check-ins.store');
     Route::patch('progress/check-ins/{athleteCheckIn}', AthleteCheckInUpdateController::class)->name('progress.check-ins.update');
@@ -50,7 +98,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('wearables/whoop/connect', WhoopConnectController::class)->name('wearables.whoop.connect');
     Route::get('wearables/whoop/callback', WhoopCallbackController::class)->name('wearables.whoop.callback');
     Route::get('admin/control-center', ControlCenterController::class)->name('admin.control-center');
+    Route::get('admin/audit-log', AuditLogIndexController::class)->name('admin.audit-log.index');
+    Route::get('admin/email-logs', EmailLogIndexController::class)->name('admin.email-logs.index');
+    Route::get('admin/system-settings', [SystemSettingsController::class, 'index'])->name('admin.system-settings.index');
+    Route::patch('admin/system-settings', [SystemSettingsController::class, 'update'])->name('admin.system-settings.update');
     Route::get('admin/users', UserIndexController::class)->name('admin.users.index');
+    Route::post('admin/users', UserStoreController::class)->name('admin.users.store');
+    Route::get('admin/users/{user}', UserShowController::class)->name('admin.users.show');
     Route::patch('admin/users/{user}', UserUpdateController::class)->name('admin.users.update');
 });
 

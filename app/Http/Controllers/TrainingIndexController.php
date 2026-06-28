@@ -29,7 +29,7 @@ class TrainingIndexController extends Controller
             ->with([
                 'coach.roles',
                 'athlete.roles',
-                'sessions.workoutLog',
+                'sessions.workoutLog.setLogs',
             ])
             ->orderByRaw(
                 "case status
@@ -68,13 +68,32 @@ class TrainingIndexController extends Controller
                         'scheduledDate' => $session->scheduled_date?->toDateString(),
                         'focus' => $session->focus,
                         'instructions' => $session->instructions,
+                        'videoUrl' => $session->video_url,
                         'exercises' => $this->normalizeExercises($session->exercises ?? []),
                         'workoutLog' => $session->workoutLog ? [
                             'completionStatus' => $session->workoutLog->completion_status->value,
                             'performedAt' => $session->workoutLog->performed_at?->toDateString(),
                             'durationMinutes' => $session->workoutLog->duration_minutes,
                             'exertionRating' => $session->workoutLog->exertion_rating,
+                            'energyScore' => $session->workoutLog->energy_score,
+                            'sorenessScore' => $session->workoutLog->soreness_score,
+                            'stressScore' => $session->workoutLog->stress_score,
+                            'sleepQualityScore' => $session->workoutLog->sleep_quality_score,
                             'notes' => $session->workoutLog->notes,
+                            'setLogs' => $session->workoutLog->setLogs
+                                ->map(fn ($setLog): array => [
+                                    'exerciseIndex' => $setLog->exercise_index,
+                                    'exerciseName' => $setLog->exercise_name,
+                                    'setNumber' => $setLog->set_number,
+                                    'targetReps' => $setLog->target_reps,
+                                    'targetLoad' => $setLog->target_load,
+                                    'actualReps' => $setLog->actual_reps,
+                                    'actualLoad' => $setLog->actual_load,
+                                    'actualRpe' => $setLog->actual_rpe,
+                                    'completedAt' => $setLog->completed_at?->toIso8601String(),
+                                ])
+                                ->values()
+                                ->all(),
                         ] : null,
                     ])
                     ->values()

@@ -30,8 +30,20 @@ class SocialAuthService
         /** @var array<string, mixed> $service */
         $service = config("services.{$method->value}", []);
 
-        return filled($service['client_id'] ?? null)
-            && filled($service['client_secret'] ?? null);
+        if (! filled($service['client_id'] ?? null)) {
+            return false;
+        }
+
+        if ($method === SignupMethod::Apple) {
+            return filled($service['client_secret'] ?? null)
+                || (
+                    filled($service['key_id'] ?? null)
+                    && filled($service['team_id'] ?? null)
+                    && filled($service['private_key'] ?? null)
+                );
+        }
+
+        return filled($service['client_secret'] ?? null);
     }
 
     public function redirectUrlFor(SignupMethod $provider): string
@@ -100,11 +112,14 @@ class SocialAuthService
         $user = User::query()->where('email', $email)->first();
 
         if (! $user && $intent !== 'register') {
-            throw new SocialAuthException('No Throughline account exists for this Google email yet. Start from sign up so we can assign the right role.');
+            throw new SocialAuthException(sprintf(
+                'No Throughline account exists for this %s email yet. Start from sign up so we can assign the right role.',
+                $provider->label(),
+            ));
         }
 
         if (! $user) {
-            $role = $this->resolveRegistrationRole($accountType);
+            $role = $this->resolveRegistrationRole($provider, $accountType);
 
             $user = User::query()->create([
                 'name' => trim((string) ($providerUser->getName() ?: Str::before($email, '@'))),
@@ -118,7 +133,7 @@ class SocialAuthService
             $user->assignRole($role);
         } else {
             if ($intent === 'register' && $accountType && ! array_intersect($user->roleNames(), RoleName::registrationValues())) {
-                $user->assignRole($this->resolveRegistrationRole($accountType));
+                $user->assignRole($this->resolveRegistrationRole($provider, $accountType));
             }
 
             if (! $user->email_verified_at) {
@@ -137,10 +152,13 @@ class SocialAuthService
         return $user->fresh(['roles', 'socialAccounts']);
     }
 
-    private function resolveRegistrationRole(?string $accountType): RoleName
+    private function resolveRegistrationRole(SignupMethod $provider, ?string $accountType): RoleName
     {
         if (! is_string($accountType) || ! in_array($accountType, RoleName::registrationValues(), true)) {
-            throw new SocialAuthException('Choose whether the Google account should register as a coach or athlete before continuing.');
+            throw new SocialAuthException(sprintf(
+                'Choose whether the %s account should register as a coach or athlete before continuing.',
+                $provider->label(),
+            ));
         }
 
         return RoleName::from($accountType);

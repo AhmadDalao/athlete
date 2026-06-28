@@ -6,8 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    WorkspaceHero,
+    WorkspaceMetricCard,
+    WorkspacePanel,
+    WorkspaceSectionHeading,
+    WorkspaceTable,
+    WorkspaceTableEmpty,
+    WorkspaceTableHeader,
+} from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
-import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
@@ -19,13 +28,13 @@ import {
     ClipboardList,
     Clock3,
     Dumbbell,
-    type LucideIcon,
     NotebookText,
+    PlayCircle,
     Plus,
     Timer,
     TrendingUp,
 } from 'lucide-react';
-import { type FormEvent, type TextareaHTMLAttributes } from 'react';
+import { Fragment, type FormEvent, useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -71,6 +80,7 @@ interface TrainingSessionRow {
     scheduledDate: string | null;
     focus: string | null;
     instructions: string | null;
+    videoUrl: string | null;
     exercises: ExerciseRow[];
     workoutLog: WorkoutLogRow | null;
 }
@@ -131,6 +141,7 @@ interface ProgramCreateFormData {
     first_session_date: string;
     first_session_focus: string;
     first_session_instructions: string;
+    first_session_video_url: string;
     first_session_exercises: string;
 }
 
@@ -139,6 +150,7 @@ interface SessionCreateFormData {
     scheduled_date: string;
     focus: string;
     instructions: string;
+    video_url: string;
     exercises: string;
 }
 
@@ -148,6 +160,69 @@ interface WorkoutLogFormData {
     duration_minutes: string;
     exertion_rating: string;
     notes: string;
+}
+
+interface ExerciseBuilderRow {
+    name: string;
+    sets: string;
+    reps: string;
+    load: string;
+    rest: string;
+    target: string;
+    note: string;
+}
+
+const emptyExerciseBuilderRow = (): ExerciseBuilderRow => ({
+    name: '',
+    sets: '',
+    reps: '',
+    load: '',
+    rest: '',
+    target: '',
+    note: '',
+});
+
+function serializeExerciseBuilderRows(rows: ExerciseBuilderRow[]) {
+    return rows
+        .filter((row) => Object.values(row).some((value) => value.trim() !== ''))
+        .map((row) => [row.name, row.sets, row.reps, row.load, row.rest, row.target, row.note].map((value) => value.trim()).join(' | '))
+        .join('\n');
+}
+
+function parseExerciseBuilderRows(value: string) {
+    if (value.trim() === '') {
+        return [emptyExerciseBuilderRow()];
+    }
+
+    return value
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+            const parts = line.split('|').map((part) => part.trim());
+
+            if (parts.length >= 4) {
+                return {
+                    name: parts[0] ?? '',
+                    sets: parts[1] ?? '',
+                    reps: parts[2] ?? '',
+                    load: parts[3] ?? '',
+                    rest: parts[4] ?? '',
+                    target: parts[5] ?? '',
+                    note: parts[6] ?? '',
+                };
+            }
+
+            return {
+                name: parts[0] ?? '',
+                sets: '',
+                reps: parts[1] ?? '',
+                load: '',
+                rest: '',
+                target: '',
+                note: parts[2] ?? '',
+            };
+        });
 }
 
 function humanizeStatus(status: string) {
@@ -271,6 +346,85 @@ function formatRest(value: number | null, label: string | null) {
     return `${value}s`;
 }
 
+function videoEmbedUrl(value: string | null) {
+    if (!value) {
+        return null;
+    }
+
+    try {
+        const url = new URL(value);
+        const host = url.hostname.replace(/^www\./, '');
+
+        if (host === 'youtu.be') {
+            return `https://www.youtube.com/embed/${url.pathname.replace('/', '')}`;
+        }
+
+        if (host === 'youtube.com' || host === 'm.youtube.com') {
+            const id = url.searchParams.get('v');
+
+            if (id) {
+                return `https://www.youtube.com/embed/${id}`;
+            }
+
+            if (url.pathname.startsWith('/shorts/')) {
+                return `https://www.youtube.com/embed/${url.pathname.split('/')[2]}`;
+            }
+        }
+
+        if (host === 'vimeo.com') {
+            const id = url.pathname.split('/').filter(Boolean).at(0);
+
+            if (id) {
+                return `https://player.vimeo.com/video/${id}`;
+            }
+        }
+    } catch {
+        return null;
+    }
+
+    return null;
+}
+
+function isDirectVideo(value: string) {
+    return /\.(mp4|webm|ogg)(\?.*)?$/i.test(value);
+}
+
+function WorkoutVideoPlayer({ url }: { url: string | null }) {
+    if (!url) {
+        return null;
+    }
+
+    const embedUrl = videoEmbedUrl(url);
+
+    return (
+        <div className="mt-4 overflow-hidden rounded-[1.35rem] border border-stone-200 bg-stone-950">
+            <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3 text-sm font-medium text-white">
+                <PlayCircle className="size-4" />
+                Coach video
+            </div>
+            {embedUrl ? (
+                <iframe
+                    src={embedUrl}
+                    title="Workout video"
+                    className="aspect-video w-full"
+                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                />
+            ) : isDirectVideo(url) ? (
+                <video src={url} controls className="aspect-video w-full bg-black" />
+            ) : (
+                <div className="bg-white p-4">
+                    <Button asChild variant="outline" size="sm">
+                        <a href={url} target="_blank" rel="noreferrer">
+                            Open video link
+                        </a>
+                    </Button>
+                </div>
+            )}
+        </div>
+    );
+}
+
 function exercisePrimaryLine(exercise: ExerciseRow) {
     if (exercise.sets && exercise.reps) {
         return `${exercise.sets} x ${exercise.reps}`;
@@ -303,34 +457,156 @@ function ExerciseCard({ exercise }: { exercise: ExerciseRow }) {
     );
 }
 
-function TextArea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-    return (
-        <textarea
-            className={cn(
-                'border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-24 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50',
-                className,
-            )}
-            {...props}
-        />
-    );
-}
+function ExerciseBuilder({
+    id,
+    value,
+    onChange,
+    disabled,
+    hint,
+}: {
+    id: string;
+    value: string;
+    onChange: (value: string) => void;
+    disabled?: boolean;
+    hint: string;
+}) {
+    const [rows, setRows] = useState<ExerciseBuilderRow[]>(() => parseExerciseBuilderRows(value));
 
-function MetricCard({ title, value, note, icon: Icon }: { title: string; value: string; note: string; icon: LucideIcon }) {
+    useEffect(() => {
+        if (value.trim() === '') {
+            setRows([emptyExerciseBuilderRow()]);
+        }
+    }, [value]);
+
+    const updateRows = (nextRows: ExerciseBuilderRow[]) => {
+        setRows(nextRows);
+        onChange(serializeExerciseBuilderRows(nextRows));
+    };
+
+    const updateRow = (index: number, patch: Partial<ExerciseBuilderRow>) => {
+        updateRows(rows.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row)));
+    };
+
     return (
-        <Card className="border-sidebar-border/70">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <div>
-                    <CardDescription>{title}</CardDescription>
-                    <CardTitle className="mt-3 text-3xl font-semibold tracking-tight">{value}</CardTitle>
-                </div>
-                <div className="bg-primary/10 text-primary rounded-full p-2">
-                    <Icon className="size-4" />
-                </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground text-sm leading-6">{note}</p>
-            </CardContent>
-        </Card>
+        <div className="space-y-3">
+            <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
+                <table className="w-full min-w-[860px] text-left text-sm">
+                    <thead className="bg-stone-50 text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
+                        <tr>
+                            <th className="px-3 py-3">Exercise</th>
+                            <th className="px-3 py-3">Sets</th>
+                            <th className="px-3 py-3">Reps/time</th>
+                            <th className="px-3 py-3">Load</th>
+                            <th className="px-3 py-3">Rest</th>
+                            <th className="px-3 py-3">Target</th>
+                            <th className="px-3 py-3">Note</th>
+                            <th className="px-3 py-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map((row, index) => (
+                            <tr key={`${id}-${index}`} className="border-t border-stone-100">
+                                <td className="px-3 py-3">
+                                    <Input
+                                        value={row.name}
+                                        onChange={(event) => updateRow(index, { name: event.target.value })}
+                                        placeholder="Back squat"
+                                        disabled={disabled}
+                                        className="h-10 min-w-44"
+                                    />
+                                </td>
+                                <td className="px-3 py-3">
+                                    <Input
+                                        type="number"
+                                        min="1"
+                                        value={row.sets}
+                                        onChange={(event) => updateRow(index, { sets: event.target.value })}
+                                        placeholder="4"
+                                        disabled={disabled}
+                                        className="h-10 min-w-20"
+                                    />
+                                </td>
+                                <td className="px-3 py-3">
+                                    <Input
+                                        value={row.reps}
+                                        onChange={(event) => updateRow(index, { reps: event.target.value })}
+                                        placeholder="6 or 40s"
+                                        disabled={disabled}
+                                        className="h-10 min-w-32"
+                                    />
+                                </td>
+                                <td className="px-3 py-3">
+                                    <Input
+                                        value={row.load}
+                                        onChange={(event) => updateRow(index, { load: event.target.value })}
+                                        placeholder="120 kg"
+                                        disabled={disabled}
+                                        className="h-10 min-w-32"
+                                    />
+                                </td>
+                                <td className="px-3 py-3">
+                                    <Input
+                                        value={row.rest}
+                                        onChange={(event) => updateRow(index, { rest: event.target.value })}
+                                        placeholder="90s"
+                                        disabled={disabled}
+                                        className="h-10 min-w-28"
+                                    />
+                                </td>
+                                <td className="px-3 py-3">
+                                    <Input
+                                        value={row.target}
+                                        onChange={(event) => updateRow(index, { target: event.target.value })}
+                                        placeholder="RPE 8"
+                                        disabled={disabled}
+                                        className="h-10 min-w-32"
+                                    />
+                                </td>
+                                <td className="px-3 py-3">
+                                    <Input
+                                        value={row.note}
+                                        onChange={(event) => updateRow(index, { note: event.target.value })}
+                                        placeholder="Technique cue"
+                                        disabled={disabled}
+                                        className="h-10 min-w-44"
+                                    />
+                                </td>
+                                <td className="px-3 py-3">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={disabled || rows.length === 1}
+                                        onClick={() => updateRows(rows.filter((_, rowIndex) => rowIndex !== index))}
+                                    >
+                                        Remove
+                                    </Button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-muted-foreground text-xs leading-5">{hint}</p>
+                <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => updateRows([...rows, emptyExerciseBuilderRow()])}>
+                    Add exercise row
+                </Button>
+            </div>
+
+            <details className="rounded-2xl border border-stone-200 bg-stone-50 p-3">
+                <summary className="cursor-pointer text-sm font-semibold text-stone-800">Advanced paste / legacy pipe format</summary>
+                <Textarea
+                    id={id}
+                    value={value}
+                    onChange={(event) => onChange(event.target.value)}
+                    disabled={disabled}
+                    placeholder={`Back squat | 4 | 6 | 120 kg | 150s | RPE 8 | Full depth every rep\nRun intervals | 6 | 800m | Threshold pace | 90s | Hold form | Walk back easy`}
+                    className="mt-3"
+                />
+            </details>
+        </div>
     );
 }
 
@@ -347,6 +623,7 @@ function ProgramCreateForm({ rosterAthletes, exerciseFormatHint }: { rosterAthle
         first_session_date: today,
         first_session_focus: '',
         first_session_instructions: '',
+        first_session_video_url: '',
         first_session_exercises: '',
     });
 
@@ -364,6 +641,7 @@ function ProgramCreateForm({ rosterAthletes, exerciseFormatHint }: { rosterAthle
                     'first_session_title',
                     'first_session_focus',
                     'first_session_instructions',
+                    'first_session_video_url',
                     'first_session_exercises',
                 ),
         });
@@ -458,7 +736,7 @@ function ProgramCreateForm({ rosterAthletes, exerciseFormatHint }: { rosterAthle
 
                         <div className="grid gap-2">
                             <Label htmlFor="notes">Coach notes</Label>
-                            <TextArea
+                            <Textarea
                                 id="notes"
                                 value={data.notes}
                                 onChange={(event) => setData('notes', event.target.value)}
@@ -510,12 +788,24 @@ function ProgramCreateForm({ rosterAthletes, exerciseFormatHint }: { rosterAthle
                                     />
                                     <InputError message={errors.first_session_focus} />
                                 </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="first_session_video_url">Video URL</Label>
+                                    <Input
+                                        id="first_session_video_url"
+                                        value={data.first_session_video_url}
+                                        onChange={(event) => setData('first_session_video_url', event.target.value)}
+                                        disabled={processing}
+                                        placeholder="https://youtube.com/watch?v=..."
+                                    />
+                                    <InputError message={errors.first_session_video_url} />
+                                </div>
                             </div>
 
                             <div className="mt-4 grid gap-4 lg:grid-cols-2">
                                 <div className="grid gap-2">
                                     <Label htmlFor="first_session_instructions">Instructions</Label>
-                                    <TextArea
+                                    <Textarea
                                         id="first_session_instructions"
                                         value={data.first_session_instructions}
                                         onChange={(event) => setData('first_session_instructions', event.target.value)}
@@ -527,14 +817,13 @@ function ProgramCreateForm({ rosterAthletes, exerciseFormatHint }: { rosterAthle
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="first_session_exercises">Exercise list</Label>
-                                    <TextArea
+                                    <ExerciseBuilder
                                         id="first_session_exercises"
                                         value={data.first_session_exercises}
-                                        onChange={(event) => setData('first_session_exercises', event.target.value)}
+                                        onChange={(value) => setData('first_session_exercises', value)}
                                         disabled={processing}
-                                        placeholder={`Back squat | 4 | 6 | 120 kg | 150s | RPE 8 | Full depth every rep\nRun intervals | 6 | 800m | Threshold pace | 90s | Hold form | Walk back easy`}
+                                        hint={exerciseFormatHint}
                                     />
-                                    <p className="text-muted-foreground text-xs leading-5">{exerciseFormatHint}</p>
                                     <InputError message={errors.first_session_exercises} />
                                 </div>
                             </div>
@@ -557,6 +846,7 @@ function ProgramSessionForm({ programId, exerciseFormatHint }: { programId: numb
         scheduled_date: today,
         focus: '',
         instructions: '',
+        video_url: '',
         exercises: '',
     });
 
@@ -565,7 +855,7 @@ function ProgramSessionForm({ programId, exerciseFormatHint }: { programId: numb
 
         post(route('training.programs.sessions.store', { trainingProgram: programId }), {
             preserveScroll: true,
-            onSuccess: () => reset('title', 'focus', 'instructions', 'exercises'),
+            onSuccess: () => reset('title', 'focus', 'instructions', 'video_url', 'exercises'),
         });
     };
 
@@ -613,12 +903,24 @@ function ProgramSessionForm({ programId, exerciseFormatHint }: { programId: numb
                             />
                             <InputError message={errors.focus} />
                         </div>
+
+                        <div className="grid gap-2 lg:col-span-2">
+                            <Label htmlFor={`session-video-${programId}`}>Video URL</Label>
+                            <Input
+                                id={`session-video-${programId}`}
+                                value={data.video_url}
+                                onChange={(event) => setData('video_url', event.target.value)}
+                                disabled={processing}
+                                placeholder="YouTube, Vimeo, MP4, or WebM URL"
+                            />
+                            <InputError message={errors.video_url} />
+                        </div>
                     </div>
 
                     <div className="grid gap-4 lg:grid-cols-2">
                         <div className="grid gap-2">
                             <Label htmlFor={`session-instructions-${programId}`}>Instructions</Label>
-                            <TextArea
+                            <Textarea
                                 id={`session-instructions-${programId}`}
                                 value={data.instructions}
                                 onChange={(event) => setData('instructions', event.target.value)}
@@ -630,14 +932,13 @@ function ProgramSessionForm({ programId, exerciseFormatHint }: { programId: numb
 
                         <div className="grid gap-2">
                             <Label htmlFor={`session-exercises-${programId}`}>Exercise list</Label>
-                            <TextArea
+                            <ExerciseBuilder
                                 id={`session-exercises-${programId}`}
                                 value={data.exercises}
-                                onChange={(event) => setData('exercises', event.target.value)}
+                                onChange={(value) => setData('exercises', value)}
                                 disabled={processing}
-                                placeholder={`Trap-bar deadlift | 5 | 3 | 140 kg | 180s | Fast concentric | Reset each rep\nBike flush | 1 | 20 min zone 2 | Easy spin | 0s | Nasal breathing | Keep cadence smooth`}
+                                hint={exerciseFormatHint}
                             />
-                            <p className="text-muted-foreground text-xs leading-5">{exerciseFormatHint}</p>
                             <InputError message={errors.exercises} />
                         </div>
                     </div>
@@ -740,7 +1041,7 @@ function WorkoutLogForm({ session, statusOptions }: { session: TrainingSessionRo
 
                     <div className="grid gap-2">
                         <Label htmlFor={`workout-notes-${session.id}`}>Notes</Label>
-                        <TextArea
+                        <Textarea
                             id={`workout-notes-${session.id}`}
                             value={data.notes}
                             onChange={(event) => setData('notes', event.target.value)}
@@ -795,7 +1096,7 @@ function AthleteTrainingExperience({ summary, programs, statusOptions }: Pick<Tr
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Training" />
 
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-xl bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(255,255,255,1))] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
                 <AthleteHero
                     eyebrow="Athlete training board"
                     title={primaryProgram ? primaryProgram.title : 'Training is ready when your coach assigns the block.'}
@@ -949,6 +1250,7 @@ function AthleteTrainingExperience({ summary, programs, statusOptions }: Pick<Tr
                                                             {session.instructions && (
                                                                 <p className="max-w-3xl text-sm leading-6 text-stone-600">{session.instructions}</p>
                                                             )}
+                                                            <WorkoutVideoPlayer url={session.videoUrl} />
                                                         </div>
 
                                                         {session.workoutLog ? (
@@ -1016,228 +1318,252 @@ export default function TrainingIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Training" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
-                <Card className="border-sidebar-border/70 from-background via-background to-muted/40 bg-linear-to-br">
-                    <CardHeader>
-                        <CardTitle className="text-3xl">Training workspace</CardTitle>
-                        <CardDescription className="max-w-3xl leading-6">
-                            {scopeLabel}. This is where training intent, session execution, and coach visibility finally live in the same place.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-4 lg:grid-cols-[1.4fr_0.6fr]">
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                            {cards.map((card) => (
-                                <MetricCard key={card.title} title={card.title} value={card.value} note={card.note} icon={card.icon} />
-                            ))}
-                        </div>
-
-                        <div className="border-sidebar-border/70 bg-muted/30 rounded-2xl border p-5">
-                            <p className="text-muted-foreground text-sm font-medium">Why this matters</p>
-                            <p className="mt-3 text-lg font-semibold tracking-tight">{roleCallout(viewerRole)}</p>
-                            <div className="border-sidebar-border/70 bg-background/80 mt-4 rounded-xl border border-dashed p-3">
-                                <p className="text-muted-foreground text-xs font-medium tracking-[0.2em] uppercase">Exercise format</p>
-                                <p className="text-muted-foreground mt-2 text-sm leading-6">{exerciseFormatHint}</p>
-                                <p className="text-muted-foreground mt-2 text-xs leading-5">
+            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+                <WorkspaceHero
+                    eyebrow={viewerRole === 'coach' ? 'Coach training control' : 'Training oversight'}
+                    title={
+                        viewerRole === 'coach'
+                            ? 'Programming should be easy to assign and easier to review.'
+                            : 'Training visibility should stay readable even at platform scope.'
+                    }
+                    description={`${scopeLabel} The point of this page is to keep block design, session detail, and athlete execution in one clean flow instead of scattering them across random notes and side chats.`}
+                    badges={[`${summary.activePrograms} active blocks`, `${summary.scheduledThisWeek} scheduled this week`]}
+                    actions={
+                        <>
+                            {canCreatePrograms && (
+                                <Button asChild size="lg" className="rounded-full bg-stone-950 text-white hover:bg-stone-800">
+                                    <a href="#program-composer">
+                                        <Plus className="mr-2 size-4" />
+                                        Build a program
+                                    </a>
+                                </Button>
+                            )}
+                            <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
+                                <Link href="/roster">
+                                    <ClipboardList className="mr-2 size-4" />
+                                    Open roster
+                                </Link>
+                            </Button>
+                            <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
+                                <Link href="/progress">
+                                    <TrendingUp className="mr-2 size-4" />
+                                    Open progress
+                                </Link>
+                            </Button>
+                        </>
+                    }
+                    aside={
+                        <div className="grid gap-3">
+                            <div className="rounded-[1.35rem] border border-white/70 bg-white/82 p-4">
+                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Why this matters</p>
+                                <p className="mt-3 text-lg font-semibold tracking-tight text-stone-950">{roleCallout(viewerRole)}</p>
+                            </div>
+                            <div className="rounded-[1.35rem] border border-white/70 bg-white/82 p-4">
+                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Programs in view</p>
+                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">{programs.total}</p>
+                                <p className="mt-2 text-sm text-stone-600">Visible training records in the current scope.</p>
+                            </div>
+                            <div className="rounded-[1.35rem] border border-white/70 bg-white/82 p-4">
+                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Exercise format</p>
+                                <p className="mt-3 text-sm leading-6 text-stone-600">{exerciseFormatHint}</p>
+                                <p className="mt-2 text-xs leading-5 text-stone-500">
                                     Example: `Exercise | sets | reps or time | load | rest | target | note`
                                 </p>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    }
+                />
 
-                {canCreatePrograms && <ProgramCreateForm rosterAthletes={rosterAthletes} exerciseFormatHint={exerciseFormatHint} />}
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    {cards.map((card) => (
+                        <WorkspaceMetricCard key={card.title} title={card.title} value={card.value} note={card.note} icon={card.icon} />
+                    ))}
+                </div>
+
+                {canCreatePrograms && (
+                    <section id="program-composer" className="space-y-4">
+                        <WorkspaceSectionHeading
+                            eyebrow="Program composer"
+                            title="Assign the block once, then let the athlete execute against something clear."
+                            description="Start with the athlete, define the goal, and seed the first session so the training workspace is useful immediately instead of after three more admin steps."
+                        />
+                        <ProgramCreateForm rosterAthletes={rosterAthletes} exerciseFormatHint={exerciseFormatHint} />
+                    </section>
+                )}
 
                 <section className="space-y-4">
-                    <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
-                        <div>
-                            <h2 className="text-xl font-semibold tracking-tight">Programs</h2>
-                            <p className="text-muted-foreground text-sm leading-6">
-                                {viewerRole === 'coach'
-                                    ? 'Your roster programming blocks, upcoming sessions, and athlete feedback.'
-                                    : viewerRole === 'athlete'
-                                      ? 'Your assigned programming and session-level log history.'
-                                      : 'Platform-wide training visibility for support and operations.'}
-                            </p>
-                        </div>
-                        <p className="text-muted-foreground text-sm">{programs.total} program record(s) in the current view.</p>
-                    </div>
+                    <WorkspaceSectionHeading
+                        eyebrow="Program library"
+                        title="Every block, session, and athlete log in one readable stack."
+                        description={
+                            viewerRole === 'coach'
+                                ? 'Your visible programming blocks, upcoming sessions, and athlete feedback should read like a coaching workflow, not a database dump.'
+                                : 'Platform-wide training visibility for support and operations without making you drown in detail.'
+                        }
+                    />
 
-                    <Card className="border-sidebar-border/70">
-                        <CardContent className="space-y-4 p-4">
+                    <WorkspacePanel
+                        title="Programs in view"
+                        description={`${programs.total} program record(s) in the current view.`}
+                        contentClassName="space-y-4"
+                    >
+                        <WorkspaceTable minWidth="min-w-[1180px]">
+                            <WorkspaceTableHeader labels={['Program', 'Athlete', 'Coach', 'Status', 'Dates', 'Sessions', 'Next', 'Notes']} />
                             {programs.data.length === 0 ? (
-                                <div className="border-sidebar-border/70 rounded-xl border border-dashed p-8 text-center">
-                                    <p className="font-medium">No training programs yet.</p>
-                                    <p className="text-muted-foreground mt-2 text-sm">
-                                        That is either an empty roster or a product that still needs to earn its name.
-                                    </p>
-                                </div>
+                                <WorkspaceTableEmpty message="No training programs yet." colSpan={8} />
                             ) : (
-                                programs.data.map((program) => (
-                                    <div key={program.id} className="border-sidebar-border/70 rounded-2xl border p-4">
-                                        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                                            <div className="space-y-2">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <p className="text-xl font-semibold tracking-tight">{program.title}</p>
+                                <tbody className="divide-y divide-stone-100">
+                                    {programs.data.map((program) => (
+                                        <Fragment key={program.id}>
+                                            <tr key={`program-${program.id}`} className="align-top transition-colors hover:bg-stone-50/80">
+                                                <td className="px-4 py-4">
+                                                    <p className="font-semibold text-stone-950">{program.title}</p>
+                                                    {program.goal && <p className="mt-1 text-xs text-stone-500">{program.goal}</p>}
+                                                </td>
+                                                <td className="px-4 py-4 font-medium text-stone-950">{program.athleteName}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{program.coachName}</td>
+                                                <td className="px-4 py-4">
                                                     <Badge variant={badgeVariantForProgram(program.status)}>{humanizeStatus(program.status)}</Badge>
-                                                </div>
-                                                <p className="text-muted-foreground text-sm">
-                                                    Coach: {program.coachName} · Athlete: {program.athleteName}
-                                                </p>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {program.goal && <Badge variant="outline">{program.goal}</Badge>}
-                                                    <Badge variant="outline">{program.sessionCount} session(s)</Badge>
-                                                    <Badge variant="outline">Next: {program.nextSessionDate ?? 'Not scheduled'}</Badge>
-                                                </div>
-                                            </div>
+                                                </td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">
+                                                    {program.startDate ?? 'Not set'} → {program.endDate ?? 'Open ended'}
+                                                </td>
+                                                <td className="px-4 py-4 font-medium text-stone-950">{program.sessionCount}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{program.nextSessionDate ?? 'Not scheduled'}</td>
+                                                <td className="px-4 py-4">
+                                                    <p className="line-clamp-2 max-w-[18rem] text-sm text-stone-700">
+                                                        {program.notes ?? 'No coach notes.'}
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                            <tr key={`program-detail-${program.id}`} className="bg-stone-50/50">
+                                                <td colSpan={8} className="px-4 py-4">
+                                                    {viewerRole === 'coach' && (
+                                                        <div className="mb-4">
+                                                            <ProgramSessionForm programId={program.id} exerciseFormatHint={exerciseFormatHint} />
+                                                        </div>
+                                                    )}
 
-                                            <div className="grid gap-3 sm:grid-cols-3 xl:w-[28rem]">
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Start</p>
-                                                    <p className="mt-2 text-sm font-medium">{program.startDate ?? 'Not set'}</p>
-                                                </div>
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">End</p>
-                                                    <p className="mt-2 text-sm font-medium">{program.endDate ?? 'Open ended'}</p>
-                                                </div>
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Sessions</p>
-                                                    <p className="mt-2 text-sm font-medium">{program.sessionCount}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {program.notes && (
-                                            <div className="border-sidebar-border/70 bg-muted/20 mt-4 rounded-xl border p-4">
-                                                <div className="flex items-center gap-2">
-                                                    <NotebookText className="text-primary size-4" />
-                                                    <p className="text-sm font-medium">Coach note</p>
-                                                </div>
-                                                <p className="text-muted-foreground mt-2 text-sm leading-6">{program.notes}</p>
-                                            </div>
-                                        )}
-
-                                        {viewerRole === 'coach' && (
-                                            <div className="mt-4">
-                                                <ProgramSessionForm programId={program.id} exerciseFormatHint={exerciseFormatHint} />
-                                            </div>
-                                        )}
-
-                                        <div className="mt-4 space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <Timer className="text-primary size-4" />
-                                                <h3 className="font-medium">Sessions</h3>
-                                            </div>
-
-                                            {program.sessions.length === 0 ? (
-                                                <div className="border-sidebar-border/70 rounded-xl border border-dashed p-4">
-                                                    <p className="text-muted-foreground text-sm">No sessions have been added to this program yet.</p>
-                                                </div>
-                                            ) : (
-                                                program.sessions.map((session) => (
-                                                    <div
-                                                        key={session.id}
-                                                        className="border-sidebar-border/70 bg-background/70 rounded-2xl border p-4"
-                                                    >
-                                                        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                                                            <div className="space-y-2">
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <p className="font-medium">{session.title}</p>
-                                                                    {session.scheduledDate && (
-                                                                        <Badge variant="outline">{session.scheduledDate}</Badge>
-                                                                    )}
-                                                                    {session.focus && <Badge variant="outline">{session.focus}</Badge>}
-                                                                </div>
-                                                                {session.instructions && (
-                                                                    <p className="text-muted-foreground max-w-3xl text-sm leading-6">
-                                                                        {session.instructions}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-
-                                                            {session.workoutLog ? (
-                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                    <Badge variant={badgeVariantForWorkout(session.workoutLog.completionStatus)}>
-                                                                        {humanizeStatus(session.workoutLog.completionStatus)}
-                                                                    </Badge>
-                                                                    {session.workoutLog.durationMinutes && (
-                                                                        <Badge variant="outline">{session.workoutLog.durationMinutes} min</Badge>
-                                                                    )}
-                                                                    {session.workoutLog.exertionRating && (
-                                                                        <Badge variant="outline">RPE {session.workoutLog.exertionRating}</Badge>
-                                                                    )}
-                                                                </div>
-                                                            ) : (
-                                                                <Badge variant="outline">No workout log yet</Badge>
-                                                            )}
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center gap-2 text-sm font-semibold text-stone-950">
+                                                            <Timer className="size-4" />
+                                                            Sessions and exercise prescription
                                                         </div>
 
-                                                        {session.exercises.length > 0 && (
-                                                            <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                                                                {session.exercises.map((exercise, index) => (
-                                                                    <ExerciseCard key={`${session.id}-${index}`} exercise={exercise} />
-                                                                ))}
-                                                            </div>
-                                                        )}
-
-                                                        {viewerRole === 'athlete' ? (
-                                                            <div className="mt-4">
-                                                                <WorkoutLogForm session={session} statusOptions={statusOptions} />
-                                                            </div>
-                                                        ) : session.workoutLog ? (
-                                                            <div className="border-sidebar-border/70 bg-muted/20 mt-4 rounded-xl border p-4">
-                                                                <p className="text-sm font-medium">Athlete log</p>
-                                                                <div className="mt-3 grid gap-3 md:grid-cols-3">
-                                                                    <div>
-                                                                        <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
-                                                                            Completed on
-                                                                        </p>
-                                                                        <p className="mt-2 text-sm font-medium">
-                                                                            {session.workoutLog.performedAt ?? 'Not logged'}
-                                                                        </p>
-                                                                    </div>
-                                                                    <div>
-                                                                        <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
-                                                                            Duration
-                                                                        </p>
-                                                                        <p className="mt-2 text-sm font-medium">
-                                                                            {session.workoutLog.durationMinutes
-                                                                                ? `${session.workoutLog.durationMinutes} min`
-                                                                                : 'Not logged'}
-                                                                        </p>
-                                                                    </div>
-                                                                    <div>
-                                                                        <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">
-                                                                            Exertion
-                                                                        </p>
-                                                                        <p className="mt-2 text-sm font-medium">
-                                                                            {session.workoutLog.exertionRating
-                                                                                ? `RPE ${session.workoutLog.exertionRating}`
-                                                                                : 'Not logged'}
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                                {session.workoutLog.notes && (
-                                                                    <p className="text-muted-foreground mt-3 text-sm leading-6">
-                                                                        {session.workoutLog.notes}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="border-sidebar-border/70 mt-4 rounded-xl border border-dashed p-4">
-                                                                <p className="text-muted-foreground text-sm">
-                                                                    Athlete feedback has not been submitted for this session yet.
-                                                                </p>
-                                                            </div>
-                                                        )}
+                                                        <WorkspaceTable minWidth="min-w-[1040px]">
+                                                            <WorkspaceTableHeader
+                                                                labels={['Session', 'Scheduled', 'Focus', 'Video', 'Workout log', 'Exercises']}
+                                                            />
+                                                            {program.sessions.length === 0 ? (
+                                                                <WorkspaceTableEmpty message="No sessions have been added to this program yet." colSpan={6} />
+                                                            ) : (
+                                                                <tbody className="divide-y divide-stone-100">
+                                                                    {program.sessions.map((session) => (
+                                                                        <tr key={session.id} className="align-top">
+                                                                            <td className="px-4 py-4">
+                                                                                <p className="font-medium text-stone-950">{session.title}</p>
+                                                                                <p className="mt-1 max-w-[18rem] text-xs leading-5 text-stone-500">
+                                                                                    {session.instructions ?? 'No instructions.'}
+                                                                                </p>
+                                                                                {viewerRole === 'athlete' && (
+                                                                                    <div className="mt-3">
+                                                                                        <WorkoutLogForm session={session} statusOptions={statusOptions} />
+                                                                                    </div>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="px-4 py-4 text-sm text-stone-700">
+                                                                                {session.scheduledDate ?? 'Not scheduled'}
+                                                                            </td>
+                                                                            <td className="px-4 py-4 text-sm text-stone-700">{session.focus ?? 'General'}</td>
+                                                                            <td className="px-4 py-4">
+                                                                                <WorkoutVideoPlayer url={session.videoUrl} />
+                                                                            </td>
+                                                                            <td className="px-4 py-4">
+                                                                                {session.workoutLog ? (
+                                                                                    <div className="space-y-1 text-xs text-stone-600">
+                                                                                        <Badge
+                                                                                            variant={badgeVariantForWorkout(
+                                                                                                session.workoutLog.completionStatus,
+                                                                                            )}
+                                                                                        >
+                                                                                            {humanizeStatus(session.workoutLog.completionStatus)}
+                                                                                        </Badge>
+                                                                                        <p>{session.workoutLog.performedAt ?? 'Not dated'}</p>
+                                                                                        <p>
+                                                                                            {session.workoutLog.durationMinutes
+                                                                                                ? `${session.workoutLog.durationMinutes} min`
+                                                                                                : 'No duration'}{' '}
+                                                                                            ·{' '}
+                                                                                            {session.workoutLog.exertionRating
+                                                                                                ? `RPE ${session.workoutLog.exertionRating}`
+                                                                                                : 'No RPE'}
+                                                                                        </p>
+                                                                                        {session.workoutLog.notes && (
+                                                                                            <p className="line-clamp-2 max-w-[14rem]">
+                                                                                                {session.workoutLog.notes}
+                                                                                            </p>
+                                                                                        )}
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <Badge variant="outline">No workout log yet</Badge>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="px-4 py-4">
+                                                                                <WorkspaceTable minWidth="min-w-[720px]">
+                                                                                    <WorkspaceTableHeader
+                                                                                        labels={['Exercise', 'Sets', 'Reps/time', 'Load', 'Rest', 'Target']}
+                                                                                    />
+                                                                                    {session.exercises.length === 0 ? (
+                                                                                        <WorkspaceTableEmpty message="No exercises listed." colSpan={6} />
+                                                                                    ) : (
+                                                                                        <tbody className="divide-y divide-stone-100">
+                                                                                            {session.exercises.map((exercise, index) => (
+                                                                                                <tr key={`${session.id}-${index}`}>
+                                                                                                    <td className="px-4 py-3">
+                                                                                                        <p className="font-medium text-stone-950">
+                                                                                                            {exercise.name}
+                                                                                                        </p>
+                                                                                                        <p className="mt-1 line-clamp-2 max-w-[12rem] text-xs text-stone-500">
+                                                                                                            {exercise.note ??
+                                                                                                                exercise.prescription ??
+                                                                                                                'No note.'}
+                                                                                                        </p>
+                                                                                                    </td>
+                                                                                                    <td className="px-4 py-3 text-sm text-stone-700">
+                                                                                                        {exercise.sets ?? '-'}
+                                                                                                    </td>
+                                                                                                    <td className="px-4 py-3 text-sm text-stone-700">
+                                                                                                        {exercise.reps ?? '-'}
+                                                                                                    </td>
+                                                                                                    <td className="px-4 py-3 text-sm text-stone-700">
+                                                                                                        {exercise.load ?? '-'}
+                                                                                                    </td>
+                                                                                                    <td className="px-4 py-3 text-sm text-stone-700">
+                                                                                                        {exercise.rest_label ?? '-'}
+                                                                                                    </td>
+                                                                                                    <td className="px-4 py-3 text-sm text-stone-700">
+                                                                                                        {exercise.target ?? '-'}
+                                                                                                    </td>
+                                                                                                </tr>
+                                                                                            ))}
+                                                                                        </tbody>
+                                                                                    )}
+                                                                                </WorkspaceTable>
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            )}
+                                                        </WorkspaceTable>
                                                     </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-                                ))
+                                                </td>
+                                            </tr>
+                                        </Fragment>
+                                    ))}
+                                </tbody>
                             )}
-                        </CardContent>
-                    </Card>
+                        </WorkspaceTable>
+                    </WorkspacePanel>
 
                     <div className="flex items-center justify-between">
                         <Button variant="outline" asChild disabled={!programs.prev_page_url}>

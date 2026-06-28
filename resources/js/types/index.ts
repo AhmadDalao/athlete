@@ -28,6 +28,9 @@ export interface SharedData {
         success?: string | null;
         status?: string | null;
     };
+    notifications?: {
+        unreadCount: number;
+    };
     auth: Auth;
     [key: string]: unknown;
 }
@@ -50,8 +53,11 @@ export interface User {
     updated_at: string;
     role_names?: string[];
     primary_role?: string | null;
+    position?: string | null;
+    permissions?: string[];
     primary_goal?: string | null;
     preferred_contact_method?: string | null;
     registration_channel?: string | null;
+    landing_path?: string | null;
     [key: string]: unknown; // This allows for additional properties...
 }

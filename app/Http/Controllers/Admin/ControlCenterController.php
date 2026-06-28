@@ -19,18 +19,19 @@ use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use App\Models\User;
 use App\Models\WorkoutLog;
+use App\Services\DeviceConnectionHealthReviewService;
 use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ControlCenterController extends Controller
 {
-    public function __invoke(): Response
+    public function __invoke(DeviceConnectionHealthReviewService $healthReview): Response
     {
         /** @var User $viewer */
         $viewer = request()->user()->loadMissing('roles');
 
-        abort_unless($viewer->hasRole(RoleName::Admin), 403);
+        abort_unless($viewer->hasPermission('admin.control_center.view'), 403);
 
         $currentMemberships = Membership::query()
             ->whereIn('status', [
@@ -208,14 +209,17 @@ class ControlCenterController extends Controller
                     ->all(),
                 'deviceQueue' => $attentionConnections
                     ->take(8)
-                    ->map(fn (DeviceConnection $connection): array => [
-                        'userName' => $connection->user->name,
-                        'userRole' => $connection->user->primaryRoleName(),
-                        'provider' => $connection->provider->label(),
-                        'status' => $connection->status->value,
-                        'lastSyncedAt' => $connection->last_synced_at?->toDateTimeString(),
-                        'readinessScore' => $connection->latestSnapshot?->readiness_score,
-                    ])
+                    ->map(function (DeviceConnection $connection) use ($healthReview): array {
+                        return [
+                            'userName' => $connection->user->name,
+                            'userRole' => $connection->user->primaryRoleName(),
+                            'provider' => $connection->provider->label(),
+                            'status' => $connection->status->value,
+                            'lastSyncedAt' => $connection->last_synced_at?->toDateTimeString(),
+                            'readinessScore' => $connection->latestSnapshot?->readiness_score,
+                            ...$healthReview->review($connection),
+                        ];
+                    })
                     ->values()
                     ->all(),
                 'athleteCoverageGaps' => $athleteCoverageGaps,

@@ -30,6 +30,10 @@ class DeviceConnection extends Model
         'granted_scopes',
         'provider_account_payload',
         'last_synced_at',
+        'last_sync_started_at',
+        'last_error_at',
+        'last_error_message',
+        'sync_failures_count',
     ];
 
     protected $hidden = [
@@ -51,6 +55,9 @@ class DeviceConnection extends Model
             'provider_account_payload' => 'array',
             'token_expires_at' => 'datetime',
             'last_synced_at' => 'datetime',
+            'last_sync_started_at' => 'datetime',
+            'last_error_at' => 'datetime',
+            'sync_failures_count' => 'integer',
         ];
     }
 

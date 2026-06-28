@@ -113,7 +113,9 @@ class WhoopCallbackTest extends TestCase
                 'code' => 'oauth-code-123',
             ]));
 
-        $response->assertRedirect(route('wearables.index', absolute: false));
+        $response
+            ->assertRedirect(route('wearables.index', absolute: false))
+            ->assertSessionHas('success');
 
         $connection = DeviceConnection::query()
             ->where('user_id', $athlete->id)
@@ -135,5 +137,50 @@ class WhoopCallbackTest extends TestCase
         $this->assertSame(6500, $snapshot->distance_meters);
         $this->assertSame(60, $snapshot->active_minutes);
         $this->assertSame(15.8, $snapshot->respiratory_rate);
+    }
+
+    public function test_whoop_callback_tracks_first_sync_failure_for_review(): void
+    {
+        config()->set('services.whoop.client_id', 'whoop-client-id');
+        config()->set('services.whoop.client_secret', 'whoop-client-secret');
+
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://api.prod.whoop.com/oauth/oauth2/token' => Http::response([
+                'access_token' => 'whoop-access-token',
+                'refresh_token' => 'whoop-refresh-token',
+                'expires_in' => 3600,
+                'scope' => 'offline read:profile read:recovery read:sleep read:cycles read:workout',
+            ]),
+            'https://api.prod.whoop.com/developer/v2/user/profile/basic' => Http::response([
+                'user_id' => 884422,
+                'email' => 'athlete@whoop.test',
+            ]),
+            'https://api.prod.whoop.com/developer/v2/cycle*' => Http::response(['message' => 'expired token'], 401),
+        ]);
+
+        $athlete = User::factory()->create();
+        $athlete->assignRole(RoleName::Athlete);
+
+        $response = $this->actingAs($athlete)
+            ->withSession(['throughline.whoop.oauth_state' => 'state-123'])
+            ->get(route('wearables.whoop.callback', [
+                'state' => 'state-123',
+                'code' => 'oauth-code-123',
+            ]));
+
+        $response
+            ->assertRedirect(route('wearables.index', absolute: false))
+            ->assertSessionHas('status');
+
+        $connection = DeviceConnection::query()
+            ->where('user_id', $athlete->id)
+            ->where('provider', DeviceProvider::Whoop->value)
+            ->firstOrFail();
+
+        $this->assertSame('attention', $connection->status->value);
+        $this->assertSame(1, $connection->sync_failures_count);
+        $this->assertNotNull($connection->last_error_at);
+        $this->assertStringContainsString('401', (string) $connection->last_error_message);
     }
 }

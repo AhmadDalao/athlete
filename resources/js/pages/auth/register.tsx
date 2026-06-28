@@ -40,8 +40,8 @@ interface RegisterProps {
 
 const iconMap = {
     email: Mail,
-    google: ShieldCheck,
-    apple: ShieldCheck,
+    google: Chrome,
+    apple: LockKeyhole,
     phone: Phone,
 } as const;
 
@@ -57,7 +57,7 @@ export default function Register({ signupMethods, goalSuggestions }: RegisterPro
         password_confirmation: '',
         terms_accepted: false,
     });
-    const googleMethod = signupMethods.find((method) => method.value === 'google' && method.enabled && method.authorizationUrl);
+    const actionableMethods = signupMethods.filter((method) => method.value !== 'email' && method.enabled && method.authorizationUrl);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -66,12 +66,12 @@ export default function Register({ signupMethods, goalSuggestions }: RegisterPro
         });
     };
 
-    const continueWithGoogle = () => {
-        if (!googleMethod?.authorizationUrl) {
+    const continueWithProvider = (method: SignupMethod) => {
+        if (!method.authorizationUrl) {
             return;
         }
 
-        const url = new URL(googleMethod.authorizationUrl, window.location.origin);
+        const url = new URL(method.authorizationUrl, window.location.origin);
         url.searchParams.set('account_type', data.account_type);
         window.location.assign(url.toString());
     };
@@ -80,9 +80,9 @@ export default function Register({ signupMethods, goalSuggestions }: RegisterPro
         <AuthLayout
             title="Create your Throughline account"
             description={
-                googleMethod
-                    ? 'Email and Google are live. Apple and phone stay staged until the verification and abuse controls are real.'
-                    : 'Start with email now. Google, Apple, and phone auth are staged later once the hardening work is in place.'
+                actionableMethods.length > 0
+                    ? `Email plus ${actionableMethods.map((method) => method.label).join(' and ')} are live.`
+                    : 'Start with email now. Apple and phone auth stay staged until the hardening work is real.'
             }
         >
             <Head title="Register" />
@@ -199,20 +199,33 @@ export default function Register({ signupMethods, goalSuggestions }: RegisterPro
                             <InputError message={errors.account_type} />
                         </div>
 
-                        {googleMethod?.authorizationUrl && (
+                        {actionableMethods.length > 0 && (
                             <div className="border-primary/20 bg-primary/5 rounded-2xl border p-4">
-                                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                <div className="flex flex-col gap-3">
                                     <div>
-                                        <p className="font-medium">{googleMethod.headline}</p>
+                                        <p className="font-medium">Fast-track sign up</p>
                                         <p className="text-muted-foreground text-sm leading-6">
-                                            Google sign-up is live. We still need the role first, because silently creating the wrong account type is
-                                            stupid.
+                                            We still need the role first, because silently creating the wrong account type is stupid.
                                         </p>
                                     </div>
-                                    <Button type="button" variant="outline" onClick={continueWithGoogle} disabled={processing}>
-                                        <Chrome className="size-4" />
-                                        Continue with Google as {data.account_type === 'coach' ? 'Coach' : 'Athlete'}
-                                    </Button>
+                                    <div className="grid gap-3 md:grid-cols-2">
+                                        {actionableMethods.map((method) => {
+                                            const ProviderIcon = iconMap[method.value as keyof typeof iconMap] ?? ShieldCheck;
+
+                                            return (
+                                                <Button
+                                                    key={method.value}
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={() => continueWithProvider(method)}
+                                                    disabled={processing}
+                                                >
+                                                    <ProviderIcon className="size-4" />
+                                                    Continue with {method.label} as {data.account_type === 'coach' ? 'Coach' : 'Athlete'}
+                                                </Button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
                         )}

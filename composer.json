@@ -9,12 +9,14 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.4.1",
+        "php": "^8.2",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.27",
         "laravel/tinker": "^2.10.1",
+        "socialiteproviders/apple": "^5.10",
+        "stripe/stripe-php": "^20.2",
         "tightenco/ziggy": "^2.4"
     },
     "require-dev": {
@@ -82,6 +84,9 @@
         }
     },
     "config": {
+        "platform": {
+            "php": "8.2.0"
+        },
         "optimize-autoloader": true,
         "preferred-install": "dist",
         "sort-packages": true,

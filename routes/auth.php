@@ -8,6 +8,9 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\OAuthCallbackController;
 use App\Http\Controllers\Auth\OAuthRedirectController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\PhoneAuthChallengeStoreController;
+use App\Http\Controllers\Auth\PhoneAuthPageController;
+use App\Http\Controllers\Auth\PhoneAuthVerifyController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
@@ -26,8 +29,17 @@ Route::middleware('guest')->group(function () {
     Route::get('auth/{provider}/redirect', OAuthRedirectController::class)
         ->name('auth.oauth.redirect');
 
-    Route::get('auth/{provider}/callback', OAuthCallbackController::class)
+    Route::match(['get', 'post'], 'auth/{provider}/callback', OAuthCallbackController::class)
         ->name('auth.oauth.callback');
+
+    Route::get('auth/phone', PhoneAuthPageController::class)
+        ->name('auth.phone.create');
+
+    Route::post('auth/phone/challenges', PhoneAuthChallengeStoreController::class)
+        ->name('auth.phone.challenges.store');
+
+    Route::post('auth/phone/verify', PhoneAuthVerifyController::class)
+        ->name('auth.phone.verify');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');

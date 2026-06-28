@@ -51,6 +51,7 @@ class WearableIndexTest extends TestCase
                 ->where('connections.data.0.userName', $athlete->name)
                 ->where('connections.data.0.provider', $visibleConnection->provider->value)
                 ->where('connections.data.0.ingest', null)
+                ->where('connections.data.0.review.severity', 'stable')
             );
     }
 
@@ -68,12 +69,47 @@ class WearableIndexTest extends TestCase
                 ->where('viewerRole', RoleName::Athlete->value)
                 ->where('summary.totalConnections', 1)
                 ->where('whoopIntegration.connectedCount', 0)
+                ->where('whoopIntegration.webhookReady', false)
                 ->where('connections.data.0.publicId', $connection->public_id)
                 ->where('connections.data.0.ingest.key', 'thl_athlete_key_3333')
                 ->where('connections.data.0.latestSnapshot.readinessScore', 83)
                 ->where('connections.data.0.latestSnapshot.sleepHours', 7.4)
                 ->where('connections.data.0.latestSnapshot.sleepPerformancePercentage', 95)
                 ->where('connections.data.0.analytics.overview.daysTracked', 1)
+            );
+    }
+
+    public function test_admin_review_queue_exposes_sync_failure_context(): void
+    {
+        $admin = User::factory()->create();
+        $athlete = User::factory()->create();
+
+        $admin->assignRole(RoleName::Admin);
+        $athlete->assignRole(RoleName::Athlete);
+
+        DeviceConnection::query()->create([
+            'user_id' => $athlete->id,
+            'provider' => DeviceProvider::Whoop,
+            'status' => DeviceConnectionStatus::Attention,
+            'auth_type' => 'oauth',
+            'external_user_id' => 'whoop-review-1',
+            'access_token' => 'review-token',
+            'refresh_token' => 'review-refresh-token',
+            'token_expires_at' => now()->addHour(),
+            'last_synced_at' => now()->subHours(30),
+            'last_error_at' => now()->subHours(2),
+            'last_error_message' => 'WHOOP returned 401 on refresh.',
+            'sync_failures_count' => 2,
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/wearables')
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('wearables/index')
+                ->where('reviewQueue.0.severity', 'high')
+                ->where('reviewQueue.0.issue', 'Recent sync failed.')
+                ->where('reviewQueue.0.syncFailuresCount', 2)
+                ->where('connections.data.0.review.lastErrorMessage', 'WHOOP returned 401 on refresh.')
             );
     }
 

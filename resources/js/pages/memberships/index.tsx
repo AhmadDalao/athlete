@@ -1,16 +1,24 @@
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    WorkspaceHero,
+    WorkspaceMetricCard,
+    WorkspacePanel,
+    WorkspaceSectionHeading,
+    WorkspaceTable,
+    WorkspaceTableEmpty,
+    WorkspaceTableHeader,
+} from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { AlertTriangle, ArrowLeft, ArrowRight, CreditCard, ReceiptText, Settings2, ShieldCheck, Timer } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 
@@ -61,6 +69,8 @@ interface MembershipRow {
     autoRenew: boolean;
     price: number;
     currency: string;
+    billingProvider: string | null;
+    providerSubscriptionId: string | null;
     notes: string | null;
     paymentEvents: PaymentEventRow[];
 }
@@ -95,6 +105,24 @@ interface MembershipPageProps {
         projectedMonthlyRevenue: number;
         paymentVolumeThisMonth: number;
         failedPaymentsThisMonth: number;
+    };
+    billing: {
+        provider: string;
+        checkoutEnabled: boolean;
+        portalEnabled: boolean;
+        webhookEnabled: boolean;
+        hasCustomerProfile: boolean;
+        currentPlanId: number | null;
+        activePlans: {
+            id: number;
+            name: string;
+            description: string | null;
+            price: number;
+            currency: string;
+            durationDays: number;
+            billingInterval: string;
+            checkoutReady: boolean;
+        }[];
     };
     memberships: MembershipPaginator;
     auditCommand: string;
@@ -168,9 +196,7 @@ function formatDateTimeForInput() {
 }
 
 function humanizeStatus(status: string) {
-    return status
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (character) => character.toUpperCase());
+    return status.replace(/_/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 function badgeVariantForStatus(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
@@ -189,32 +215,127 @@ function badgeVariantForStatus(status: string): 'default' | 'secondary' | 'destr
     return 'outline';
 }
 
-function MetricCard({
-    title,
-    value,
-    note,
-    icon: Icon,
-}: {
-    title: string;
-    value: string;
-    note: string;
-    icon: typeof CreditCard;
-}) {
+function BillingWorkspaceCard({ billing, viewerRole }: Pick<MembershipPageProps, 'billing' | 'viewerRole'>) {
+    const page = usePage<SharedData>();
+    const [portalProcessing, setPortalProcessing] = useState(false);
+    const { data, setData, post, processing, errors } = useForm<{ plan_id: string }>({
+        plan_id: billing.currentPlanId ? billing.currentPlanId.toString() : (billing.activePlans[0]?.id.toString() ?? ''),
+    });
+    const selectedPlan = billing.activePlans.find((plan) => plan.id.toString() === data.plan_id) ?? null;
+    const flashStatus = page.props.flash?.status;
+
+    const openCheckout = () => {
+        post(route('billing.checkout.store'), {
+            preserveScroll: true,
+        });
+    };
+
+    const openPortal = () => {
+        setPortalProcessing(true);
+
+        post(route('billing.portal.store'), {
+            preserveScroll: true,
+            onFinish: () => setPortalProcessing(false),
+        });
+    };
+
     return (
-        <Card className="border-sidebar-border/70">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <div>
-                    <CardDescription>{title}</CardDescription>
-                    <CardTitle className="mt-3 text-3xl font-semibold tracking-tight">{value}</CardTitle>
+        <WorkspacePanel
+            title="Billing access"
+            description={
+                viewerRole === 'athlete'
+                    ? 'Pick the right plan, launch Stripe checkout, and let the portal handle card updates without dragging a coach into admin work.'
+                    : 'Use Stripe for self-serve billing while keeping the internal membership queue visible for operator cleanup.'
+            }
+            contentClassName="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]"
+        >
+            <div className="space-y-4 rounded-2xl border border-stone-200/75 bg-stone-50/70 p-5">
+                <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">{billing.provider.toUpperCase()}</Badge>
+                    <Badge variant={billing.checkoutEnabled ? 'default' : 'secondary'}>
+                        {billing.checkoutEnabled ? 'Checkout live' : 'Checkout staged'}
+                    </Badge>
+                    <Badge variant={billing.webhookEnabled ? 'default' : 'secondary'}>
+                        {billing.webhookEnabled ? 'Webhook signed' : 'Webhook missing'}
+                    </Badge>
                 </div>
-                <div className="rounded-full bg-primary/10 p-2 text-primary">
-                    <Icon className="size-4" />
+
+                {flashStatus && (
+                    <div className="rounded-xl border border-stone-200/75 bg-white/90 p-3 text-sm leading-6 text-stone-700">{flashStatus}</div>
+                )}
+
+                <div className="grid gap-2">
+                    <Label htmlFor="billing-plan">Plan</Label>
+                    <Select value={data.plan_id} onValueChange={(value) => setData('plan_id', value)}>
+                        <SelectTrigger id="billing-plan">
+                            <SelectValue placeholder="Select a plan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {billing.activePlans.map((plan) => (
+                                <SelectItem key={plan.id} value={plan.id.toString()}>
+                                    {plan.name} · {formatCurrency(plan.price, plan.currency)}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <InputError message={errors.plan_id} />
                 </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm leading-6 text-muted-foreground">{note}</p>
-            </CardContent>
-        </Card>
+
+                {selectedPlan && (
+                    <div className="rounded-xl border border-stone-200/75 bg-white/90 p-4">
+                        <p className="font-medium text-stone-950">{selectedPlan.name}</p>
+                        <p className="mt-1 text-sm text-stone-600">
+                            {selectedPlan.description ?? 'No plan description yet. Fix that before real customers see it.'}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            <Badge variant="outline">{humanizeStatus(selectedPlan.billingInterval)}</Badge>
+                            <Badge variant="outline">{selectedPlan.durationDays} day cycle</Badge>
+                            <Badge variant={selectedPlan.checkoutReady ? 'default' : 'secondary'}>
+                                {selectedPlan.checkoutReady ? 'Stripe price linked' : 'Needs Stripe price ID'}
+                            </Badge>
+                        </div>
+                    </div>
+                )}
+
+                <div className="flex flex-wrap gap-3">
+                    <Button
+                        type="button"
+                        onClick={openCheckout}
+                        disabled={processing || !billing.checkoutEnabled || !selectedPlan || !selectedPlan.checkoutReady}
+                    >
+                        <CreditCard className="mr-2 size-4" />
+                        Open checkout
+                    </Button>
+                    <Button type="button" variant="outline" onClick={openPortal} disabled={portalProcessing || !billing.portalEnabled}>
+                        <Settings2 className="mr-2 size-4" />
+                        Open billing portal
+                    </Button>
+                </div>
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-stone-200/75 bg-white/92 p-5">
+                <div className="rounded-xl border border-stone-200/75 bg-stone-50/70 p-3">
+                    <p className="text-xs font-medium tracking-[0.2em] text-stone-500 uppercase">Checkout readiness</p>
+                    <p className="mt-2 text-sm leading-6 text-stone-600">
+                        Checkout works only when the Stripe secret key is set and the selected plan has a real Stripe price ID.
+                    </p>
+                </div>
+                <div className="rounded-xl border border-stone-200/75 bg-stone-50/70 p-3">
+                    <p className="text-xs font-medium tracking-[0.2em] text-stone-500 uppercase">Portal access</p>
+                    <p className="mt-2 text-sm leading-6 text-stone-600">
+                        {billing.hasCustomerProfile
+                            ? 'This account already has a Stripe customer profile, so the portal can manage card details and invoices.'
+                            : 'Portal access appears after the first successful Stripe checkout creates a customer profile.'}
+                    </p>
+                </div>
+                <div className="rounded-xl border border-stone-200/75 bg-stone-50/70 p-3">
+                    <p className="text-xs font-medium tracking-[0.2em] text-stone-500 uppercase">Launch note</p>
+                    <p className="mt-2 text-sm leading-6 text-stone-600">
+                        Webhook signing must be configured before you trust renewal automation. Skipping that would be dumb.
+                    </p>
+                </div>
+            </div>
+        </WorkspacePanel>
     );
 }
 
@@ -537,153 +658,276 @@ export default function MembershipIndex({
     scopeLabel,
     filters,
     summary,
+    billing,
     memberships,
     auditCommand,
     paymentEventTypes,
     paymentEventStatuses,
 }: MembershipPageProps) {
+    const primaryMembership = memberships.data[0] ?? null;
+    const recentPaymentActivity = memberships.data
+        .flatMap((membership) =>
+            membership.paymentEvents.map((event) => ({
+                ...event,
+                userName: membership.userName,
+                planName: membership.planName,
+            })),
+        )
+        .sort((left, right) => {
+            const leftTime = left.eventAt ? new Date(left.eventAt).getTime() : 0;
+            const rightTime = right.eventAt ? new Date(right.eventAt).getTime() : 0;
+
+            return rightTime - leftTime;
+        })
+        .slice(0, 8);
+
+    const heroTitle =
+        viewerRole === 'athlete' ? 'Your membership should be obvious, not mysterious.' : 'Billing, renewals, and reality all in one place.';
+    const heroDescription =
+        viewerRole === 'athlete'
+            ? 'Plan status, days remaining, checkout, and recent payments sit here without operator noise taking over the page.'
+            : `${scopeLabel}. This is the billing reality check: status, renewals, money movement, and who is about to become a support ticket.`;
+    const heroBadges = [
+        viewerRole === 'athlete' ? 'Athlete view' : 'Operator view',
+        billing.provider.toUpperCase(),
+        billing.webhookEnabled ? 'Webhook ready' : 'Webhook missing',
+    ];
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Memberships" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
-                <Card className="border-sidebar-border/70 bg-linear-to-br from-background via-background to-muted/40">
-                    <CardHeader>
-                        <CardTitle className="text-3xl">Membership control</CardTitle>
-                        <CardDescription className="max-w-3xl leading-6">
-                            {scopeLabel}. This page is the billing reality check: status, renewals, money movement, and who is about to become a support ticket.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-4 xl:grid-cols-[1.45fr_0.55fr]">
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                            <MetricCard
+            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+                <WorkspaceHero
+                    eyebrow="Membership workspace"
+                    title={heroTitle}
+                    description={heroDescription}
+                    badges={heroBadges}
+                    actions={
+                        <>
+                            <Button asChild size="lg" className="rounded-full bg-stone-950 text-white hover:bg-stone-800">
+                                <Link href="/dashboard">Back to dashboard</Link>
+                            </Button>
+                            {viewerRole === 'admin' ? (
+                                <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
+                                    <Link href="/admin/control-center">Open control center</Link>
+                                </Button>
+                            ) : canManageMemberships ? (
+                                <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
+                                    <Link href="/roster">Open roster</Link>
+                                </Button>
+                            ) : (
+                                <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
+                                    <Link href="/training">Open training</Link>
+                                </Button>
+                            )}
+                        </>
+                    }
+                    aside={
+                        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                            <div className="rounded-[1.35rem] border border-white/70 bg-white/80 p-4">
+                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">
+                                    {viewerRole === 'athlete' ? 'Current plan' : 'Projected monthly revenue'}
+                                </p>
+                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">
+                                    {viewerRole === 'athlete'
+                                        ? (primaryMembership?.planName ?? 'No plan')
+                                        : formatCurrency(summary.projectedMonthlyRevenue)}
+                                </p>
+                                <p className="mt-2 text-sm text-stone-600">
+                                    {viewerRole === 'athlete'
+                                        ? primaryMembership
+                                            ? formatDays(primaryMembership.daysRemaining)
+                                            : 'No active membership found.'
+                                        : 'Normalized from active memberships and plan intervals.'}
+                                </p>
+                            </div>
+                            <div className="rounded-[1.35rem] border border-white/70 bg-white/80 p-4">
+                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">
+                                    {viewerRole === 'athlete' ? 'Renewal state' : 'Collected this month'}
+                                </p>
+                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">
+                                    {viewerRole === 'athlete'
+                                        ? humanizeStatus(primaryMembership?.status ?? 'unknown')
+                                        : formatCurrency(summary.paymentVolumeThisMonth)}
+                                </p>
+                                <p className="mt-2 text-sm text-stone-600">
+                                    {viewerRole === 'athlete'
+                                        ? primaryMembership?.autoRenew
+                                            ? 'Auto renew is enabled.'
+                                            : 'Manual renewal is in effect.'
+                                        : `${summary.failedPaymentsThisMonth} payment event(s) failed this month.`}
+                                </p>
+                            </div>
+                            <div className="rounded-[1.35rem] border border-white/70 bg-white/80 p-4">
+                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">
+                                    {viewerRole === 'athlete' ? 'Recent payments' : 'Auto renew enabled'}
+                                </p>
+                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">
+                                    {viewerRole === 'athlete' ? recentPaymentActivity.length : summary.autoRenewEnabled}
+                                </p>
+                                <p className="mt-2 text-sm text-stone-600">
+                                    {viewerRole === 'athlete'
+                                        ? 'Recent payment events visible in this workspace.'
+                                        : 'Memberships currently set to renew automatically.'}
+                                </p>
+                            </div>
+                        </div>
+                    }
+                />
+
+                <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    {viewerRole === 'athlete' ? (
+                        <>
+                            <WorkspaceMetricCard
+                                title="Access state"
+                                value={humanizeStatus(primaryMembership?.status ?? 'unknown')}
+                                note="This is the status the platform will actually use."
+                                icon={ShieldCheck}
+                            />
+                            <WorkspaceMetricCard
+                                title="Days remaining"
+                                value={primaryMembership?.daysRemaining === null ? 'N/A' : String(primaryMembership?.daysRemaining ?? 'N/A')}
+                                note={primaryMembership ? formatDays(primaryMembership.daysRemaining) : 'No membership record found.'}
+                                icon={Timer}
+                            />
+                            <WorkspaceMetricCard
+                                title="Plan value"
+                                value={primaryMembership ? formatCurrency(primaryMembership.price, primaryMembership.currency) : 'N/A'}
+                                note="Current billing value for the visible plan."
+                                icon={CreditCard}
+                            />
+                            <WorkspaceMetricCard
+                                title="Payment events"
+                                value={recentPaymentActivity.length.toString()}
+                                note="Recent payment history visible from this page."
+                                icon={AlertTriangle}
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <WorkspaceMetricCard
                                 title="Tracked memberships"
                                 value={summary.totalMemberships.toString()}
                                 note={`${memberships.total} record(s) match the current view.`}
                                 icon={CreditCard}
                             />
-                            <MetricCard
+                            <WorkspaceMetricCard
                                 title="Current access"
                                 value={summary.currentAccess.toString()}
                                 note="Includes active, trialing, grace, past-due, and scheduled-to-end access."
                                 icon={ShieldCheck}
                             />
-                            <MetricCard
+                            <WorkspaceMetricCard
                                 title="Attention required"
                                 value={summary.attentionRequired.toString()}
                                 note="Grace, past due, and cancelled memberships should not sit ignored."
                                 icon={AlertTriangle}
                             />
-                            <MetricCard
+                            <WorkspaceMetricCard
                                 title="Renewing this week"
                                 value={summary.renewingThisWeek.toString()}
                                 note="Seven-day renewal horizon for manual follow-up."
                                 icon={Timer}
                             />
-                        </div>
+                        </>
+                    )}
+                </section>
 
-                        <div className="space-y-4 rounded-2xl border border-sidebar-border/70 bg-muted/30 p-5">
-                            <div>
-                                <p className="text-sm font-medium text-muted-foreground">
-                                    {viewerRole === 'athlete' ? 'Your membership value' : 'Projected monthly revenue'}
-                                </p>
-                                <p className="mt-3 text-3xl font-semibold tracking-tight">
-                                    {formatCurrency(summary.projectedMonthlyRevenue)}
-                                </p>
-                                <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                                    {viewerRole === 'athlete'
-                                        ? 'This reflects the current monthly value of your active access.'
-                                        : 'Calculated from current memberships and normalized plan intervals.'}
-                                </p>
-                            </div>
-
-                            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
-                                <div className="rounded-xl border border-sidebar-border/70 bg-background/80 p-3">
-                                    <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Collected this month</p>
-                                    <p className="mt-2 text-lg font-semibold">{formatCurrency(summary.paymentVolumeThisMonth)}</p>
-                                    <p className="mt-1 text-sm text-muted-foreground">{summary.failedPaymentsThisMonth} failed payment events this month.</p>
-                                </div>
-                                <div className="rounded-xl border border-sidebar-border/70 bg-background/80 p-3">
-                                    <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Auto renew</p>
-                                    <p className="mt-2 text-lg font-semibold">{summary.autoRenewEnabled}</p>
-                                    <p className="mt-1 text-sm text-muted-foreground">Memberships currently set to renew automatically.</p>
-                                </div>
-                            </div>
-
-                            <div className="rounded-xl border border-dashed border-sidebar-border/70 bg-background/80 p-3">
-                                <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Audit command</p>
-                                <code className="mt-2 block text-sm">{auditCommand}</code>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <BillingWorkspaceCard billing={billing} viewerRole={viewerRole} />
 
                 <section className="space-y-4">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                        <div>
-                            <h2 className="text-xl font-semibold tracking-tight">Membership queue</h2>
-                            <p className="text-sm leading-6 text-muted-foreground">
-                                Filter the list by status and keep the next renewal mess small.
+                    <WorkspaceSectionHeading
+                        eyebrow="Membership queue"
+                        title={
+                            viewerRole === 'athlete' ? 'Current access and renewal detail.' : 'Filter the queue and keep the next billing mess small.'
+                        }
+                        description={
+                            viewerRole === 'athlete'
+                                ? 'The operator detail is still here, but your current plan and recent activity are the things that matter first.'
+                                : 'Filters, dialogs, and pagination behave the same; the page just stops looking like three design eras stapled together.'
+                        }
+                    />
+
+                    <WorkspacePanel
+                        title={viewerRole === 'athlete' ? 'Membership records' : 'Membership queue'}
+                        description={viewerRole === 'athlete' ? 'Your visible membership history.' : 'Review status, dates, and operator actions.'}
+                        contentClassName="space-y-4"
+                    >
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <p className="text-sm leading-6 text-stone-600">
+                                {viewerRole === 'athlete'
+                                    ? `${memberships.total} visible membership record(s) in this view.`
+                                    : `${memberships.total} record(s) match the current filter.`}
                             </p>
+                            <div className="flex flex-wrap gap-2">
+                                {statusFilters.map((filter) => (
+                                    <Link
+                                        key={filter.label}
+                                        href={route('memberships.index', filter.value ? { status: filter.value } : {})}
+                                        preserveScroll
+                                        className={cn(
+                                            'inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+                                            filters.status === filter.value || (!filters.status && filter.value === null)
+                                                ? 'border-stone-900 bg-stone-900 text-white'
+                                                : 'border-stone-200/80 bg-white text-stone-600 hover:border-stone-300 hover:text-stone-950',
+                                        )}
+                                    >
+                                        {filter.label}
+                                    </Link>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-2">
-                            {statusFilters.map((filter) => (
-                                <Link
-                                    key={filter.label}
-                                    href={route('memberships.index', filter.value ? { status: filter.value } : {})}
-                                    preserveScroll
-                                    className={cn(
-                                        'inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
-                                        filters.status === filter.value || (!filters.status && filter.value === null)
-                                            ? 'border-primary bg-primary text-primary-foreground'
-                                            : 'border-sidebar-border/70 bg-background text-muted-foreground hover:text-foreground',
-                                    )}
-                                >
-                                    {filter.label}
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-
-                    <Card className="border-sidebar-border/70">
-                        <CardContent className="space-y-3 p-4">
+                        <WorkspaceTable minWidth="min-w-[1180px]">
+                            <WorkspaceTableHeader
+                                labels={['Member', 'Role', 'Plan', 'Status', 'Renewal', 'Access ends', 'Value', 'Provider', 'Actions']}
+                            />
                             {memberships.data.length === 0 ? (
-                                <div className="rounded-xl border border-dashed border-sidebar-border/70 p-8 text-center">
-                                    <p className="font-medium">No memberships match this filter.</p>
-                                    <p className="mt-2 text-sm text-muted-foreground">
-                                        That is either good news or a sign your seed data is boring.
-                                    </p>
-                                </div>
+                                <WorkspaceTableEmpty message="No memberships match this filter." colSpan={9} />
                             ) : (
-                                memberships.data.map((membership) => (
-                                    <div key={membership.id} className="rounded-2xl border border-sidebar-border/70 p-4 transition-colors hover:bg-muted/30">
-                                        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                                            <div className="space-y-2">
-                                                <div>
-                                                    <p className="font-medium">{membership.userName}</p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {membership.userEmail}
-                                                        {membership.userPhone ? ` · ${membership.userPhone}` : ''}
-                                                    </p>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {membership.userRole && <Badge variant="outline">{humanizeStatus(membership.userRole)}</Badge>}
-                                                    <Badge variant="outline">{membership.planName}</Badge>
-                                                    <Badge variant={membership.autoRenew ? 'default' : 'secondary'}>
-                                                        {membership.autoRenew ? 'Auto renew on' : 'Manual renewal'}
-                                                    </Badge>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex flex-col items-start gap-3 xl:items-end">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <Badge variant={badgeVariantForStatus(membership.status)}>{humanizeStatus(membership.status)}</Badge>
-                                                    <Badge variant="outline">{formatCurrency(membership.price, membership.currency)}</Badge>
-                                                </div>
-
-                                                {canManageMemberships && (
-                                                    <div className="flex flex-wrap gap-2">
+                                <tbody className="divide-y divide-stone-100">
+                                    {memberships.data.map((membership) => (
+                                        <tr key={membership.id} className="align-top transition-colors hover:bg-stone-50/80">
+                                            <td className="px-4 py-4">
+                                                <p className="font-semibold text-stone-950">{membership.userName}</p>
+                                                <p className="mt-1 text-xs text-stone-500">{membership.userEmail}</p>
+                                                {membership.userPhone && <p className="mt-1 text-xs text-stone-500">{membership.userPhone}</p>}
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <Badge variant="outline">{humanizeStatus(membership.userRole ?? 'user')}</Badge>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <p className="font-medium text-stone-950">{membership.planName}</p>
+                                                <p className="mt-1 text-xs text-stone-500">
+                                                    {membership.autoRenew ? 'Auto renew on' : 'Manual renewal'}
+                                                </p>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <Badge variant={badgeVariantForStatus(membership.status)}>
+                                                    {humanizeStatus(membership.status)}
+                                                </Badge>
+                                                <p className="mt-2 text-xs font-medium text-emerald-700">{formatDays(membership.daysRemaining)}</p>
+                                            </td>
+                                            <td className="px-4 py-4 text-sm text-stone-700">{membership.renewsAt ?? 'Not scheduled'}</td>
+                                            <td className="px-4 py-4">
+                                                <p className="text-sm text-stone-700">{membership.effectiveEndsAt ?? 'Open ended'}</p>
+                                                <p className="mt-1 text-xs text-stone-500">
+                                                    Grace/cancelled: {membership.graceEndsAt ?? membership.cancelledAt ?? 'None'}
+                                                </p>
+                                            </td>
+                                            <td className="px-4 py-4 font-medium text-stone-950">
+                                                {formatCurrency(membership.price, membership.currency)}
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <p className="text-sm text-stone-700">{membership.billingProvider?.toUpperCase() ?? 'Manual'}</p>
+                                                <p className="mt-1 line-clamp-2 max-w-[12rem] text-xs text-stone-500">
+                                                    {membership.providerSubscriptionId ?? membership.notes ?? 'No provider id'}
+                                                </p>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                {canManageMemberships ? (
+                                                    <div className="flex flex-col gap-2">
                                                         <MembershipSettingsDialog membership={membership} />
                                                         <PaymentEventDialog
                                                             membership={membership}
@@ -691,83 +935,111 @@ export default function MembershipIndex({
                                                             paymentEventStatuses={paymentEventStatuses}
                                                         />
                                                     </div>
+                                                ) : (
+                                                    <span className="text-xs text-stone-500">
+                                                        {membership.paymentEvents.length} recent payment(s)
+                                                    </span>
                                                 )}
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-4 grid gap-3 md:grid-cols-4">
-                                            <div className="rounded-xl border border-sidebar-border/70 p-3">
-                                                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Time left</p>
-                                                <p className="mt-2 text-sm font-medium">{formatDays(membership.daysRemaining)}</p>
-                                            </div>
-                                            <div className="rounded-xl border border-sidebar-border/70 p-3">
-                                                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Renews on</p>
-                                                <p className="mt-2 text-sm font-medium">{membership.renewsAt ?? 'Not scheduled'}</p>
-                                            </div>
-                                            <div className="rounded-xl border border-sidebar-border/70 p-3">
-                                                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Access ends</p>
-                                                <p className="mt-2 text-sm font-medium">{membership.effectiveEndsAt ?? 'Open ended'}</p>
-                                            </div>
-                                            <div className="rounded-xl border border-sidebar-border/70 p-3">
-                                                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Grace / cancelled</p>
-                                                <p className="mt-2 text-sm font-medium">
-                                                    {membership.graceEndsAt ?? membership.cancelledAt ?? 'None'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {membership.notes && (
-                                            <div className="mt-4 rounded-xl border border-sidebar-border/70 bg-background/80 p-3">
-                                                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Notes</p>
-                                                <p className="mt-2 text-sm leading-6">{membership.notes}</p>
-                                            </div>
-                                        )}
-
-                                        <div className="mt-4 space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-sm font-medium">Recent payment activity</p>
-                                                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Last 4 events</p>
-                                            </div>
-
-                                            {membership.paymentEvents.length === 0 ? (
-                                                <div className="rounded-xl border border-dashed border-sidebar-border/70 p-4 text-sm text-muted-foreground">
-                                                    No payment events recorded yet. That is not documentation. That is denial.
-                                                </div>
-                                            ) : (
-                                                membership.paymentEvents.map((event) => (
-                                                    <div
-                                                        key={event.id}
-                                                        className="grid gap-3 rounded-xl border border-sidebar-border/70 p-3 md:grid-cols-[1fr_1fr_1.2fr]"
-                                                    >
-                                                        <div className="space-y-1">
-                                                            <div className="flex flex-wrap gap-2">
-                                                                <Badge variant={badgeVariantForStatus(event.status)}>{humanizeStatus(event.status)}</Badge>
-                                                                <Badge variant="outline">{humanizeStatus(event.eventType)}</Badge>
-                                                            </div>
-                                                            <p className="text-sm text-muted-foreground">{event.provider ?? 'Manual'}{event.reference ? ` · ${event.reference}` : ''}</p>
-                                                        </div>
-
-                                                        <div className="space-y-1">
-                                                            <p className="text-sm font-medium">
-                                                                {event.amount === null ? 'No amount' : formatCurrency(event.amount, event.currency)}
-                                                            </p>
-                                                            <p className="text-sm text-muted-foreground">{formatDateTime(event.eventAt)}</p>
-                                                        </div>
-
-                                                        <div className="space-y-1">
-                                                            <p className="text-sm text-muted-foreground">{event.createdBy ? `Recorded by ${event.createdBy}` : 'System event'}</p>
-                                                            <p className="text-sm leading-6">{event.notes ?? 'No notes attached.'}</p>
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-                                ))
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
                             )}
-                        </CardContent>
-                    </Card>
+                        </WorkspaceTable>
+                    </WorkspacePanel>
+                </section>
 
+                <section className="space-y-4">
+                    <WorkspaceSectionHeading
+                        eyebrow="Payments"
+                        title="Recent payment activity stays visible, but lower than access status."
+                        description="Technical billing evidence is still here. It just stops shouting louder than the actual membership state."
+                    />
+
+                    <WorkspacePanel
+                        title="Recent payment activity"
+                        description="Latest visible payment events across the current membership scope."
+                        contentClassName="space-y-3"
+                    >
+                        <WorkspaceTable minWidth="min-w-[980px]">
+                            <WorkspaceTableHeader labels={['When', 'Member', 'Plan', 'Type', 'Status', 'Amount', 'Provider / reference', 'Notes']} />
+                            {recentPaymentActivity.length === 0 ? (
+                                <WorkspaceTableEmpty message="No payment events recorded yet." colSpan={8} />
+                            ) : (
+                                <tbody className="divide-y divide-stone-100">
+                                    {recentPaymentActivity.map((event) => (
+                                        <tr key={`${event.userName}-${event.id}`} className="align-top transition-colors hover:bg-stone-50/80">
+                                            <td className="px-4 py-4 text-sm text-stone-700">{formatDateTime(event.eventAt)}</td>
+                                            <td className="px-4 py-4 font-medium text-stone-950">{event.userName}</td>
+                                            <td className="px-4 py-4 text-sm text-stone-700">{event.planName}</td>
+                                            <td className="px-4 py-4">
+                                                <Badge variant="outline">{humanizeStatus(event.eventType)}</Badge>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <Badge variant={badgeVariantForStatus(event.status)}>{humanizeStatus(event.status)}</Badge>
+                                            </td>
+                                            <td className="px-4 py-4 font-medium text-stone-950">
+                                                {event.amount === null ? 'No amount' : formatCurrency(event.amount, event.currency)}
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <p className="text-sm text-stone-700">{event.provider ?? 'Manual'}</p>
+                                                <p className="mt-1 max-w-[14rem] break-words text-xs text-stone-500">{event.reference ?? 'No reference'}</p>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <p className="max-w-[18rem] text-sm leading-6 text-stone-700">{event.notes ?? 'No notes attached.'}</p>
+                                                <p className="mt-1 text-xs text-stone-500">
+                                                    {event.createdBy ? `Recorded by ${event.createdBy}` : 'System event'}
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            )}
+                        </WorkspaceTable>
+                    </WorkspacePanel>
+                </section>
+
+                {canManageMemberships && (
+                    <section className="space-y-4">
+                        <WorkspaceSectionHeading
+                            eyebrow="Technical detail"
+                            title="Keep the operator and provider detail available, just not in the hero."
+                            description="Audit commands, provider state, and other backend-facing detail still matter. They simply belong lower in the visual hierarchy."
+                        />
+
+                        <WorkspacePanel
+                            title="Operator detail"
+                            description="Billing provider context and commands used to inspect the queue."
+                            contentClassName="grid gap-3 lg:grid-cols-[0.8fr_1.2fr]"
+                        >
+                            <div className="space-y-3 rounded-2xl border border-stone-200/75 bg-stone-50/70 p-4">
+                                <div className="rounded-xl border border-stone-200/75 bg-white/90 p-3">
+                                    <p className="text-xs font-medium tracking-[0.2em] text-stone-500 uppercase">Provider</p>
+                                    <p className="mt-2 text-sm font-medium text-stone-950">{billing.provider.toUpperCase()}</p>
+                                </div>
+                                <div className="rounded-xl border border-stone-200/75 bg-white/90 p-3">
+                                    <p className="text-xs font-medium tracking-[0.2em] text-stone-500 uppercase">Portal state</p>
+                                    <p className="mt-2 text-sm font-medium text-stone-950">
+                                        {billing.portalEnabled ? 'Portal ready' : 'Portal disabled'}
+                                    </p>
+                                </div>
+                                <div className="rounded-xl border border-stone-200/75 bg-white/90 p-3">
+                                    <p className="text-xs font-medium tracking-[0.2em] text-stone-500 uppercase">Webhook state</p>
+                                    <p className="mt-2 text-sm font-medium text-stone-950">
+                                        {billing.webhookEnabled ? 'Signed and active' : 'Missing or disabled'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-dashed border-stone-200/80 bg-white/90 p-4">
+                                <p className="text-xs font-medium tracking-[0.2em] text-stone-500 uppercase">Audit command</p>
+                                <code className="mt-3 block text-sm leading-6 text-stone-700">{auditCommand}</code>
+                            </div>
+                        </WorkspacePanel>
+                    </section>
+                )}
+
+                <section>
                     <div className="flex items-center justify-between">
                         <Button variant="outline" asChild disabled={!memberships.prev_page_url}>
                             {memberships.prev_page_url ? (
@@ -783,7 +1055,7 @@ export default function MembershipIndex({
                             )}
                         </Button>
 
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                             Page {memberships.current_page} of {memberships.last_page}
                         </p>
 

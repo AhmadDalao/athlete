@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\RoleName;
+use App\Support\PermissionCatalog;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,9 +31,13 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
+        'email_verified_at',
+        'phone_verified_at',
+        'stripe_customer_id',
         'primary_goal',
         'preferred_contact_method',
         'registration_channel',
+        'position',
     ];
 
     /**
@@ -64,6 +69,11 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class)
             ->withPivot('assigned_at')
             ->withTimestamps();
+    }
+
+    public function permissions(): HasMany
+    {
+        return $this->hasMany(UserPermission::class);
     }
 
     public function memberships(): HasMany
@@ -121,6 +131,21 @@ class User extends Authenticatable
         return $this->hasMany(WorkoutLog::class, 'athlete_id');
     }
 
+    public function workoutSetLogs(): HasMany
+    {
+        return $this->hasMany(WorkoutSetLog::class, 'athlete_id');
+    }
+
+    public function sentCoachAthleteMessages(): HasMany
+    {
+        return $this->hasMany(CoachAthleteMessage::class, 'sender_id');
+    }
+
+    public function receivedCoachAthleteMessages(): HasMany
+    {
+        return $this->hasMany(CoachAthleteMessage::class, 'recipient_id');
+    }
+
     public function coachAssignments(): HasMany
     {
         return $this->hasMany(CoachAthleteAssignment::class, 'coach_id');
@@ -161,6 +186,86 @@ class User extends Authenticatable
         }
 
         return $this->roles()->where('name', $roleName)->exists();
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->hasRole(RoleName::Owner)) {
+            return true;
+        }
+
+        if ($this->relationLoaded('permissions')) {
+            if ($this->permissions->isNotEmpty()) {
+                return $this->permissions->contains('permission_key', $permission);
+            }
+        } elseif ($this->permissions()->exists()) {
+            return $this->permissions()->where('permission_key', $permission)->exists();
+        }
+
+        if ($this->hasRole(RoleName::Admin)) {
+            return in_array($permission, PermissionCatalog::defaultsForRole(RoleName::Admin), true);
+        }
+
+        return in_array($permission, PermissionCatalog::defaultsForRoles($this->roleNames()), true);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function permissionKeys(): array
+    {
+        if ($this->hasRole(RoleName::Owner)) {
+            return PermissionCatalog::keys();
+        }
+
+        if ($this->relationLoaded('permissions')) {
+            $explicit = $this->permissions->pluck('permission_key')->all();
+        } else {
+            $explicit = $this->permissions()->pluck('permission_key')->all();
+        }
+
+        if ($explicit !== []) {
+            return collect(PermissionCatalog::keys())
+                ->filter(fn (string $permission) => in_array($permission, $explicit, true))
+                ->values()
+                ->all();
+        }
+
+        return PermissionCatalog::defaultsForRoles($this->roleNames());
+    }
+
+    /**
+     * @param  array<int, string>  $permissions
+     */
+    public function syncPermissions(array $permissions, ?self $actor = null): void
+    {
+        if ($this->hasRole(RoleName::Owner)) {
+            $this->permissions()->delete();
+            $this->unsetRelation('permissions');
+
+            return;
+        }
+
+        $timestamp = now();
+        $sanitized = PermissionCatalog::sanitize($permissions);
+
+        $this->permissions()->delete();
+
+        if ($sanitized !== []) {
+            $this->permissions()->insert(
+                collect($sanitized)
+                    ->map(fn (string $permission) => [
+                        'user_id' => $this->id,
+                        'permission_key' => $permission,
+                        'created_by_user_id' => $actor?->id,
+                        'created_at' => $timestamp,
+                        'updated_at' => $timestamp,
+                    ])
+                    ->all(),
+            );
+        }
+
+        $this->unsetRelation('permissions');
     }
 
     public function assignRole(RoleName|string $role): void
@@ -271,5 +376,16 @@ class User extends Authenticatable
             ->pluck('provider_avatar')
             ->filter(fn ($avatar) => is_string($avatar) && $avatar !== '')
             ->first();
+    }
+
+    public function landingPath(): string
+    {
+        return match ($this->primaryRoleName()) {
+            RoleName::Owner->value => '/admin/control-center',
+            RoleName::Admin->value => '/admin/control-center',
+            RoleName::Coach->value => '/roster',
+            RoleName::Athlete->value => '/app',
+            default => '/dashboard',
+        };
     }
 }

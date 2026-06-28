@@ -1,12 +1,20 @@
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    WorkspaceHero,
+    WorkspaceMetricCard,
+    WorkspacePanel,
+    WorkspaceSectionHeading,
+    WorkspaceTable,
+    WorkspaceTableEmpty,
+    WorkspaceTableHeader,
+} from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -71,6 +79,13 @@ interface AssignmentRow {
         status: string;
         nextSessionDate: string | null;
         pendingLogs: number;
+    } | null;
+    weeklyBrief?: {
+        priority: string;
+        score: number;
+        headline: string;
+        summary: string;
+        reasons: string[];
     } | null;
 }
 
@@ -164,27 +179,49 @@ function badgeVariant(status: string): 'default' | 'secondary' | 'destructive' |
     return 'outline';
 }
 
+function priorityBadgeVariant(priority: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+    if (priority === 'high') {
+        return 'destructive';
+    }
+
+    if (priority === 'medium') {
+        return 'secondary';
+    }
+
+    if (priority === 'stable') {
+        return 'default';
+    }
+
+    return 'outline';
+}
+
 function todayDate() {
     return new Date().toISOString().slice(0, 10);
 }
 
-function MetricCard({ title, value, note, icon: Icon }: { title: string; value: string; note: string; icon: typeof Users }) {
-    return (
-        <Card className="border-sidebar-border/70">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <div>
-                    <CardDescription>{title}</CardDescription>
-                    <CardTitle className="mt-3 text-3xl font-semibold tracking-tight">{value}</CardTitle>
-                </div>
-                <div className="bg-primary/10 text-primary rounded-full p-2">
-                    <Icon className="size-4" />
-                </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground text-sm leading-6">{note}</p>
-            </CardContent>
-        </Card>
-    );
+function normalizedWeeklyBrief(assignment: AssignmentRow) {
+    const fallback = {
+        priority: 'stable',
+        score: 0,
+        headline: 'Weekly coach brief is not available yet.',
+        summary: 'The live payload is missing the weekly decision brief. The page should still load instead of falling over.',
+        reasons: ['Weekly brief data has not been synced into this environment yet.'],
+    };
+
+    if (!assignment.weeklyBrief || typeof assignment.weeklyBrief.priority !== 'string') {
+        return fallback;
+    }
+
+    return {
+        priority: assignment.weeklyBrief.priority,
+        score: assignment.weeklyBrief.score ?? 0,
+        headline: assignment.weeklyBrief.headline ?? fallback.headline,
+        summary: assignment.weeklyBrief.summary ?? fallback.summary,
+        reasons:
+            Array.isArray(assignment.weeklyBrief.reasons) && assignment.weeklyBrief.reasons.length > 0
+                ? assignment.weeklyBrief.reasons
+                : fallback.reasons,
+    };
 }
 
 function CreateAssignmentDialog({
@@ -458,40 +495,86 @@ function EditAssignmentDialog({ assignment, statusOptions }: { assignment: Assig
 
 export default function RosterIndex({ viewerRole, scopeLabel, summary, assignments, coachOptions, athleteOptions, statusOptions }: RosterPageProps) {
     const isAdmin = viewerRole === 'admin';
+    const heroBadges = [`${summary.activeAssignments} active assignments`, `${summary.athletesMissingRecentCheckIns} missing recent check-ins`];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Roster" />
 
-            <div className="space-y-6 px-4 py-6 md:px-6">
-                <Card className="border-sidebar-border/70 overflow-hidden">
-                    <CardHeader className="from-primary/10 via-background to-background relative overflow-hidden bg-linear-to-br">
-                        <div className="absolute inset-y-0 right-0 hidden w-56 bg-[radial-gradient(circle_at_center,_rgba(15,23,42,0.08),_transparent_70%)] lg:block" />
-                        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                            <div className="space-y-2">
-                                <Badge variant="outline">{isAdmin ? 'Admin roster control' : 'Coach roster control'}</Badge>
-                                <CardTitle className="text-3xl">Roster workspace</CardTitle>
-                                <CardDescription className="max-w-3xl leading-6">{scopeLabel}</CardDescription>
-                            </div>
-
+            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+                <WorkspaceHero
+                    eyebrow={isAdmin ? 'Admin roster control' : 'Coach roster control'}
+                    title={
+                        isAdmin ? 'Every coaching relationship should be visible in one pass.' : 'Run the roster without guessing who needs you next.'
+                    }
+                    description={`${scopeLabel} The roster should tell you who is covered, who is drifting, and where the next action belongs before you open anything else.`}
+                    badges={heroBadges}
+                    actions={
+                        <>
                             <CreateAssignmentDialog
                                 viewerRole={viewerRole}
                                 coachOptions={coachOptions}
                                 athleteOptions={athleteOptions}
                                 statusOptions={statusOptions}
                             />
+                            <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
+                                <Link href="/training">
+                                    <Dumbbell className="mr-2 size-4" />
+                                    Open training
+                                </Link>
+                            </Button>
+                            <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
+                                <Link href="/progress">
+                                    <Activity className="mr-2 size-4" />
+                                    Open progress
+                                </Link>
+                            </Button>
+                        </>
+                    }
+                    aside={
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="rounded-[1.35rem] border border-white/70 bg-white/82 p-4">
+                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Active athletes</p>
+                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">{summary.activeAthletes}</p>
+                                <p className="mt-2 text-sm text-stone-600">
+                                    {isAdmin ? 'Athletes currently attached to a live coach relationship.' : 'Athletes currently assigned to you.'}
+                                </p>
+                            </div>
+                            <div className="rounded-[1.35rem] border border-white/70 bg-white/82 p-4">
+                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Coverage gaps</p>
+                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">{summary.availableAthletes}</p>
+                                <p className="mt-2 text-sm text-stone-600">
+                                    {isAdmin ? 'Athletes without a live coach assignment yet.' : 'Athletes not currently active on your roster.'}
+                                </p>
+                            </div>
+                            <div className="rounded-[1.35rem] border border-white/70 bg-white/82 p-4">
+                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Assignments</p>
+                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">{summary.totalAssignments}</p>
+                                <p className="mt-2 text-sm text-stone-600">
+                                    {summary.pausedAssignments} paused and {summary.archivedAssignments} archived.
+                                </p>
+                            </div>
+                            <div className="rounded-[1.35rem] border border-white/70 bg-white/82 p-4">
+                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Coach spread</p>
+                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">
+                                    {isAdmin ? summary.representedCoaches : 1}
+                                </p>
+                                <p className="mt-2 text-sm text-stone-600">
+                                    {isAdmin ? 'Coaches represented in the visible roster map.' : 'You are the visible coach in this view.'}
+                                </p>
+                            </div>
                         </div>
-                    </CardHeader>
-                </Card>
+                    }
+                />
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <MetricCard
+                    <WorkspaceMetricCard
                         title="Assignments"
                         value={summary.totalAssignments.toString()}
                         note={`${summary.activeAssignments} active, ${summary.pausedAssignments} paused, ${summary.archivedAssignments} archived.`}
                         icon={ClipboardList}
                     />
-                    <MetricCard
+                    <WorkspaceMetricCard
                         title="Athletes covered"
                         value={summary.activeAthletes.toString()}
                         note={
@@ -501,13 +584,13 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                         }
                         icon={Users}
                     />
-                    <MetricCard
+                    <WorkspaceMetricCard
                         title="Still available"
                         value={summary.availableAthletes.toString()}
                         note={isAdmin ? 'Athletes with no active coach coverage yet.' : 'Athletes not currently active on your roster yet.'}
                         icon={UserRoundPlus}
                     />
-                    <MetricCard
+                    <WorkspaceMetricCard
                         title="Paused or archived"
                         value={(summary.pausedAssignments + summary.archivedAssignments).toString()}
                         note={`${summary.athletesMissingRecentCheckIns} athlete(s) are also missing a recent progress check-in.`}
@@ -515,135 +598,132 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                     />
                 </div>
 
-                <Card className="border-sidebar-border/70">
-                    <CardHeader>
-                        <CardTitle className="text-xl">Assignment queue</CardTitle>
-                        <CardDescription>
-                            Every row should tell you whether the coach-athlete relationship is healthy, neglected, or dead.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {assignments.data.length === 0 ? (
-                            <div className="border-sidebar-border/70 rounded-xl border border-dashed p-8 text-center">
-                                <p className="font-medium">No roster assignments yet.</p>
-                                <p className="text-muted-foreground mt-2 text-sm leading-6">
-                                    That means either the roster is genuinely empty or the operating workflow still lives in someone’s head. Both are
-                                    bad.
-                                </p>
-                            </div>
-                        ) : (
-                            assignments.data.map((assignment) => (
-                                <div key={assignment.id} className="border-sidebar-border/70 rounded-2xl border p-5">
-                                    <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                                        <div className="space-y-2">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <p className="text-lg font-semibold">{assignment.athlete.name}</p>
-                                                <Badge variant={badgeVariant(assignment.status)}>{humanizeStatus(assignment.status)}</Badge>
-                                                {assignment.membership && (
-                                                    <Badge variant={badgeVariant(assignment.membership.status)}>
-                                                        {humanizeStatus(assignment.membership.status)}
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                            <p className="text-muted-foreground text-sm">
-                                                {assignment.athlete.email}
-                                                {assignment.athlete.phone ? ` · ${assignment.athlete.phone}` : ''}
-                                            </p>
-                                            <p className="text-muted-foreground text-sm leading-6">
-                                                Coach: {assignment.coach.name}
-                                                {isAdmin ? ` · ${assignment.coach.email}` : ''}
-                                            </p>
-                                            <p className="text-sm leading-6">
-                                                {assignment.goal ?? assignment.athlete.primaryGoal ?? 'No explicit coaching goal set yet.'}
-                                            </p>
-                                        </div>
+                <section className="space-y-4">
+                    <WorkspaceSectionHeading
+                        eyebrow="Assignment queue"
+                        title="See the relationship, the risk, and the next action in one place."
+                        description="Each assignment should surface membership, recovery, progress, and program state without forcing you to open four different pages just to understand one athlete."
+                    />
+                    <WorkspacePanel
+                        title="Live roster map"
+                        description={`${assignments.total} assignment record(s) in the current view. Healthy relationships should read fast. Bad ones should be impossible to miss.`}
+                        contentClassName="space-y-4"
+                    >
+                        <WorkspaceTable minWidth="min-w-[1320px]">
+                            <WorkspaceTableHeader
+                                labels={['Athlete', 'Coach', 'Status', 'Membership', 'Recovery', 'Food / body', 'Training', 'Timeline', 'Actions']}
+                            />
+                            {assignments.data.length === 0 ? (
+                                <WorkspaceTableEmpty message="No roster assignments yet." colSpan={9} />
+                            ) : (
+                                <tbody className="divide-y divide-stone-100">
+                                    {assignments.data.map((assignment) => {
+                                        const weeklyBrief = normalizedWeeklyBrief(assignment);
 
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <Badge variant="outline">{assignment.connectedDevices} connected devices</Badge>
-                                            {assignment.membership && <Badge variant="outline">{assignment.membership.planName}</Badge>}
-                                            <EditAssignmentDialog assignment={assignment} statusOptions={statusOptions} />
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-5 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-                                        <div className="border-sidebar-border/70 rounded-xl border p-4">
-                                            <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Membership</p>
-                                            <p className="mt-2 font-medium">
-                                                {assignment.membership ? formatDays(assignment.membership.daysRemaining) : 'No active membership'}
-                                            </p>
-                                            <p className="text-muted-foreground mt-1 text-sm">
-                                                {assignment.membership
-                                                    ? humanizeStatus(assignment.membership.status)
-                                                    : 'Nothing current is attached.'}
-                                            </p>
-                                        </div>
-
-                                        <div className="border-sidebar-border/70 rounded-xl border p-4">
-                                            <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Recovery</p>
-                                            <p className="mt-2 font-medium">{formatReadiness(assignment.latestSnapshot?.readinessScore ?? null)}</p>
-                                            <p className="text-muted-foreground mt-1 text-sm">
-                                                {assignment.latestSnapshot
-                                                    ? `${formatSleepHours(assignment.latestSnapshot.sleepHours)} · strain ${assignment.latestSnapshot.strainScore ?? 'N/A'}`
-                                                    : 'No recovery snapshot synced yet.'}
-                                            </p>
-                                        </div>
-
-                                        <div className="border-sidebar-border/70 rounded-xl border p-4">
-                                            <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Food and body</p>
-                                            <p className="mt-2 font-medium">
-                                                {assignment.latestCheckIn
-                                                    ? `${assignment.latestCheckIn.weightKg === null ? 'No weight' : `${assignment.latestCheckIn.weightKg.toFixed(1)} kg`} · ${assignment.latestCheckIn.proteinGrams === null ? 'No protein' : `${assignment.latestCheckIn.proteinGrams} g protein`}`
-                                                    : 'No recent check-in'}
-                                            </p>
-                                            <p className="text-muted-foreground mt-1 text-sm">
-                                                {assignment.latestCheckIn
-                                                    ? `${assignment.latestCheckIn.caloriesConsumed === null ? 'No calories logged' : `${assignment.latestCheckIn.caloriesConsumed} kcal`} · Water ${assignment.latestCheckIn.waterLiters === null ? 'N/A' : `${assignment.latestCheckIn.waterLiters.toFixed(1)} L`}`
-                                                    : 'Weight, food, and hydration are still a blind spot here.'}
-                                            </p>
-                                        </div>
-
-                                        <div className="border-sidebar-border/70 rounded-xl border p-4">
-                                            <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Training</p>
-                                            <p className="mt-2 font-medium">{assignment.currentProgram?.title ?? 'No current program'}</p>
-                                            <p className="text-muted-foreground mt-1 text-sm">
-                                                {assignment.currentProgram
-                                                    ? `Next session ${assignment.currentProgram.nextSessionDate ?? 'not scheduled'} · ${assignment.currentProgram.pendingLogs} pending log(s)`
-                                                    : 'The athlete is assigned, but actual programming still needs to happen.'}
-                                            </p>
-                                        </div>
-
-                                        <div className="border-sidebar-border/70 rounded-xl border p-4">
-                                            <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Timeline</p>
-                                            <p className="mt-2 font-medium">Started {assignment.startedAt ?? 'not set'}</p>
-                                            <p className="text-muted-foreground mt-1 text-sm">
-                                                {assignment.endedAt ? `Ended ${assignment.endedAt}` : 'Still live unless the status says otherwise.'}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                                        <p className="text-muted-foreground text-sm leading-6">
-                                            {assignment.notes ?? 'No notes on the assignment yet.'}
-                                        </p>
-
-                                        <div className="flex flex-wrap gap-2">
-                                            <Button asChild variant="outline" size="sm">
-                                                <Link href="/training">
-                                                    <Dumbbell className="mr-2 size-4" />
-                                                    Training
-                                                </Link>
-                                            </Button>
-                                            <Button asChild variant="outline" size="sm">
-                                                <Link href="/wearables">
-                                                    <Watch className="mr-2 size-4" />
-                                                    Wearables
-                                                </Link>
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
+                                        return (
+                                            <tr key={assignment.id} className="align-top transition-colors hover:bg-stone-50/80">
+                                                <td className="px-4 py-4">
+                                                    <p className="font-semibold text-stone-950">{assignment.athlete.name}</p>
+                                                    <p className="mt-1 text-xs text-stone-500">{assignment.athlete.email}</p>
+                                                    <p className="mt-2 line-clamp-2 max-w-[16rem] text-xs text-stone-600">
+                                                        {assignment.goal ?? assignment.athlete.primaryGoal ?? 'No goal set.'}
+                                                    </p>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <p className="font-medium text-stone-950">{assignment.coach.name}</p>
+                                                    {isAdmin && <p className="mt-1 text-xs text-stone-500">{assignment.coach.email}</p>}
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <div className="flex flex-col items-start gap-2">
+                                                        <Badge variant={badgeVariant(assignment.status)}>{humanizeStatus(assignment.status)}</Badge>
+                                                        <Badge variant={priorityBadgeVariant(weeklyBrief.priority)}>
+                                                            {humanizeStatus(weeklyBrief.priority)}
+                                                        </Badge>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    {assignment.membership ? (
+                                                        <div className="space-y-1">
+                                                            <Badge variant={badgeVariant(assignment.membership.status)}>
+                                                                {humanizeStatus(assignment.membership.status)}
+                                                            </Badge>
+                                                            <p className="text-xs font-medium text-stone-950">{assignment.membership.planName}</p>
+                                                            <p className="text-xs text-stone-600">{formatDays(assignment.membership.daysRemaining)}</p>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-stone-500">No active membership</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <p className="font-medium text-stone-950">
+                                                        {formatReadiness(assignment.latestSnapshot?.readinessScore ?? null)}
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-stone-500">
+                                                        {assignment.latestSnapshot
+                                                            ? `${formatSleepHours(assignment.latestSnapshot.sleepHours)} sleep · strain ${assignment.latestSnapshot.strainScore ?? 'N/A'}`
+                                                            : 'No snapshot'}
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-stone-500">{assignment.connectedDevices} device(s)</p>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <p className="font-medium text-stone-950">
+                                                        {assignment.latestCheckIn?.weightKg === null || assignment.latestCheckIn?.weightKg === undefined
+                                                            ? 'No weight'
+                                                            : `${assignment.latestCheckIn.weightKg.toFixed(1)} kg`}
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-stone-500">
+                                                        {assignment.latestCheckIn
+                                                            ? `${assignment.latestCheckIn.caloriesConsumed ?? 'No'} kcal · ${assignment.latestCheckIn.proteinGrams ?? 'No'}g protein`
+                                                            : 'No recent check-in'}
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-stone-500">
+                                                        Water{' '}
+                                                        {assignment.latestCheckIn?.waterLiters === null ||
+                                                        assignment.latestCheckIn?.waterLiters === undefined
+                                                            ? 'N/A'
+                                                            : `${assignment.latestCheckIn.waterLiters.toFixed(1)} L`}
+                                                    </p>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <p className="font-medium text-stone-950">
+                                                        {assignment.currentProgram?.title ?? 'No current program'}
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-stone-500">
+                                                        {assignment.currentProgram
+                                                            ? `Next ${assignment.currentProgram.nextSessionDate ?? 'not scheduled'} · ${assignment.currentProgram.pendingLogs} pending`
+                                                            : 'Programming needed'}
+                                                    </p>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <p className="font-medium text-stone-950">Start {assignment.startedAt ?? 'not set'}</p>
+                                                    <p className="mt-1 text-xs text-stone-500">
+                                                        {assignment.endedAt ? `End ${assignment.endedAt}` : 'Still live'}
+                                                    </p>
+                                                    <p className="mt-2 line-clamp-2 max-w-[14rem] text-xs text-stone-600">{weeklyBrief.headline}</p>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <div className="flex flex-col gap-2">
+                                                        <EditAssignmentDialog assignment={assignment} statusOptions={statusOptions} />
+                                                        <Button asChild variant="outline" size="sm">
+                                                            <Link href="/training">
+                                                                <Dumbbell className="mr-2 size-4" />
+                                                                Training
+                                                            </Link>
+                                                        </Button>
+                                                        <Button asChild variant="outline" size="sm">
+                                                            <Link href="/wearables">
+                                                                <Watch className="mr-2 size-4" />
+                                                                Wearables
+                                                            </Link>
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            )}
+                        </WorkspaceTable>
 
                         {assignments.last_page > 1 && (
                             <div className="border-sidebar-border/70 flex items-center justify-between border-t pt-4">
@@ -667,18 +747,21 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                                 </div>
                             </div>
                         )}
-                    </CardContent>
-                </Card>
+                    </WorkspacePanel>
+                </section>
 
-                <div className="grid gap-4 xl:grid-cols-3">
-                    <Card className="border-sidebar-border/70">
-                        <CardHeader>
-                            <CardTitle className="text-lg">Status meaning</CardTitle>
-                            <CardDescription>
-                                The labels are simple on purpose. Complexity here is usually just bad discipline wearing a tie.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="text-muted-foreground space-y-3 text-sm leading-6">
+                <section className="space-y-4">
+                    <WorkspaceSectionHeading
+                        eyebrow="Operating rules"
+                        title="Keep the roster simple enough that people actually maintain it."
+                        description="Roster systems get ugly when nobody agrees what the statuses mean or where assignment context belongs. This page exists to kill that ambiguity."
+                    />
+                    <div className="grid gap-4 xl:grid-cols-3">
+                        <WorkspacePanel
+                            title="Status meaning"
+                            description="The labels stay blunt on purpose. This is operating state, not poetry."
+                            contentClassName="text-muted-foreground space-y-3 text-sm leading-6"
+                        >
                             <p className="flex items-start gap-2">
                                 <Activity className="text-primary mt-1 size-4" />
                                 <span>
@@ -700,32 +783,27 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                                     honestly.
                                 </span>
                             </p>
-                        </CardContent>
-                    </Card>
+                        </WorkspacePanel>
 
-                    <Card className="border-sidebar-border/70">
-                        <CardHeader>
-                            <CardTitle className="text-lg">What this page fixes</CardTitle>
-                            <CardDescription>
-                                The product already depended on assignments everywhere. Now the operating workflow actually has a home.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="text-muted-foreground space-y-2 text-sm leading-6">
+                        <WorkspacePanel
+                            title="What this page fixes"
+                            description="Assignments already drove the product logic. Now the humans finally get a page worthy of that fact."
+                            className="xl:col-span-1"
+                            contentClassName="text-muted-foreground space-y-2 text-sm leading-6"
+                        >
                             <p>Coaches can claim and update their roster from the UI instead of getting blocked before training even starts.</p>
                             <p>Admins can see who is covered, who is drifting, and who still has no coach attached.</p>
                             <p>
                                 Membership, recovery, and training status now sit next to the relationship itself, which is where decisions actually
                                 happen.
                             </p>
-                        </CardContent>
-                    </Card>
+                        </WorkspacePanel>
 
-                    <Card className="border-sidebar-border/70">
-                        <CardHeader>
-                            <CardTitle className="text-lg">Fast links</CardTitle>
-                            <CardDescription>Move from roster status to execution without taking the scenic route.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
+                        <WorkspacePanel
+                            title="Fast links"
+                            description="Move from roster status to execution without taking the scenic route."
+                            contentClassName="space-y-2"
+                        >
                             <Button asChild variant="outline" className="w-full justify-between">
                                 <Link href="/training">
                                     Training workspace
@@ -746,9 +824,9 @@ export default function RosterIndex({ viewerRole, scopeLabel, summary, assignmen
                                     </Link>
                                 </Button>
                             )}
-                        </CardContent>
-                    </Card>
-                </div>
+                        </WorkspacePanel>
+                    </div>
+                </section>
             </div>
         </AppLayout>
     );

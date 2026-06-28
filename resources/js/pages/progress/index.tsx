@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { WorkspaceTable, WorkspaceTableEmpty, WorkspaceTableHeader } from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -631,25 +632,37 @@ function AthleteProgressView({ athleteProfile, canManageOwnCheckIns }: { athlete
                 description="Recent history is often more useful than a single perfect-looking day."
                 contentClassName="space-y-3"
             >
-                {athleteProfile.recentCheckIns.map((checkIn) => (
-                    <div key={checkIn.id} className="rounded-2xl border border-stone-200/80 p-4">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                            <div>
-                                <p className="font-medium text-stone-950">{shortDate(checkIn.loggedDate)}</p>
-                                <p className="mt-1 text-sm text-stone-600">
-                                    {formatWeight(checkIn.weightKg)} · {formatCalories(checkIn.caloriesConsumed)} ·{' '}
-                                    {formatGrams(checkIn.proteinGrams)}
-                                </p>
-                                <p className="mt-1 text-sm text-stone-600">
-                                    Water {formatLiters(checkIn.waterLiters)} · Energy {formatScore(checkIn.energyScore)} · Soreness{' '}
-                                    {formatScore(checkIn.sorenessScore)}
-                                </p>
-                            </div>
-                            {canManageOwnCheckIns && <CheckInDialog label="Edit" checkIn={checkIn} defaults={athleteProfile.defaults} />}
-                        </div>
-                        {checkIn.notes && <p className="mt-3 text-sm leading-6 text-stone-700">{checkIn.notes}</p>}
-                    </div>
-                ))}
+                <WorkspaceTable minWidth="min-w-[980px]">
+                    <WorkspaceTableHeader
+                        labels={['Date', 'Weight', 'Calories', 'Protein', 'Water', 'Energy', 'Soreness', 'Sleep', 'Notes', 'Action']}
+                    />
+                    {athleteProfile.recentCheckIns.length === 0 ? (
+                        <WorkspaceTableEmpty message="No check-ins logged yet." colSpan={10} />
+                    ) : (
+                        <tbody className="divide-y divide-stone-100">
+                            {athleteProfile.recentCheckIns.map((checkIn) => (
+                                <tr key={checkIn.id} className="align-top transition-colors hover:bg-stone-50/80">
+                                    <td className="px-4 py-4 font-medium text-stone-950">{shortDate(checkIn.loggedDate)}</td>
+                                    <td className="px-4 py-4 text-sm text-stone-700">{formatWeight(checkIn.weightKg)}</td>
+                                    <td className="px-4 py-4 text-sm text-stone-700">{formatCalories(checkIn.caloriesConsumed)}</td>
+                                    <td className="px-4 py-4 text-sm text-stone-700">{formatGrams(checkIn.proteinGrams)}</td>
+                                    <td className="px-4 py-4 text-sm text-stone-700">{formatLiters(checkIn.waterLiters)}</td>
+                                    <td className="px-4 py-4 text-sm text-stone-700">{formatScore(checkIn.energyScore)}</td>
+                                    <td className="px-4 py-4 text-sm text-stone-700">{formatScore(checkIn.sorenessScore)}</td>
+                                    <td className="px-4 py-4 text-sm text-stone-700">{formatScore(checkIn.sleepQualityScore)}</td>
+                                    <td className="px-4 py-4">
+                                        <p className="line-clamp-2 max-w-[18rem] text-sm leading-6 text-stone-700">
+                                            {checkIn.notes ?? 'No notes.'}
+                                        </p>
+                                    </td>
+                                    <td className="px-4 py-4">
+                                        {canManageOwnCheckIns && <CheckInDialog label="Edit" checkIn={checkIn} defaults={athleteProfile.defaults} />}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    )}
+                </WorkspaceTable>
             </AthletePanel>
         </div>
     );
@@ -716,116 +729,108 @@ function CoachAdminProgressView({
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {athletes.data.length === 0 ? (
-                        <div className="border-sidebar-border/70 rounded-2xl border border-dashed p-8 text-center">
-                            <p className="font-medium">No athlete progress data is visible yet.</p>
-                            <p className="text-muted-foreground mt-2 text-sm leading-6">
-                                That means either the roster is empty or nobody is logging anything useful yet.
-                            </p>
-                        </div>
-                    ) : (
-                        athletes.data.map((athlete) => (
-                            <div key={athlete.id} className="border-sidebar-border/70 rounded-2xl border p-5">
-                                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                                    <div className="space-y-2">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <p className="text-lg font-semibold">{athlete.name}</p>
-                                            <Badge variant="outline">{athlete.coachName ?? 'No coach label'}</Badge>
-                                            {athlete.latestSnapshot && (
-                                                <Badge variant="default">Readiness {athlete.latestSnapshot.readinessScore ?? 'N/A'}</Badge>
+                    <WorkspaceTable minWidth="min-w-[1280px]">
+                        <WorkspaceTableHeader
+                            labels={['Athlete', 'Coach', 'Latest check-in', 'Weight', 'Fuel', 'State', 'Compliance', 'Wearable', 'Alerts', 'Actions']}
+                        />
+                        {athletes.data.length === 0 ? (
+                            <WorkspaceTableEmpty message="No athlete progress data is visible yet." colSpan={10} />
+                        ) : (
+                            <tbody className="divide-y divide-stone-100">
+                                {athletes.data.map((athlete) => (
+                                    <tr key={athlete.id} className="align-top transition-colors hover:bg-stone-50/80">
+                                        <td className="px-4 py-4">
+                                            <p className="font-semibold text-stone-950">{athlete.name}</p>
+                                            <p className="mt-1 text-xs text-stone-500">{athlete.email}</p>
+                                            <p className="mt-2 line-clamp-2 max-w-[16rem] text-xs text-stone-600">
+                                                {athlete.primaryGoal ?? 'No goal saved.'}
+                                            </p>
+                                        </td>
+                                        <td className="px-4 py-4 text-sm text-stone-700">{athlete.coachName ?? 'No coach label'}</td>
+                                        <td className="px-4 py-4">
+                                            <p className="font-medium text-stone-950">
+                                                {athlete.latestCheckIn ? shortDate(athlete.latestCheckIn.loggedDate) : 'No check-in'}
+                                            </p>
+                                            <p className="mt-1 text-xs text-stone-500">
+                                                Water {formatLiters(athlete.latestCheckIn?.waterLiters ?? null)}
+                                            </p>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <p className="font-medium text-stone-950">{formatWeight(athlete.progressOverview.latestWeightKg)}</p>
+                                            <p className="mt-1 text-xs text-stone-500">
+                                                Delta {formatDelta(athlete.progressOverview.weightDeltaKg)}
+                                            </p>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <p className="font-medium text-stone-950">
+                                                {formatCalories(athlete.progressOverview.averageCaloriesConsumed)}
+                                            </p>
+                                            <p className="mt-1 text-xs text-stone-500">
+                                                Protein {formatGrams(athlete.progressOverview.averageProteinGrams)}
+                                            </p>
+                                            <p className="mt-1 text-xs text-stone-500">
+                                                Carbs {formatGrams(athlete.progressOverview.averageCarbsGrams)} · Fat{' '}
+                                                {formatGrams(athlete.progressOverview.averageFatGrams)}
+                                            </p>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <p className="text-sm text-stone-700">
+                                                Energy {formatScore(athlete.progressOverview.averageEnergyScore)}
+                                            </p>
+                                            <p className="mt-1 text-xs text-stone-500">
+                                                Soreness {formatScore(athlete.progressOverview.averageSorenessScore)} · Stress{' '}
+                                                {formatScore(athlete.progressOverview.averageStressScore)}
+                                            </p>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <p className="font-medium text-stone-950">{formatPercent(athlete.progressOverview.completionRate)}</p>
+                                            <p className="mt-1 text-xs text-stone-500">
+                                                {athlete.progressOverview.completedSessions}/{athlete.progressOverview.scheduledSessions} sessions
+                                            </p>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <p className="font-medium text-stone-950">
+                                                Readiness {athlete.latestSnapshot?.readinessScore ?? 'N/A'}
+                                            </p>
+                                            <p className="mt-1 text-xs text-stone-500">
+                                                Sleep {athlete.latestSnapshot?.sleepHours ?? 'N/A'} · Load{' '}
+                                                {athlete.latestSnapshot?.trainingLoad ?? 'N/A'}
+                                            </p>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            {athlete.alerts.length === 0 ? (
+                                                <span className="text-xs text-stone-500">No alerts</span>
+                                            ) : (
+                                                <div className="flex max-w-[14rem] flex-wrap gap-1.5">
+                                                    {athlete.alerts.map((alert) => (
+                                                        <Badge key={alert} variant="secondary">
+                                                            {alert}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
                                             )}
-                                        </div>
-                                        <p className="text-muted-foreground text-sm">{athlete.email}</p>
-                                        <p className="text-sm leading-6">{athlete.primaryGoal ?? 'No explicit primary goal saved yet.'}</p>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href="/training">
-                                                <Dumbbell className="mr-2 size-4" />
-                                                Training
-                                            </Link>
-                                        </Button>
-                                        <Button asChild variant="outline" size="sm">
-                                            <Link href={isAdmin ? '/roster' : '/roster'}>
-                                                <Users className="mr-2 size-4" />
-                                                Roster
-                                            </Link>
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                <div className="mt-5 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-                                    <div className="border-sidebar-border/70 rounded-xl border p-4">
-                                        <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Weight</p>
-                                        <p className="mt-2 font-medium">{formatWeight(athlete.progressOverview.latestWeightKg)}</p>
-                                        <p className="text-muted-foreground mt-1 text-sm">
-                                            Window delta {formatDelta(athlete.progressOverview.weightDeltaKg)}
-                                        </p>
-                                    </div>
-                                    <div className="border-sidebar-border/70 rounded-xl border p-4">
-                                        <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Fuel</p>
-                                        <p className="mt-2 font-medium">
-                                            {formatCalories(athlete.progressOverview.averageCaloriesConsumed)} ·{' '}
-                                            {formatGrams(athlete.progressOverview.averageProteinGrams)}
-                                        </p>
-                                        <p className="text-muted-foreground mt-1 text-sm">
-                                            {formatGrams(athlete.progressOverview.averageCarbsGrams)} carbs ·{' '}
-                                            {formatGrams(athlete.progressOverview.averageFatGrams)} fat
-                                        </p>
-                                    </div>
-                                    <div className="border-sidebar-border/70 rounded-xl border p-4">
-                                        <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Subjective state</p>
-                                        <p className="mt-2 font-medium">
-                                            Energy {formatScore(athlete.progressOverview.averageEnergyScore)} · Soreness{' '}
-                                            {formatScore(athlete.progressOverview.averageSorenessScore)}
-                                        </p>
-                                        <p className="text-muted-foreground mt-1 text-sm">
-                                            Stress {formatScore(athlete.progressOverview.averageStressScore)} · Sleep{' '}
-                                            {formatScore(athlete.progressOverview.averageSleepQualityScore)}
-                                        </p>
-                                    </div>
-                                    <div className="border-sidebar-border/70 rounded-xl border p-4">
-                                        <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Compliance</p>
-                                        <p className="mt-2 font-medium">{formatPercent(athlete.progressOverview.completionRate)}</p>
-                                        <p className="text-muted-foreground mt-1 text-sm">
-                                            {athlete.progressOverview.completedSessions} completed of {athlete.progressOverview.scheduledSessions}{' '}
-                                            scheduled
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="mt-5 grid gap-4 xl:grid-cols-2">
-                                    <div className="border-sidebar-border/70 rounded-xl border p-4">
-                                        <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Latest check-in</p>
-                                        <p className="mt-2 font-medium">
-                                            {athlete.latestCheckIn
-                                                ? `${shortDate(athlete.latestCheckIn.loggedDate)} · ${formatWeight(athlete.latestCheckIn.weightKg)} · ${formatCalories(athlete.latestCheckIn.caloriesConsumed)}`
-                                                : 'No recent manual check-in logged.'}
-                                        </p>
-                                        <p className="text-muted-foreground mt-1 text-sm">
-                                            {athlete.latestCheckIn
-                                                ? `Protein ${formatGrams(athlete.latestCheckIn.proteinGrams)} · Water ${formatLiters(athlete.latestCheckIn.waterLiters)} · Energy ${formatScore(athlete.latestCheckIn.energyScore)}`
-                                                : 'Nothing recent to compare against training or wearable data.'}
-                                        </p>
-                                    </div>
-                                    <div className="border-sidebar-border/70 rounded-xl border p-4">
-                                        <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Alerts</p>
-                                        {athlete.alerts.length === 0 ? (
-                                            <p className="text-muted-foreground mt-2 text-sm">No progress-side alerts are firing right now.</p>
-                                        ) : (
-                                            <div className="mt-2 flex flex-wrap gap-2">
-                                                {athlete.alerts.map((alert) => (
-                                                    <Badge key={alert} variant="secondary">
-                                                        {alert}
-                                                    </Badge>
-                                                ))}
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <div className="flex flex-col gap-2">
+                                                <Button asChild variant="outline" size="sm">
+                                                    <Link href="/training">
+                                                        <Dumbbell className="mr-2 size-4" />
+                                                        Training
+                                                    </Link>
+                                                </Button>
+                                                <Button asChild variant="outline" size="sm">
+                                                    <Link href="/roster">
+                                                        <Users className="mr-2 size-4" />
+                                                        Roster
+                                                    </Link>
+                                                </Button>
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))
-                    )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        )}
+                    </WorkspaceTable>
 
                     {athletes.last_page > 1 && (
                         <div className="border-sidebar-border/70 flex items-center justify-between border-t pt-4">

@@ -19,6 +19,7 @@ class SubscriptionPlan extends Model
         'duration_days',
         'price',
         'currency',
+        'stripe_price_id',
         'is_active',
     ];
 

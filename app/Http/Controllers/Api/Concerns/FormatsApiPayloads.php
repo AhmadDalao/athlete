@@ -149,7 +149,29 @@ trait FormatsApiPayloads
             'performedAt' => $workoutLog->performed_at?->toIso8601String(),
             'durationMinutes' => $workoutLog->duration_minutes,
             'exertionRating' => $workoutLog->exertion_rating,
+            'energyScore' => $workoutLog->energy_score,
+            'sorenessScore' => $workoutLog->soreness_score,
+            'stressScore' => $workoutLog->stress_score,
+            'sleepQualityScore' => $workoutLog->sleep_quality_score,
             'notes' => $workoutLog->notes,
+            'setLogs' => $workoutLog->relationLoaded('setLogs')
+                ? $workoutLog->setLogs
+                    ->map(fn ($setLog): array => [
+                        'exerciseIndex' => $setLog->exercise_index,
+                        'exerciseName' => $setLog->exercise_name,
+                        'setNumber' => $setLog->set_number,
+                        'targetReps' => $setLog->target_reps,
+                        'targetLoad' => $setLog->target_load,
+                        'targetRestSeconds' => $setLog->target_rest_seconds,
+                        'actualReps' => $setLog->actual_reps,
+                        'actualLoad' => $setLog->actual_load,
+                        'actualRpe' => $setLog->actual_rpe,
+                        'completedAt' => $setLog->completed_at?->toIso8601String(),
+                        'notes' => $setLog->notes,
+                    ])
+                    ->values()
+                    ->all()
+                : [],
         ];
     }
 
@@ -187,6 +209,7 @@ trait FormatsApiPayloads
             'scheduledDate' => $session->scheduled_date?->toDateString(),
             'focus' => $session->focus,
             'instructions' => $session->instructions,
+            'videoUrl' => $session->video_url,
             'exercises' => $this->normalizeExercises($session->exercises ?? []),
             'workoutLog' => $this->workoutLogPayload($session->workoutLog),
         ];

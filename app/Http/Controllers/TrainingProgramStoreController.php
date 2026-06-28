@@ -6,13 +6,14 @@ use App\Enums\CoachAthleteStatus;
 use App\Enums\RoleName;
 use App\Enums\TrainingProgramStatus;
 use App\Models\TrainingProgram;
+use App\Services\PlatformAuditLogger;
 use App\Support\TrainingExerciseParser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class TrainingProgramStoreController extends Controller
 {
-    public function __invoke(Request $request, TrainingExerciseParser $exerciseParser): RedirectResponse
+    public function __invoke(Request $request, TrainingExerciseParser $exerciseParser, PlatformAuditLogger $auditLogger): RedirectResponse
     {
         $user = $request->user();
 
@@ -29,6 +30,7 @@ class TrainingProgramStoreController extends Controller
             'first_session_date' => ['required', 'date'],
             'first_session_focus' => ['nullable', 'string', 'max:255'],
             'first_session_instructions' => ['nullable', 'string'],
+            'first_session_video_url' => ['nullable', 'url', 'max:2048'],
             'first_session_exercises' => ['nullable', 'string'],
         ]);
 
@@ -55,9 +57,25 @@ class TrainingProgramStoreController extends Controller
             'scheduled_date' => $validated['first_session_date'],
             'focus' => $validated['first_session_focus'],
             'instructions' => $validated['first_session_instructions'],
+            'video_url' => $validated['first_session_video_url'] ?? null,
             'exercises' => $exerciseParser->parse($validated['first_session_exercises'] ?? null),
             'sort_order' => 1,
         ]);
+
+        $program->loadMissing(['coach', 'athlete']);
+
+        $auditLogger->record(
+            $request,
+            'training_program.created',
+            $program,
+            "{$program->coach->name} assigned {$program->title} to {$program->athlete->name}.",
+            [
+                'coach_id' => $program->coach_id,
+                'athlete_id' => $program->athlete_id,
+                'start_date' => $program->start_date?->toDateString(),
+                'end_date' => $program->end_date?->toDateString(),
+            ],
+        );
 
         return redirect()->route('training.index');
     }

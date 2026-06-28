@@ -43,7 +43,10 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
 
             <SettingsLayout>
                 <div className="space-y-6">
-                    <HeadingSmall title="Profile information" description="Update the identity and contact details that drive onboarding and coach communication." />
+                    <HeadingSmall
+                        title="Profile information"
+                        description="Update the identity and contact details that drive onboarding and coach communication."
+                    />
 
                     <form onSubmit={submit} className="space-y-6">
                         <div className="grid gap-2">

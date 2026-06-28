@@ -27,6 +27,11 @@ class Membership extends Model
         'auto_renew',
         'price',
         'currency',
+        'billing_provider',
+        'provider_customer_id',
+        'provider_subscription_id',
+        'provider_price_id',
+        'provider_payload',
         'notes',
     ];
 
@@ -41,6 +46,7 @@ class Membership extends Model
             'cancelled_at' => 'date',
             'auto_renew' => 'bool',
             'price' => 'decimal:2',
+            'provider_payload' => 'array',
         ];
     }
 

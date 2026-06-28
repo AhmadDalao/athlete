@@ -87,6 +87,11 @@ class DashboardTest extends TestCase
                 ->where('admin.metrics.activeMemberships', 1)
                 ->where('admin.signupMix.0.method', 'email')
                 ->where('admin.signupMix.0.count', 3)
+                ->where('admin.recentUsers.0.id', fn (int $id) => $id > 0)
+                ->where('admin.athleteTable.0.name', $athlete->name)
+                ->where('admin.athleteTable.0.currentMembership.subscribedAt', now()->subDays(5)->toDateString())
+                ->where('admin.subscriptionTable.0.userId', $athlete->id)
+                ->where('admin.subscriptionTable.0.startsAt', now()->subDays(5)->toDateString())
             );
     }
 
@@ -178,8 +183,10 @@ class DashboardTest extends TestCase
                 ->where('coach.metrics.activePrograms', 1)
                 ->where('coach.metrics.pendingWorkoutLogs', 1)
                 ->where('coach.roster.0.name', $athlete->name)
+                ->where('coach.roster.0.weeklyBrief.priority', 'high')
                 ->where('coach.roster.0.latestCheckIn.weightKg', 92.4)
                 ->where('coach.roster.0.currentProgram.title', 'Power Build')
+                ->where('coach.weeklyBriefs.0.name', $athlete->name)
             );
     }
 

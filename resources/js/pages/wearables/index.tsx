@@ -1,11 +1,19 @@
 import { AthleteHero, AthleteMetricCard, AthletePanel, AthleteSectionHeading, ReadinessDial, TrendBars } from '@/components/athlete-page-primitives';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    WorkspaceHero,
+    WorkspaceMetricCard,
+    WorkspacePanel,
+    WorkspaceSectionHeading,
+    WorkspaceTable,
+    WorkspaceTableEmpty,
+    WorkspaceTableHeader,
+} from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { Activity, AlertTriangle, HeartPulse, MoonStar, ShieldCheck, Watch } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -100,6 +108,16 @@ interface WearableConnection {
     } | null;
     latestSnapshot: LatestSnapshot | null;
     analytics: MetricsAnalytics;
+    review: {
+        severity: string;
+        issue: string;
+        recommendation: string;
+        lastErrorMessage: string | null;
+        lastErrorAt: string | null;
+        staleHours: number | null;
+        staleDays: number | null;
+        syncFailuresCount: number;
+    };
 }
 
 interface WearablePaginator {
@@ -125,6 +143,20 @@ interface WearablesPageProps {
         averageReadiness: number | null;
     };
     connections: WearablePaginator;
+    reviewQueue: Array<{
+        id: number;
+        userName: string;
+        providerLabel: string;
+        status: string;
+        severity: string;
+        issue: string;
+        recommendation: string;
+        lastErrorMessage: string | null;
+        lastErrorAt: string | null;
+        staleHours: number | null;
+        staleDays: number | null;
+        syncFailuresCount: number;
+    }>;
     whoopIntegration: {
         oauthReady: boolean;
         connectUrl: string;
@@ -132,7 +164,14 @@ interface WearablesPageProps {
         lookbackDays: number;
         capabilities: string[];
         connectedCount: number;
+        failingCount: number;
+        webhookReady: boolean;
+        webhookUrl: string;
+        pendingEvents: number;
+        failedEvents: number;
+        lastReceivedAt: string | null;
         syncCommand: string;
+        webhookProcessCommand: string;
     };
     sampleCurl: string;
 }
@@ -151,6 +190,22 @@ function badgeVariantForStatus(status: string): 'default' | 'secondary' | 'destr
     }
 
     if (status === 'connected') {
+        return 'default';
+    }
+
+    return 'outline';
+}
+
+function badgeVariantForSeverity(severity: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+    if (severity === 'high') {
+        return 'destructive';
+    }
+
+    if (severity === 'medium') {
+        return 'secondary';
+    }
+
+    if (severity === 'stable') {
         return 'default';
     }
 
@@ -191,25 +246,6 @@ function formatSleepDebt(value: number | null) {
     }
 
     return `${value.toFixed(1)}h behind`;
-}
-
-function MetricCard({ title, value, note, icon: Icon }: { title: string; value: string; note: string; icon: typeof Watch }) {
-    return (
-        <Card className="border-sidebar-border/70">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <div>
-                    <CardDescription>{title}</CardDescription>
-                    <CardTitle className="mt-3 text-3xl font-semibold tracking-tight">{value}</CardTitle>
-                </div>
-                <div className="bg-primary/10 text-primary rounded-full p-2">
-                    <Icon className="size-4" />
-                </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground text-sm leading-6">{note}</p>
-            </CardContent>
-        </Card>
-    );
 }
 
 function shortDayLabel(value: string | null) {
@@ -253,7 +289,7 @@ function AthleteWearablesExperience({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Wearables" />
 
-            <div className="flex h-full flex-1 flex-col gap-8 rounded-xl bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(255,255,255,1))] p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
                 <AthleteHero
                     eyebrow="Recovery signal board"
                     title={
@@ -532,11 +568,11 @@ function AthleteWearablesExperience({
                                         </div>
                                     )}
                                     {connection.ingest && (
-                                        <div className="rounded-xl border border-stone-200/75 bg-stone-50/80 p-4">
+                                        <div className="min-w-0 rounded-xl border border-stone-200/75 bg-stone-50/80 p-4">
                                             <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
                                                 Fallback ingest endpoint
                                             </p>
-                                            <code className="mt-2 block text-xs leading-6 text-stone-700">{connection.ingest.path}</code>
+                                            <code className="mt-2 block text-xs leading-6 break-all text-stone-700">{connection.ingest.path}</code>
                                         </div>
                                     )}
                                 </AthletePanel>
@@ -549,7 +585,18 @@ function AthleteWearablesExperience({
     );
 }
 
-export default function WearablesIndex({ viewerRole, scopeLabel, filters, summary, connections, whoopIntegration, sampleCurl }: WearablesPageProps) {
+export default function WearablesIndex({
+    viewerRole,
+    scopeLabel,
+    filters,
+    summary,
+    connections,
+    reviewQueue,
+    whoopIntegration,
+    sampleCurl,
+}: WearablesPageProps) {
+    const page = usePage<SharedData>();
+
     if (viewerRole === 'athlete') {
         return <AthleteWearablesExperience summary={summary} connections={connections} whoopIntegration={whoopIntegration} />;
     }
@@ -558,288 +605,363 @@ export default function WearablesIndex({ viewerRole, scopeLabel, filters, summar
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Wearables" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
-                <Card className="border-sidebar-border/70 from-background via-background to-muted/40 bg-linear-to-br">
-                    <CardHeader>
-                        <CardTitle className="text-3xl">Wearable control</CardTitle>
-                        <CardDescription className="max-w-3xl leading-6">
-                            {scopeLabel}. This is where integration health, recovery snapshots, and ingest credentials stop being vague promises.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-4 lg:grid-cols-[1.4fr_0.6fr]">
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                            <MetricCard
-                                title="Tracked connections"
-                                value={summary.totalConnections.toString()}
-                                note={`${connections.total} record(s) match the current filter.`}
-                                icon={Watch}
-                            />
-                            <MetricCard
-                                title="Healthy connections"
-                                value={summary.healthyConnections.toString()}
-                                note="Connected devices with recent ingest capacity."
-                                icon={ShieldCheck}
-                            />
-                            <MetricCard
-                                title="Needs attention"
-                                value={summary.attentionRequired.toString()}
-                                note="These are the device relationships most likely to become blind spots."
-                                icon={AlertTriangle}
-                            />
-                            <MetricCard
-                                title="Synced today"
-                                value={summary.syncedToday.toString()}
-                                note="Cron-safe MVPs still need fresh data, not just clever excuses."
-                                icon={Activity}
-                            />
+            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+                {page.props.flash?.success && (
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+                        {page.props.flash.success}
+                    </div>
+                )}
+                {page.props.flash?.status && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                        {page.props.flash.status}
+                    </div>
+                )}
+
+                <WorkspaceHero
+                    eyebrow="Wearables workspace"
+                    title="Connection health and recovery signal come first."
+                    description={`${scopeLabel}. This is where integration health, recovery snapshots, and ingest readiness stop being vague promises.`}
+                    badges={[
+                        whoopIntegration.oauthReady ? 'WHOOP OAuth ready' : 'WHOOP OAuth staged',
+                        whoopIntegration.webhookReady ? 'Webhook signed' : 'Webhook missing',
+                        `${summary.attentionRequired} needs attention`,
+                    ]}
+                    actions={
+                        <>
+                            <Button asChild size="lg" className="rounded-full bg-stone-950 text-white hover:bg-stone-800">
+                                <Link href="/dashboard">Back to dashboard</Link>
+                            </Button>
+                            {whoopIntegration.oauthReady && (
+                                <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
+                                    <Link href={whoopIntegration.connectUrl}>Connect WHOOP</Link>
+                                </Button>
+                            )}
+                            <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
+                                <Link href="/api-access">Open API access</Link>
+                            </Button>
+                        </>
+                    }
+                    aside={
+                        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                            <div className="rounded-[1.35rem] border border-white/70 bg-white/80 p-4">
+                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">WHOOP links</p>
+                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">{whoopIntegration.connectedCount}</p>
+                                <p className="mt-2 text-sm text-stone-600">{whoopIntegration.failingCount} link(s) currently need repair.</p>
+                            </div>
+                            <div className="rounded-[1.35rem] border border-white/70 bg-white/80 p-4">
+                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Webhook queue</p>
+                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">{whoopIntegration.pendingEvents}</p>
+                                <p className="mt-2 text-sm text-stone-600">{whoopIntegration.failedEvents} failed event(s) still need attention.</p>
+                            </div>
+                            <div className="rounded-[1.35rem] border border-white/70 bg-white/80 p-4">
+                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Last webhook</p>
+                                <p className="mt-3 text-sm font-semibold tracking-tight text-stone-950">
+                                    {whoopIntegration.lastReceivedAt
+                                        ? new Date(whoopIntegration.lastReceivedAt).toLocaleString()
+                                        : 'No deliveries yet'}
+                                </p>
+                                <p className="mt-2 text-sm text-stone-600">Keep this current or the dashboard gets blind fast.</p>
+                            </div>
+                        </div>
+                    }
+                />
+
+                <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <WorkspaceMetricCard
+                        title="Tracked connections"
+                        value={summary.totalConnections.toString()}
+                        note={`${connections.total} record(s) match the current filter.`}
+                        icon={Watch}
+                    />
+                    <WorkspaceMetricCard
+                        title="Healthy connections"
+                        value={summary.healthyConnections.toString()}
+                        note="Connected devices with recent ingest capacity."
+                        icon={ShieldCheck}
+                    />
+                    <WorkspaceMetricCard
+                        title="Needs attention"
+                        value={summary.attentionRequired.toString()}
+                        note="These relationships are most likely to become blind spots."
+                        icon={AlertTriangle}
+                    />
+                    <WorkspaceMetricCard
+                        title="Synced today"
+                        value={summary.syncedToday.toString()}
+                        note="Cron-safe MVPs still need fresh data, not excuses."
+                        icon={Activity}
+                    />
+                </section>
+
+                <section className="space-y-4">
+                    <WorkspaceSectionHeading
+                        eyebrow="Urgent"
+                        title="Broken or stale connections belong at the top."
+                        description="The review queue comes before the big directory because the broken stuff is what actually needs a decision."
+                    />
+
+                    <WorkspacePanel
+                        title="Connection review queue"
+                        description="The direct reasons a sync is stale, failing, or half-dead."
+                        contentClassName="space-y-3"
+                    >
+                        <WorkspaceTable minWidth="min-w-[980px]">
+                            <WorkspaceTableHeader labels={['User', 'Provider', 'Status', 'Severity', 'Stale', 'Failures', 'Issue', 'Next action']} />
+                            {reviewQueue.length === 0 ? (
+                                <WorkspaceTableEmpty message="Nothing is screaming for attention right now." colSpan={8} />
+                            ) : (
+                                <tbody className="divide-y divide-stone-100">
+                                    {reviewQueue.map((entry) => (
+                                        <tr key={entry.id} className="align-top transition-colors hover:bg-stone-50/80">
+                                            <td className="px-4 py-4 font-semibold text-stone-950">{entry.userName}</td>
+                                            <td className="px-4 py-4 text-sm text-stone-700">{entry.providerLabel}</td>
+                                            <td className="px-4 py-4">
+                                                <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <Badge variant={badgeVariantForSeverity(entry.severity)}>{humanizeStatus(entry.severity)}</Badge>
+                                            </td>
+                                            <td className="px-4 py-4 text-sm text-stone-700">
+                                                {entry.staleHours !== null ? `${entry.staleHours}h` : 'N/A'}
+                                            </td>
+                                            <td className="px-4 py-4 text-sm text-stone-700">{entry.syncFailuresCount}</td>
+                                            <td className="px-4 py-4">
+                                                <p className="max-w-[18rem] text-sm leading-6 text-stone-700">{entry.issue}</p>
+                                                {entry.lastErrorMessage && (
+                                                    <p className="mt-1 line-clamp-2 max-w-[18rem] text-xs text-stone-500">
+                                                        {entry.lastErrorMessage}
+                                                    </p>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <p className="max-w-[18rem] text-sm leading-6 text-stone-700">{entry.recommendation}</p>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            )}
+                        </WorkspaceTable>
+                    </WorkspacePanel>
+                </section>
+
+                <section className="space-y-4">
+                    <WorkspaceSectionHeading
+                        eyebrow="Directory"
+                        title="Filter the connection directory after the review queue."
+                        description="The full directory still holds all the recovery and sync detail, but it no longer steals priority from broken links."
+                    />
+
+                    <WorkspacePanel
+                        title="Connection directory"
+                        description="Filter by health state and inspect the latest normalized recovery snapshot for each connection."
+                        contentClassName="space-y-4"
+                    >
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <p className="text-sm leading-6 text-stone-600">{connections.total} connection record(s) match the current filter.</p>
+                            <div className="flex flex-wrap gap-2">
+                                {statusFilters.map((filter) => (
+                                    <Link
+                                        key={filter.label}
+                                        href={route('wearables.index', filter.value ? { status: filter.value } : {})}
+                                        preserveScroll
+                                        className={cn(
+                                            'inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+                                            filters.status === filter.value || (!filters.status && filter.value === null)
+                                                ? 'border-stone-900 bg-stone-900 text-white'
+                                                : 'border-stone-200/80 bg-white text-stone-600 hover:border-stone-300 hover:text-stone-950',
+                                        )}
+                                    >
+                                        {filter.label}
+                                    </Link>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="border-sidebar-border/70 bg-muted/30 rounded-2xl border p-5">
-                            <p className="text-muted-foreground text-sm font-medium">WHOOP integration</p>
-                            <p className="mt-3 text-3xl font-semibold tracking-tight">{whoopIntegration.connectedCount}</p>
-                            <p className="text-muted-foreground mt-3 text-sm leading-6">
-                                WHOOP accounts connected right now. OAuth is {whoopIntegration.oauthReady ? 'configured' : 'not configured yet'}.
-                            </p>
-                            <div className="mt-4 flex flex-wrap gap-2">
-                                {whoopIntegration.oauthReady && (
-                                    <Link
-                                        href={whoopIntegration.connectUrl}
-                                        className="border-primary bg-primary text-primary-foreground inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium"
-                                    >
-                                        Connect WHOOP
-                                    </Link>
-                                )}
+                        <WorkspaceTable minWidth="min-w-[1320px]">
+                            <WorkspaceTableHeader
+                                labels={['User', 'Provider', 'Auth / scopes', 'Status', 'Last sync', 'Latest recovery', 'Trend', 'Review', 'Ingest']}
+                            />
+                            {connections.data.length === 0 ? (
+                                <WorkspaceTableEmpty message="No connections match this filter." colSpan={9} />
+                            ) : (
+                                <tbody className="divide-y divide-stone-100">
+                                    {connections.data.map((connection) => (
+                                        <tr key={connection.id} className="align-top transition-colors hover:bg-stone-50/80">
+                                            <td className="px-4 py-4">
+                                                <p className="font-semibold text-stone-950">{connection.userName}</p>
+                                                <p className="mt-1 text-xs text-stone-500">{connection.userEmail}</p>
+                                                {connection.userRole && (
+                                                    <Badge variant="outline" className="mt-2">
+                                                        {humanizeStatus(connection.userRole)}
+                                                    </Badge>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <p className="font-medium text-stone-950">{connection.providerLabel}</p>
+                                                <p className="mt-1 text-xs text-stone-500">{connection.publicId}</p>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <Badge variant="outline">{humanizeStatus(connection.authType)}</Badge>
+                                                <p className="mt-2 line-clamp-2 max-w-[12rem] text-xs text-stone-500">
+                                                    {connection.grantedScopes.length ? connection.grantedScopes.join(', ') : 'No scopes'}
+                                                </p>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <div className="flex flex-col items-start gap-2">
+                                                    <Badge variant={badgeVariantForStatus(connection.status)}>
+                                                        {humanizeStatus(connection.status)}
+                                                    </Badge>
+                                                    <Badge variant={badgeVariantForSeverity(connection.review.severity)}>
+                                                        {humanizeStatus(connection.review.severity)}
+                                                    </Badge>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <p className="text-sm text-stone-700">{connection.lastSyncedAt ?? 'Never synced'}</p>
+                                                <p className="mt-1 text-xs text-stone-500">
+                                                    {connection.review.staleHours !== null ? `${connection.review.staleHours}h stale` : 'No stale data'}
+                                                </p>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                {connection.latestSnapshot ? (
+                                                    <dl className="grid gap-1 text-xs text-stone-600">
+                                                        <div className="flex justify-between gap-4">
+                                                            <dt>Readiness</dt>
+                                                            <dd className="font-medium text-stone-950">
+                                                                {formatReadiness(connection.latestSnapshot.readinessScore)}
+                                                            </dd>
+                                                        </div>
+                                                        <div className="flex justify-between gap-4">
+                                                            <dt>Sleep</dt>
+                                                            <dd className="font-medium text-stone-950">
+                                                                {formatSleepHours(connection.latestSnapshot.sleepHours)}
+                                                            </dd>
+                                                        </div>
+                                                        <div className="flex justify-between gap-4">
+                                                            <dt>Strain</dt>
+                                                            <dd className="font-medium text-stone-950">
+                                                                {connection.latestSnapshot.strainScore ?? 'N/A'}
+                                                            </dd>
+                                                        </div>
+                                                        <div className="flex justify-between gap-4">
+                                                            <dt>HRV</dt>
+                                                            <dd className="font-medium text-stone-950">
+                                                                {connection.latestSnapshot.heartRateVariability ?? 'N/A'}
+                                                            </dd>
+                                                        </div>
+                                                    </dl>
+                                                ) : (
+                                                    <span className="text-xs text-stone-500">No snapshot ingested</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <dl className="grid gap-1 text-xs text-stone-600">
+                                                    <div className="flex justify-between gap-4">
+                                                        <dt>Days</dt>
+                                                        <dd className="font-medium text-stone-950">{connection.analytics.overview.daysTracked}</dd>
+                                                    </div>
+                                                    <div className="flex justify-between gap-4">
+                                                        <dt>Avg readiness</dt>
+                                                        <dd className="font-medium text-stone-950">
+                                                            {formatReadiness(connection.analytics.overview.averageReadiness)}
+                                                        </dd>
+                                                    </div>
+                                                    <div className="flex justify-between gap-4">
+                                                        <dt>Avg sleep</dt>
+                                                        <dd className="font-medium text-stone-950">
+                                                            {formatSleepHours(connection.analytics.overview.averageSleepHours)}
+                                                        </dd>
+                                                    </div>
+                                                </dl>
+                                                {connection.analytics.alerts.length > 0 && (
+                                                    <p className="mt-2 line-clamp-2 max-w-[12rem] text-xs text-stone-500">
+                                                        {connection.analytics.alerts.join(', ')}
+                                                    </p>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <p className="max-w-[16rem] text-sm leading-6 text-stone-700">{connection.review.issue}</p>
+                                                <p className="mt-1 line-clamp-2 max-w-[16rem] text-xs text-stone-500">
+                                                    {connection.review.recommendation}
+                                                </p>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                {connection.ingest ? (
+                                                    <div className="space-y-1">
+                                                        <p className="font-mono text-xs text-stone-700">****{connection.ingest.lastFour}</p>
+                                                        <p className="line-clamp-2 max-w-[12rem] text-xs break-all text-stone-500">
+                                                            {connection.ingest.path}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <Badge variant="outline">OAuth managed</Badge>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            )}
+                        </WorkspaceTable>
+                    </WorkspacePanel>
+                </section>
+
+                <section className="space-y-4">
+                    <WorkspaceSectionHeading
+                        eyebrow="Advanced"
+                        title="Keep the integration plumbing visible, just lower in the hierarchy."
+                        description="Webhook URL, sample curl, sync commands, and capability detail still matter. They are simply not the first thing people should see."
+                    />
+
+                    <WorkspacePanel
+                        title="WHOOP and ingest detail"
+                        description="Provider-facing and backend-facing detail for operators and developers."
+                        contentClassName="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]"
+                    >
+                        <div className="min-w-0 space-y-3 rounded-2xl border border-stone-200/75 bg-stone-50/70 p-4">
+                            <div className="flex min-w-0 flex-wrap gap-2">
                                 <Badge variant="outline">Lookback {whoopIntegration.lookbackDays} day(s)</Badge>
+                                <Badge variant={whoopIntegration.webhookReady ? 'default' : 'secondary'}>
+                                    {whoopIntegration.webhookReady ? 'Webhook signed' : 'Webhook missing'}
+                                </Badge>
+                                <Badge variant="outline">{whoopIntegration.pendingEvents} pending</Badge>
+                                <Badge variant="outline">{whoopIntegration.failedEvents} failed</Badge>
                             </div>
-                            <div className="mt-4 space-y-2">
+                            <div className="space-y-2">
                                 {whoopIntegration.capabilities.map((capability) => (
-                                    <p key={capability} className="text-muted-foreground text-sm leading-6">
+                                    <p key={capability} className="text-sm leading-6 text-stone-600">
                                         {capability}
                                     </p>
                                 ))}
                             </div>
-                            {(viewerRole === 'admin' || viewerRole === 'athlete') && (
-                                <div className="border-sidebar-border/70 bg-background/80 mt-4 rounded-xl border border-dashed p-3">
-                                    <p className="text-muted-foreground text-xs font-medium tracking-[0.2em] uppercase">Fallback ingest</p>
-                                    <code className="mt-2 block text-xs leading-6">{sampleCurl}</code>
-                                    <p className="text-muted-foreground mt-2 text-xs leading-5">Cron sync command: {whoopIntegration.syncCommand}</p>
+                        </div>
+
+                        <div className="min-w-0 space-y-3">
+                            <div className="min-w-0 rounded-2xl border border-dashed border-stone-200/80 bg-white/90 p-4">
+                                <p className="text-xs font-medium tracking-[0.2em] text-stone-500 uppercase">Webhook URL</p>
+                                <code className="mt-3 block text-xs leading-6 break-all text-stone-700">{whoopIntegration.webhookUrl}</code>
+                            </div>
+                            <div className="min-w-0 rounded-2xl border border-dashed border-stone-200/80 bg-white/90 p-4">
+                                <p className="text-xs font-medium tracking-[0.2em] text-stone-500 uppercase">Fallback ingest</p>
+                                <code className="mt-3 block text-xs leading-6 break-all whitespace-pre-wrap text-stone-700">{sampleCurl}</code>
+                            </div>
+                            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                                <div className="min-w-0 rounded-2xl border border-dashed border-stone-200/80 bg-white/90 p-4">
+                                    <p className="text-xs font-medium tracking-[0.2em] text-stone-500 uppercase">Cron sync command</p>
+                                    <code className="mt-3 block text-xs leading-6 break-all text-stone-700">{whoopIntegration.syncCommand}</code>
                                 </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <section className="space-y-4">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                        <div>
-                            <h2 className="text-xl font-semibold tracking-tight">Connection queue</h2>
-                            <p className="text-muted-foreground text-sm leading-6">
-                                Filter by health state and inspect the latest normalized recovery snapshot for each connection.
-                            </p>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                            {statusFilters.map((filter) => (
-                                <Link
-                                    key={filter.label}
-                                    href={route('wearables.index', filter.value ? { status: filter.value } : {})}
-                                    preserveScroll
-                                    className={cn(
-                                        'inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
-                                        filters.status === filter.value || (!filters.status && filter.value === null)
-                                            ? 'border-primary bg-primary text-primary-foreground'
-                                            : 'border-sidebar-border/70 bg-background text-muted-foreground hover:text-foreground',
-                                    )}
-                                >
-                                    {filter.label}
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-
-                    <Card className="border-sidebar-border/70">
-                        <CardContent className="space-y-3 p-4">
-                            {connections.data.length === 0 ? (
-                                <div className="border-sidebar-border/70 rounded-xl border border-dashed p-8 text-center">
-                                    <p className="font-medium">No connections match this filter.</p>
-                                    <p className="text-muted-foreground mt-2 text-sm">That is either good ops or a very lonely demo dataset.</p>
+                                <div className="min-w-0 rounded-2xl border border-dashed border-stone-200/80 bg-white/90 p-4">
+                                    <p className="text-xs font-medium tracking-[0.2em] text-stone-500 uppercase">Webhook processor</p>
+                                    <code className="mt-3 block text-xs leading-6 break-all text-stone-700">
+                                        {whoopIntegration.webhookProcessCommand}
+                                    </code>
                                 </div>
-                            ) : (
-                                connections.data.map((connection) => (
-                                    <div
-                                        key={connection.id}
-                                        className="border-sidebar-border/70 hover:bg-muted/30 rounded-2xl border p-4 transition-colors"
-                                    >
-                                        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                                            <div className="space-y-1">
-                                                <p className="font-medium">{connection.userName}</p>
-                                                <p className="text-muted-foreground text-sm">{connection.userEmail}</p>
-                                                <div className="flex flex-wrap gap-2 pt-1">
-                                                    {connection.userRole && <Badge variant="outline">{humanizeStatus(connection.userRole)}</Badge>}
-                                                    <Badge variant="outline">{connection.providerLabel}</Badge>
-                                                    <Badge variant="outline">{humanizeStatus(connection.authType)}</Badge>
-                                                    {connection.grantedScopes.map((scope) => (
-                                                        <Badge key={scope} variant="outline">
-                                                            {scope}
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            </div>
+                            </div>
+                        </div>
+                    </WorkspacePanel>
+                </section>
 
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <Badge variant={badgeVariantForStatus(connection.status)}>{humanizeStatus(connection.status)}</Badge>
-                                                <Badge variant="outline">{connection.lastSyncedAt ?? 'Never synced'}</Badge>
-                                            </div>
-                                        </div>
-
-                                        {connection.latestSnapshot ? (
-                                            <div className="mt-4 grid gap-3 md:grid-cols-4">
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Readiness</p>
-                                                    <p className="mt-2 text-sm font-medium">
-                                                        {formatReadiness(connection.latestSnapshot.readinessScore)}
-                                                    </p>
-                                                </div>
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Sleep</p>
-                                                    <p className="mt-2 text-sm font-medium">
-                                                        {formatSleepHours(connection.latestSnapshot.sleepHours)}
-                                                    </p>
-                                                </div>
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Strain</p>
-                                                    <p className="mt-2 text-sm font-medium">{connection.latestSnapshot.strainScore ?? 'N/A'}</p>
-                                                </div>
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Sleep debt</p>
-                                                    <p className="mt-2 text-sm font-medium">
-                                                        {formatSleepDebt(connection.latestSnapshot.sleepDebtHours)}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="border-sidebar-border/70 mt-4 rounded-xl border border-dashed p-4">
-                                                <p className="text-muted-foreground text-sm">
-                                                    No normalized snapshot has been ingested for this connection yet.
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {connection.latestSnapshot && (
-                                            <div className="mt-4 grid gap-3 md:grid-cols-3">
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">HRV</p>
-                                                    <p className="mt-2 text-sm font-medium">
-                                                        {connection.latestSnapshot.heartRateVariability ?? 'N/A'}
-                                                    </p>
-                                                </div>
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Resting HR</p>
-                                                    <p className="mt-2 text-sm font-medium">{connection.latestSnapshot.restingHeartRate ?? 'N/A'}</p>
-                                                </div>
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Training load</p>
-                                                    <p className="mt-2 text-sm font-medium">{connection.latestSnapshot.trainingLoad ?? 'N/A'}</p>
-                                                </div>
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Sleep performance</p>
-                                                    <p className="mt-2 text-sm font-medium">
-                                                        {formatPercentage(connection.latestSnapshot.sleepPerformancePercentage)}
-                                                    </p>
-                                                </div>
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Sleep consistency</p>
-                                                    <p className="mt-2 text-sm font-medium">
-                                                        {formatPercentage(connection.latestSnapshot.sleepConsistencyPercentage)}
-                                                    </p>
-                                                </div>
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Blood oxygen</p>
-                                                    <p className="mt-2 text-sm font-medium">
-                                                        {connection.latestSnapshot.bloodOxygenPercent === null
-                                                            ? 'N/A'
-                                                            : `${connection.latestSnapshot.bloodOxygenPercent}%`}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {connection.analytics.overview.daysTracked > 0 && (
-                                            <div className="border-sidebar-border/70 mt-4 rounded-xl border p-4">
-                                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                                    <p className="text-sm font-medium">Trend view</p>
-                                                    <Badge variant="outline">{connection.analytics.overview.daysTracked} tracked day(s)</Badge>
-                                                </div>
-                                                <div className="mt-3 grid gap-3 md:grid-cols-4">
-                                                    <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                        <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Avg readiness</p>
-                                                        <p className="mt-2 text-sm font-medium">
-                                                            {formatReadiness(connection.analytics.overview.averageReadiness)}
-                                                        </p>
-                                                    </div>
-                                                    <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                        <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Avg sleep</p>
-                                                        <p className="mt-2 text-sm font-medium">
-                                                            {formatSleepHours(connection.analytics.overview.averageSleepHours)}
-                                                        </p>
-                                                    </div>
-                                                    <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                        <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Avg HRV</p>
-                                                        <p className="mt-2 text-sm font-medium">
-                                                            {connection.analytics.overview.averageHrv ?? 'N/A'}
-                                                        </p>
-                                                    </div>
-                                                    <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                        <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Sleep debt</p>
-                                                        <p className="mt-2 text-sm font-medium">
-                                                            {formatSleepDebt(connection.analytics.overview.averageSleepDebtHours)}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                {connection.analytics.alerts.length > 0 && (
-                                                    <div className="mt-3 flex flex-wrap gap-2">
-                                                        {connection.analytics.alerts.map((alert) => (
-                                                            <Badge key={alert} variant="secondary">
-                                                                {alert}
-                                                            </Badge>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                <div className="mt-4 grid gap-2">
-                                                    {connection.analytics.timeline.map((entry) => (
-                                                        <div
-                                                            key={entry.metricDate ?? 'unknown-metric-date'}
-                                                            className="border-sidebar-border/70 text-muted-foreground grid gap-2 rounded-xl border p-3 text-sm md:grid-cols-4"
-                                                        >
-                                                            <p className="text-foreground font-medium">{entry.metricDate ?? 'Unknown date'}</p>
-                                                            <p>Readiness {formatReadiness(entry.readinessScore)}</p>
-                                                            <p>Sleep {formatSleepHours(entry.sleepHours)}</p>
-                                                            <p>Load {entry.trainingLoad ?? 'N/A'}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {connection.ingest && (
-                                            <div className="mt-4 grid gap-3 lg:grid-cols-[0.8fr_1.2fr]">
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Ingest key</p>
-                                                    <code className="mt-2 block text-sm">{connection.ingest.key}</code>
-                                                </div>
-                                                <div className="border-sidebar-border/70 rounded-xl border p-3">
-                                                    <p className="text-muted-foreground text-xs tracking-[0.18em] uppercase">Endpoint</p>
-                                                    <code className="mt-2 block text-sm">{connection.ingest.path}</code>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <div className="text-muted-foreground flex items-center justify-between text-sm">
+                <section className="text-sm text-stone-500">
+                    <div className="flex items-center justify-between">
                         <span>
                             Page {connections.current_page} of {connections.last_page}
                         </span>

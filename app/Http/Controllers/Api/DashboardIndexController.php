@@ -376,6 +376,7 @@ class DashboardIndexController extends Controller
                     'scheduledDate' => $nextSession->scheduled_date?->toDateString(),
                     'focus' => $nextSession->focus,
                     'instructions' => $nextSession->instructions,
+                    'videoUrl' => $nextSession->video_url,
                     'exercises' => $this->normalizeExercises($nextSession->exercises ?? []),
                 ] : null,
                 'upcomingSessions' => $currentProgram->sessions
@@ -386,6 +387,7 @@ class DashboardIndexController extends Controller
                         'title' => $session->title,
                         'scheduledDate' => $session->scheduled_date?->toDateString(),
                         'focus' => $session->focus,
+                        'videoUrl' => $session->video_url,
                         'exerciseCount' => count($session->exercises ?? []),
                     ])
                     ->values()

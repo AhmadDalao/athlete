@@ -6,11 +6,12 @@ use App\Enums\RoleName;
 use App\Http\Requests\RosterAssignmentUpdateRequest;
 use App\Models\CoachAthleteAssignment;
 use App\Models\User;
+use App\Services\PlatformAuditLogger;
 use Illuminate\Http\RedirectResponse;
 
 class RosterAssignmentUpdateController extends Controller
 {
-    public function __invoke(RosterAssignmentUpdateRequest $request, CoachAthleteAssignment $assignment): RedirectResponse
+    public function __invoke(RosterAssignmentUpdateRequest $request, CoachAthleteAssignment $assignment, PlatformAuditLogger $auditLogger): RedirectResponse
     {
         $viewer = $this->manageableViewer($request->user(), $assignment);
 
@@ -25,6 +26,20 @@ class RosterAssignmentUpdateController extends Controller
         ]);
         $assignment->syncLifecycleDates();
         $assignment->save();
+
+        $assignment->loadMissing(['coach', 'athlete']);
+
+        $auditLogger->record(
+            $request,
+            'roster_assignment.updated',
+            $assignment,
+            "{$assignment->coach->name} and {$assignment->athlete->name} assignment updated to {$assignment->status->value}.",
+            [
+                'coach_id' => $assignment->coach_id,
+                'athlete_id' => $assignment->athlete_id,
+                'status' => $assignment->status->value,
+            ],
+        );
 
         return to_route('roster.index');
     }

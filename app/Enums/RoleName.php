@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum RoleName: string
 {
+    case Owner = 'owner';
     case Admin = 'admin';
     case Coach = 'coach';
     case Athlete = 'athlete';
@@ -11,6 +12,7 @@ enum RoleName: string
     public function label(): string
     {
         return match ($this) {
+            self::Owner => 'Owner',
             self::Admin => 'Admin',
             self::Coach => 'Coach',
             self::Athlete => 'Athlete',
@@ -20,6 +22,7 @@ enum RoleName: string
     public function priority(): int
     {
         return match ($this) {
+            self::Owner => 40,
             self::Admin => 30,
             self::Coach => 20,
             self::Athlete => 10,

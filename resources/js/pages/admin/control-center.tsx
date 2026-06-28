@@ -1,10 +1,23 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    WorkspaceActionCard,
+    WorkspaceHero,
+    WorkspaceMetricCard,
+    WorkspaceTable,
+    WorkspaceTableEmpty,
+    WorkspaceTableHeader,
+} from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { Activity, ArrowRight, CreditCard, Dumbbell, type LucideIcon, Shield, TimerReset, Users, Watch, WifiOff } from 'lucide-react';
+import { Activity, CreditCard, Dumbbell, Shield, TimerReset, Users, Watch, WifiOff } from 'lucide-react';
+
+const adminPrimaryButtonClass =
+    'rounded-full border border-emerald-300/70 bg-[linear-gradient(135deg,rgba(16,185,129,0.96),rgba(13,148,136,0.92))] text-white shadow-[0_18px_34px_-24px_rgba(5,150,105,0.45)] hover:brightness-[1.03]';
+const adminSecondaryButtonClass =
+    'rounded-full border-emerald-200/80 bg-[linear-gradient(135deg,rgba(236,253,245,0.98),rgba(255,251,235,0.95))] text-emerald-900 hover:border-emerald-300 hover:bg-[linear-gradient(135deg,rgba(220,252,231,1),rgba(254,249,195,0.92))]';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -61,6 +74,14 @@ interface DeviceQueueItem {
     status: string;
     lastSyncedAt: string | null;
     readinessScore: number | null;
+    severity: string;
+    issue: string;
+    recommendation: string;
+    lastErrorMessage: string | null;
+    lastErrorAt: string | null;
+    staleHours: number | null;
+    staleDays: number | null;
+    syncFailuresCount: number;
 }
 
 interface AthleteCoverageGap {
@@ -158,87 +179,28 @@ function badgeVariantForStatus(status: string): 'default' | 'secondary' | 'destr
     return 'outline';
 }
 
-function MetricCard({ title, value, note, icon: Icon }: { title: string; value: string; note: string; icon: LucideIcon }) {
-    return (
-        <Card className="border-stone-200/75 bg-white/92 shadow-[0_24px_60px_-46px_rgba(15,23,42,0.65)]">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                <div>
-                    <CardDescription className="text-stone-500">{title}</CardDescription>
-                    <CardTitle className="mt-3 text-3xl tracking-tight text-stone-950">{value}</CardTitle>
-                </div>
-                <div className="rounded-full border border-stone-200 bg-stone-50 p-2 text-stone-700">
-                    <Icon className="size-4" />
-                </div>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm leading-6 text-stone-600">{note}</p>
-            </CardContent>
-        </Card>
-    );
-}
-
-function ActionCard({ title, href, note, icon: Icon }: { title: string; href: string; note: string; icon: LucideIcon }) {
-    return (
-        <Link href={href} className="block">
-            <Card className="h-full border-stone-200/75 bg-white/86 transition-transform duration-200 hover:-translate-y-0.5">
-                <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                    <div>
-                        <CardTitle className="text-lg tracking-tight text-stone-950">{title}</CardTitle>
-                        <CardDescription className="mt-2 leading-6 text-stone-600">{note}</CardDescription>
-                    </div>
-                    <div className="rounded-full border border-stone-200 bg-stone-50 p-2 text-stone-700">
-                        <Icon className="size-4" />
-                    </div>
-                </CardHeader>
-                <CardContent className="flex items-center text-sm font-medium text-stone-800">
-                    Open queue
-                    <ArrowRight className="ml-2 size-4" />
-                </CardContent>
-            </Card>
-        </Link>
-    );
-}
-
 export default function ControlCenter({ summary, queues, signupMix, opsPlaybook }: ControlCenterProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Control Center" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
-                <section className="relative overflow-hidden rounded-[2rem] border border-stone-200/75 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(248,250,252,0.98)_48%,rgba(240,253,250,0.94))] shadow-[0_30px_80px_-45px_rgba(15,23,42,0.45)]">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.18),transparent_32%),radial-gradient(circle_at_82%_12%,rgba(20,184,166,0.14),transparent_28%),linear-gradient(rgba(148,163,184,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.07)_1px,transparent_1px)] bg-[length:auto,auto,34px_34px,34px_34px]" />
-                    <div className="relative grid gap-6 p-6 lg:grid-cols-[1.12fr_0.88fr] lg:p-8">
-                        <div className="space-y-5">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full border border-stone-300/70 bg-white/85 px-3 py-1 text-[0.68rem] font-semibold tracking-[0.24em] text-stone-600 uppercase">
-                                    Admin operations
-                                </span>
-                                <Badge variant="outline" className="border-stone-300/70 bg-white/75 text-stone-700">
-                                    {summary.renewalsThisWeek} renewals this week
-                                </Badge>
-                                <Badge variant="outline" className="border-stone-300/70 bg-white/75 text-stone-700">
-                                    {summary.attentionConnections} device issues
-                                </Badge>
-                            </div>
-                            <div className="space-y-3">
-                                <h1 className="max-w-3xl text-4xl leading-none font-semibold tracking-[-0.04em] text-stone-950 sm:text-5xl">
-                                    One page for the mess that actually matters.
-                                </h1>
-                                <p className="max-w-2xl text-sm leading-7 text-stone-600 sm:text-base">
-                                    Renewals, failed payments, device blind spots, coach load, and signup readiness sit here so operations does not
-                                    dissolve into guesswork and screenshots.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap gap-3">
-                                <Button asChild size="lg" className="rounded-full bg-stone-950 text-white hover:bg-stone-800">
-                                    <Link href="/admin/users">Manage users</Link>
-                                </Button>
-                                <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/75">
-                                    <Link href="/memberships">Review memberships</Link>
-                                </Button>
-                            </div>
-                        </div>
-
+            <div className="flex h-full flex-1 flex-col gap-8 rounded-[2rem] border border-stone-200/80 bg-[#faf9f6] p-4 md:p-6">
+                <WorkspaceHero
+                    eyebrow="Admin operations"
+                    title="One page for the mess that actually matters."
+                    description="Renewals, failed payments, device blind spots, coach load, and signup readiness sit here so operations does not dissolve into guesswork and screenshots."
+                    badges={[`${summary.renewalsThisWeek} renewals this week`, `${summary.attentionConnections} device issues`]}
+                    actions={
+                        <>
+                            <Button asChild size="lg" className={adminPrimaryButtonClass}>
+                                <Link href="/admin/users">Manage users</Link>
+                            </Button>
+                            <Button asChild size="lg" variant="outline" className={adminSecondaryButtonClass}>
+                                <Link href="/memberships">Review memberships</Link>
+                            </Button>
+                        </>
+                    }
+                    aside={
                         <div className="grid gap-3 sm:grid-cols-2">
                             <div className="rounded-[1.5rem] border border-white/75 bg-white/82 p-5">
                                 <p className="text-[0.68rem] font-semibold tracking-[0.24em] text-stone-500 uppercase">Revenue track</p>
@@ -280,29 +242,29 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </section>
+                    }
+                />
 
                 <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <MetricCard
+                    <WorkspaceMetricCard
                         title="Active memberships"
                         value={summary.activeMemberships.toString()}
                         note={`${summary.renewalsThisWeek} memberships hit a renewal boundary in the next week.`}
                         icon={CreditCard}
                     />
-                    <MetricCard
+                    <WorkspaceMetricCard
                         title="Connected devices"
                         value={summary.connectedDevices.toString()}
                         note={`${summary.attentionConnections} links are degraded or dead.`}
                         icon={Watch}
                     />
-                    <MetricCard
+                    <WorkspaceMetricCard
                         title="Sessions this week"
                         value={summary.scheduledSessionsThisWeek.toString()}
                         note={`${summary.loggedSessionsThisWeek} workout logs were actually submitted this week.`}
                         icon={Activity}
                     />
-                    <MetricCard
+                    <WorkspaceMetricCard
                         title="Projected monthly revenue"
                         value={formatCurrency(summary.projectedMonthlyRevenue)}
                         note="This is the operating picture, not accounting theater."
@@ -311,10 +273,15 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                 </section>
 
                 <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <ActionCard title="Users" href="/admin/users" note="Roles, onboarding, and account cleanup." icon={Users} />
-                    <ActionCard title="Memberships" href="/memberships" note="Renewals, manual events, and billing states." icon={CreditCard} />
-                    <ActionCard title="Wearables" href="/wearables" note="Device health, WHOOP links, and ingest visibility." icon={Watch} />
-                    <ActionCard title="Training" href="/training" note="Programs, scheduling, and athlete execution." icon={Dumbbell} />
+                    <WorkspaceActionCard title="Users" href="/admin/users" note="Roles, onboarding, and account cleanup." icon={Users} />
+                    <WorkspaceActionCard
+                        title="Memberships"
+                        href="/memberships"
+                        note="Renewals, manual events, and billing states."
+                        icon={CreditCard}
+                    />
+                    <WorkspaceActionCard title="Wearables" href="/wearables" note="Device health, WHOOP links, and ingest visibility." icon={Watch} />
+                    <WorkspaceActionCard title="Training" href="/training" note="Programs, scheduling, and athlete execution." icon={Dumbbell} />
                 </section>
 
                 <section className="grid gap-4 xl:grid-cols-3">
@@ -325,30 +292,31 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                 The next memberships likely to become support tickets if ignored.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            {queues.membershipQueue.length === 0 ? (
-                                <p className="text-sm text-stone-500">No renewals need attention right now.</p>
-                            ) : (
-                                queues.membershipQueue.map((entry) => (
-                                    <div
-                                        key={`${entry.userName}-${entry.planName}`}
-                                        className="flex flex-col gap-3 rounded-2xl border border-stone-200/75 bg-stone-50/80 p-4 md:flex-row md:items-center md:justify-between"
-                                    >
-                                        <div>
-                                            <p className="font-medium text-stone-950">{entry.userName}</p>
-                                            <p className="text-sm text-stone-500">
-                                                {entry.planName} · {humanizeStatus(entry.userRole)}
-                                            </p>
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
-                                            <Badge variant="outline">{entry.autoRenew ? 'Auto renew on' : 'Manual renewal'}</Badge>
-                                            <span className="text-sm text-stone-500">{formatDays(entry.daysRemaining)}</span>
-                                            <span className="text-sm text-stone-500">{entry.endsAt ?? 'No end date'}</span>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
+                        <CardContent>
+                            <WorkspaceTable minWidth="min-w-[760px]">
+                                <WorkspaceTableHeader labels={['User', 'Role', 'Plan', 'Status', 'Renewal', 'Ends']} />
+                                {queues.membershipQueue.length === 0 ? (
+                                    <WorkspaceTableEmpty message="No renewals need attention right now." colSpan={6} />
+                                ) : (
+                                    <tbody className="divide-y divide-stone-100">
+                                        {queues.membershipQueue.map((entry) => (
+                                            <tr key={`${entry.userName}-${entry.planName}`} className="align-top hover:bg-stone-50/80">
+                                                <td className="px-4 py-4 font-semibold text-stone-950">{entry.userName}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{humanizeStatus(entry.userRole)}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.planName}</td>
+                                                <td className="px-4 py-4">
+                                                    <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <Badge variant="outline">{entry.autoRenew ? 'Auto renew on' : 'Manual renewal'}</Badge>
+                                                    <p className="mt-1 text-xs text-stone-500">{formatDays(entry.daysRemaining)}</p>
+                                                </td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.endsAt ?? 'No end date'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                )}
+                            </WorkspaceTable>
                         </CardContent>
                     </Card>
 
@@ -359,16 +327,23 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                 Current account channels and what is staged for later.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            {signupMix.map((entry) => (
-                                <div key={entry.method} className="rounded-2xl border border-stone-200/75 bg-stone-50/80 p-4">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <p className="font-medium text-stone-950">{entry.label}</p>
-                                        <Badge variant={entry.enabled ? 'default' : 'secondary'}>{entry.enabled ? 'Live now' : 'Later stage'}</Badge>
-                                    </div>
-                                    <p className="mt-2 text-sm text-stone-500">{entry.count} account(s)</p>
-                                </div>
-                            ))}
+                        <CardContent>
+                            <WorkspaceTable minWidth="min-w-[520px]">
+                                <WorkspaceTableHeader labels={['Channel', 'Status', 'Accounts']} />
+                                <tbody className="divide-y divide-stone-100">
+                                    {signupMix.map((entry) => (
+                                        <tr key={entry.method} className="align-top hover:bg-stone-50/80">
+                                            <td className="px-4 py-4 font-semibold text-stone-950">{entry.label}</td>
+                                            <td className="px-4 py-4">
+                                                <Badge variant={entry.enabled ? 'default' : 'secondary'}>
+                                                    {entry.enabled ? 'Live now' : 'Later stage'}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-4 text-sm text-stone-700">{entry.count}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </WorkspaceTable>
                         </CardContent>
                     </Card>
                 </section>
@@ -381,35 +356,32 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                 Pending and failed money events still waiting for a human to care.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            {queues.paymentQueue.length === 0 ? (
-                                <p className="text-sm text-stone-500">No payment issues are queued right now.</p>
-                            ) : (
-                                queues.paymentQueue.map((entry) => (
-                                    <div
-                                        key={`${entry.userName}-${entry.reference ?? entry.eventAt}`}
-                                        className="rounded-2xl border border-stone-200/75 bg-stone-50/80 p-4"
-                                    >
-                                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                            <div>
-                                                <p className="font-medium text-stone-950">{entry.userName}</p>
-                                                <p className="text-sm text-stone-500">
-                                                    {entry.planName} · {humanizeStatus(entry.userRole)}
-                                                </p>
-                                            </div>
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
-                                                <span className="text-sm text-stone-500">
+                        <CardContent>
+                            <WorkspaceTable minWidth="min-w-[760px]">
+                                <WorkspaceTableHeader labels={['User', 'Role', 'Plan', 'Status', 'Amount', 'Provider', 'Reference', 'Date']} />
+                                {queues.paymentQueue.length === 0 ? (
+                                    <WorkspaceTableEmpty message="No payment issues are queued right now." colSpan={8} />
+                                ) : (
+                                    <tbody className="divide-y divide-stone-100">
+                                        {queues.paymentQueue.map((entry) => (
+                                            <tr key={`${entry.userName}-${entry.reference ?? entry.eventAt}`} className="align-top hover:bg-stone-50/80">
+                                                <td className="px-4 py-4 font-semibold text-stone-950">{entry.userName}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{humanizeStatus(entry.userRole)}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.planName}</td>
+                                                <td className="px-4 py-4">
+                                                    <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
+                                                </td>
+                                                <td className="px-4 py-4 font-medium text-stone-950">
                                                     {entry.amount === null ? 'No amount' : formatCurrency(entry.amount, entry.currency)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <p className="mt-3 text-sm leading-6 text-stone-600">
-                                            {[entry.provider, entry.reference, entry.eventAt].filter(Boolean).join(' · ') || 'No provider metadata'}
-                                        </p>
-                                    </div>
-                                ))
-                            )}
+                                                </td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.provider ?? 'Manual'}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.reference ?? 'No reference'}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.eventAt ?? 'No date'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                )}
+                            </WorkspaceTable>
                         </CardContent>
                     </Card>
 
@@ -420,33 +392,51 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                 Wearable relationships most likely to create blind spots.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            {queues.deviceQueue.length === 0 ? (
-                                <p className="text-sm text-stone-500">No device issues are queued right now.</p>
-                            ) : (
-                                queues.deviceQueue.map((entry) => (
-                                    <div
-                                        key={`${entry.userName}-${entry.provider}`}
-                                        className="rounded-2xl border border-stone-200/75 bg-stone-50/80 p-4"
-                                    >
-                                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                            <div>
-                                                <p className="font-medium text-stone-950">{entry.userName}</p>
-                                                <p className="text-sm text-stone-500">
-                                                    {entry.provider} · {humanizeStatus(entry.userRole)}
-                                                </p>
-                                            </div>
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
-                                                <Badge variant="outline">
+                        <CardContent>
+                            <WorkspaceTable minWidth="min-w-[920px]">
+                                <WorkspaceTableHeader
+                                    labels={['User', 'Provider', 'Status', 'Readiness', 'Last sync', 'Failures', 'Issue', 'Recommendation']}
+                                />
+                                {queues.deviceQueue.length === 0 ? (
+                                    <WorkspaceTableEmpty message="No device issues are queued right now." colSpan={8} />
+                                ) : (
+                                    <tbody className="divide-y divide-stone-100">
+                                        {queues.deviceQueue.map((entry) => (
+                                            <tr key={`${entry.userName}-${entry.provider}`} className="align-top hover:bg-stone-50/80">
+                                                <td className="px-4 py-4">
+                                                    <p className="font-semibold text-stone-950">{entry.userName}</p>
+                                                    <p className="mt-1 text-xs text-stone-500">{humanizeStatus(entry.userRole)}</p>
+                                                </td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.provider}</td>
+                                                <td className="px-4 py-4">
+                                                    <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
+                                                </td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">
                                                     {entry.readinessScore === null ? 'No readiness' : `${Math.round(entry.readinessScore)}/100`}
-                                                </Badge>
-                                            </div>
-                                        </div>
-                                        <p className="mt-3 text-sm leading-6 text-stone-600">{entry.lastSyncedAt ?? 'Never synced'}</p>
-                                    </div>
-                                ))
-                            )}
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <p className="text-sm text-stone-700">{entry.lastSyncedAt ?? 'Never synced'}</p>
+                                                    <p className="mt-1 text-xs text-stone-500">
+                                                        {entry.staleHours !== null ? `${entry.staleHours}h stale` : 'No stale data'}
+                                                    </p>
+                                                </td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.syncFailuresCount}</td>
+                                                <td className="px-4 py-4">
+                                                    <p className="max-w-[16rem] text-sm leading-6 text-stone-700">{entry.issue}</p>
+                                                    {entry.lastErrorMessage && (
+                                                        <p className="mt-1 line-clamp-2 max-w-[16rem] text-xs text-stone-500">
+                                                            {entry.lastErrorMessage}
+                                                        </p>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <p className="max-w-[16rem] text-sm leading-6 text-stone-700">{entry.recommendation}</p>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                )}
+                            </WorkspaceTable>
                         </CardContent>
                     </Card>
                 </section>
@@ -459,43 +449,33 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                 Athletes missing a coach, a clean membership state, or a usable device signal.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            {queues.athleteCoverageGaps.length === 0 ? (
-                                <p className="text-sm text-stone-500">Coverage looks clean right now.</p>
-                            ) : (
-                                queues.athleteCoverageGaps.map((entry) => (
-                                    <div key={entry.email} className="rounded-2xl border border-stone-200/75 bg-stone-50/80 p-4">
-                                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                            <div>
-                                                <p className="font-medium text-stone-950">{entry.name}</p>
-                                                <p className="text-sm text-stone-500">{entry.email}</p>
-                                            </div>
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <Badge variant={badgeVariantForStatus(entry.membershipStatus)}>
-                                                    {humanizeStatus(entry.membershipStatus)}
-                                                </Badge>
-                                                <Badge variant="outline">{entry.membershipPlan}</Badge>
-                                            </div>
-                                        </div>
-                                        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                                            <div className="rounded-xl border border-stone-200/75 bg-white/70 p-3">
-                                                <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">Coach links</p>
-                                                <p className="mt-2 text-sm font-medium text-stone-900">{entry.coachCount}</p>
-                                            </div>
-                                            <div className="rounded-xl border border-stone-200/75 bg-white/70 p-3">
-                                                <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
-                                                    Connected devices
-                                                </p>
-                                                <p className="mt-2 text-sm font-medium text-stone-900">{entry.connectedDevices}</p>
-                                            </div>
-                                            <div className="rounded-xl border border-stone-200/75 bg-white/70 p-3">
-                                                <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">Runway</p>
-                                                <p className="mt-2 text-sm font-medium text-stone-900">{formatDays(entry.daysRemaining)}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
+                        <CardContent>
+                            <WorkspaceTable minWidth="min-w-[780px]">
+                                <WorkspaceTableHeader
+                                    labels={['Athlete', 'Email', 'Membership', 'Plan', 'Runway', 'Coach links', 'Devices']}
+                                />
+                                {queues.athleteCoverageGaps.length === 0 ? (
+                                    <WorkspaceTableEmpty message="Coverage looks clean right now." colSpan={7} />
+                                ) : (
+                                    <tbody className="divide-y divide-stone-100">
+                                        {queues.athleteCoverageGaps.map((entry) => (
+                                            <tr key={entry.email} className="align-top hover:bg-stone-50/80">
+                                                <td className="px-4 py-4 font-semibold text-stone-950">{entry.name}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.email}</td>
+                                                <td className="px-4 py-4">
+                                                    <Badge variant={badgeVariantForStatus(entry.membershipStatus)}>
+                                                        {humanizeStatus(entry.membershipStatus)}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.membershipPlan}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{formatDays(entry.daysRemaining)}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.coachCount}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.connectedDevices}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                )}
+                            </WorkspaceTable>
                         </CardContent>
                     </Card>
 
@@ -506,43 +486,29 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                                 Which coaches are carrying real roster weight and where the cracks are forming.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            {queues.coachLoad.length === 0 ? (
-                                <p className="text-sm text-stone-500">No coach records are available.</p>
-                            ) : (
-                                queues.coachLoad.map((entry) => (
-                                    <div key={entry.email} className="rounded-2xl border border-stone-200/75 bg-stone-50/80 p-4">
-                                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                            <div>
-                                                <p className="font-medium text-stone-950">{entry.name}</p>
-                                                <p className="text-sm text-stone-500">{entry.email}</p>
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                <Badge variant="outline">{entry.rosterCount} athletes</Badge>
-                                                <Badge variant="outline">{entry.activePrograms} live programs</Badge>
-                                            </div>
-                                        </div>
-                                        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                                            <div className="rounded-xl border border-stone-200/75 bg-white/70 p-3">
-                                                <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
-                                                    Pending logs
-                                                </p>
-                                                <p className="mt-2 text-sm font-medium text-stone-900">{entry.pendingLogs}</p>
-                                            </div>
-                                            <div className="rounded-xl border border-stone-200/75 bg-white/70 p-3">
-                                                <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">No device</p>
-                                                <p className="mt-2 text-sm font-medium text-stone-900">{entry.athletesWithoutDevice}</p>
-                                            </div>
-                                            <div className="rounded-xl border border-stone-200/75 bg-white/70 p-3">
-                                                <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
-                                                    Membership risk
-                                                </p>
-                                                <p className="mt-2 text-sm font-medium text-stone-900">{entry.membershipsAtRisk}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
+                        <CardContent>
+                            <WorkspaceTable minWidth="min-w-[780px]">
+                                <WorkspaceTableHeader
+                                    labels={['Coach', 'Email', 'Roster', 'Live programs', 'Pending logs', 'No device', 'Membership risk']}
+                                />
+                                {queues.coachLoad.length === 0 ? (
+                                    <WorkspaceTableEmpty message="No coach records are available." colSpan={7} />
+                                ) : (
+                                    <tbody className="divide-y divide-stone-100">
+                                        {queues.coachLoad.map((entry) => (
+                                            <tr key={entry.email} className="align-top hover:bg-stone-50/80">
+                                                <td className="px-4 py-4 font-semibold text-stone-950">{entry.name}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.email}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.rosterCount}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.activePrograms}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.pendingLogs}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.athletesWithoutDevice}</td>
+                                                <td className="px-4 py-4 text-sm text-stone-700">{entry.membershipsAtRisk}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                )}
+                            </WorkspaceTable>
                         </CardContent>
                     </Card>
                 </section>

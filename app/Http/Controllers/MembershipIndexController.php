@@ -8,20 +8,23 @@ use App\Enums\PaymentEventStatus;
 use App\Enums\PaymentEventType;
 use App\Enums\RoleName;
 use App\Models\Membership;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
+use App\Services\Billing\StripeBillingService;
 use Illuminate\Database\Eloquent\Builder;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class MembershipIndexController extends Controller
 {
-    public function __invoke(): Response
+    public function __invoke(StripeBillingService $billing): Response
     {
         /** @var User $user */
-        $user = request()->user()->loadMissing('roles');
+        $user = request()->user()->loadMissing('roles', 'memberships.plan');
         $statusFilter = request()->string('status')->value();
         $allowedStatuses = collect(MembershipStatus::cases())->map->value->all();
         $normalizedStatusFilter = in_array($statusFilter, $allowedStatuses, true) ? $statusFilter : null;
+        $currentMembership = $user->currentMembership();
 
         $baseQuery = Membership::query()->visibleTo($user);
         $memberships = (clone $baseQuery)
@@ -59,6 +62,8 @@ class MembershipIndexController extends Controller
                 'autoRenew' => $membership->auto_renew,
                 'price' => (float) $membership->price,
                 'currency' => $membership->currency,
+                'billingProvider' => $membership->billing_provider,
+                'providerSubscriptionId' => $membership->provider_subscription_id,
                 'notes' => $membership->notes,
                 'paymentEvents' => $membership->paymentEvents
                     ->sortByDesc(fn ($event) => $event->event_at?->timestamp ?? $event->created_at?->timestamp ?? 0)
@@ -118,6 +123,30 @@ class MembershipIndexController extends Controller
                 'projectedMonthlyRevenue' => round($this->projectedMonthlyRevenue($baseQuery), 2),
                 'paymentVolumeThisMonth' => round($this->paymentVolumeThisMonth($baseQuery), 2),
                 'failedPaymentsThisMonth' => $this->failedPaymentsThisMonth($baseQuery),
+            ],
+            'billing' => [
+                'provider' => (string) config('throughline.billing.provider'),
+                'checkoutEnabled' => $billing->checkoutEnabled(),
+                'portalEnabled' => $billing->portalEnabled(),
+                'webhookEnabled' => $billing->webhookEnabled(),
+                'hasCustomerProfile' => filled($user->stripe_customer_id),
+                'currentPlanId' => $currentMembership?->subscription_plan_id,
+                'activePlans' => SubscriptionPlan::query()
+                    ->where('is_active', true)
+                    ->orderBy('price')
+                    ->get()
+                    ->map(fn (SubscriptionPlan $plan): array => [
+                        'id' => $plan->id,
+                        'name' => $plan->name,
+                        'description' => $plan->description,
+                        'price' => (float) $plan->price,
+                        'currency' => $plan->currency,
+                        'durationDays' => $plan->duration_days,
+                        'billingInterval' => $plan->billing_interval->value,
+                        'checkoutReady' => filled($plan->stripe_price_id),
+                    ])
+                    ->values()
+                    ->all(),
             ],
             'memberships' => $memberships,
             'auditCommand' => 'php artisan throughline:memberships:audit',

@@ -10,8 +10,10 @@ use App\Http\Controllers\Api\Concerns\FormatsApiPayloads;
 use App\Http\Controllers\Controller;
 use App\Models\DeviceConnection;
 use App\Models\User;
+use App\Models\WhoopWebhookEvent;
 use App\Services\MetricAnalyticsService;
 use App\Services\Whoop\WhoopApiClient;
+use App\Services\Whoop\WhoopWebhookService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,7 +22,12 @@ class WearableIndexController extends Controller
 {
     use FormatsApiPayloads;
 
-    public function __invoke(Request $request, MetricAnalyticsService $metricAnalytics, WhoopApiClient $whoopClient): JsonResponse
+    public function __invoke(
+        Request $request,
+        MetricAnalyticsService $metricAnalytics,
+        WhoopApiClient $whoopClient,
+        WhoopWebhookService $whoopWebhooks,
+    ): JsonResponse
     {
         /** @var User $user */
         $user = $request->user()->loadMissing('roles');
@@ -91,7 +98,17 @@ class WearableIndexController extends Controller
                     'connectedCount' => DeviceConnection::query()
                         ->where('provider', DeviceProvider::Whoop->value)
                         ->count(),
+                    'webhookReady' => $whoopWebhooks->webhookEnabled(),
+                    'webhookUrl' => route('wearables.whoop.webhook', absolute: true),
+                    'pendingEvents' => WhoopWebhookEvent::query()
+                        ->where('processing_status', 'pending')
+                        ->count(),
+                    'failedEvents' => WhoopWebhookEvent::query()
+                        ->where('processing_status', 'failed')
+                        ->count(),
+                    'lastReceivedAt' => WhoopWebhookEvent::query()->max('received_at'),
                     'syncCommand' => 'php artisan throughline:whoop:sync',
+                    'webhookProcessCommand' => 'php artisan throughline:whoop:webhooks:process',
                 ],
             ],
             'meta' => $this->metaPayload(),

@@ -6,6 +6,7 @@ use App\Enums\CoachAthleteStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CoachAthleteAssignment extends Model
 {
@@ -38,6 +39,12 @@ class CoachAthleteAssignment extends Model
     public function athlete(): BelongsTo
     {
         return $this->belongsTo(User::class, 'athlete_id');
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(CoachAthleteMessage::class)
+            ->latest();
     }
 
     public function syncLifecycleDates(): void

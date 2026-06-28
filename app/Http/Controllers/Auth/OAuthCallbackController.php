@@ -43,7 +43,7 @@ class OAuthCallbackController extends Controller
             Auth::login($user);
             $request->session()->regenerate();
 
-            return redirect()->intended(route('dashboard', absolute: false));
+            return redirect()->intended($user->landingPath());
         } catch (SocialAuthException $exception) {
             return to_route($fallbackRoute)->with('status', $exception->getMessage());
         } catch (Throwable $exception) {

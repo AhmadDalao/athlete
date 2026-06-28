@@ -69,125 +69,139 @@ class WhoopSyncService
             throw new InvalidArgumentException('WHOOP sync can only be used for WHOOP connections.');
         }
 
-        $accessToken = $this->freshAccessToken($connection);
-        $days = $lookbackDays ?? (int) config('throughline.integrations.whoop.lookback_days', 10);
-        $start = now()->subDays(max($days - 1, 0))->startOfDay()->toIso8601String();
-        $end = now()->endOfDay()->toIso8601String();
-
-        $cycles = $this->client->fetchCycles($accessToken, $start, $end);
-        $recoveries = $this->client->fetchRecoveries($accessToken, $start, $end);
-        $sleepActivities = $this->client->fetchSleepActivities($accessToken, $start, $end);
-        $workouts = $this->client->fetchWorkouts($accessToken, $start, $end);
-
-        $dailyMetrics = [];
-
-        foreach ($cycles as $cycle) {
-            $metricDate = $this->metricDateFromPayload($cycle);
-
-            if (! $metricDate) {
-                continue;
-            }
-
-            $score = $cycle['score'] ?? [];
-            $dailyMetrics[$metricDate] ??= [];
-            $dailyMetrics[$metricDate]['strain_score'] = $score['strain'] ?? ($dailyMetrics[$metricDate]['strain_score'] ?? null);
-            $dailyMetrics[$metricDate]['training_load'] = $score['kilojoule'] ?? ($dailyMetrics[$metricDate]['training_load'] ?? null);
-        }
-
-        foreach ($recoveries as $recovery) {
-            $metricDate = $this->metricDateFromPayload($recovery);
-
-            if (! $metricDate) {
-                continue;
-            }
-
-            $score = $recovery['score'] ?? [];
-            $dailyMetrics[$metricDate] ??= [];
-            $dailyMetrics[$metricDate]['readiness_score'] = $score['recovery_score'] ?? ($dailyMetrics[$metricDate]['readiness_score'] ?? null);
-            $dailyMetrics[$metricDate]['resting_heart_rate'] = $score['resting_heart_rate'] ?? ($dailyMetrics[$metricDate]['resting_heart_rate'] ?? null);
-            $dailyMetrics[$metricDate]['heart_rate_variability'] = $score['hrv_rmssd_milli'] ?? ($dailyMetrics[$metricDate]['heart_rate_variability'] ?? null);
-            $dailyMetrics[$metricDate]['blood_oxygen_percent'] = $score['spo2_percentage'] ?? ($dailyMetrics[$metricDate]['blood_oxygen_percent'] ?? null);
-            $dailyMetrics[$metricDate]['skin_temperature_celsius'] = $score['skin_temp_celsius'] ?? ($dailyMetrics[$metricDate]['skin_temperature_celsius'] ?? null);
-        }
-
-        foreach ($sleepActivities as $sleep) {
-            $metricDate = $this->metricDateFromPayload($sleep);
-
-            if (! $metricDate) {
-                continue;
-            }
-
-            $score = $sleep['score'] ?? [];
-            $stageSummary = $score['stage_summary'] ?? [];
-            $sleepNeeded = $score['sleep_needed'] ?? [];
-            $sleepMinutes = $this->millisecondsToMinutes(
-                ($stageSummary['total_light_sleep_time_milli'] ?? 0)
-                + ($stageSummary['total_slow_wave_sleep_time_milli'] ?? 0)
-                + ($stageSummary['total_rem_sleep_time_milli'] ?? 0),
-            );
-
-            $sleepNeedMinutes = $this->millisecondsToMinutes(
-                ($sleepNeeded['baseline_milli'] ?? 0)
-                + ($sleepNeeded['need_from_sleep_debt_milli'] ?? 0)
-                + ($sleepNeeded['need_from_recent_strain_milli'] ?? 0)
-                + ($sleepNeeded['need_from_recent_nap_milli'] ?? 0),
-            );
-
-            $dailyMetrics[$metricDate] ??= [];
-            $dailyMetrics[$metricDate]['sleep_minutes'] = $sleepMinutes ?: ($dailyMetrics[$metricDate]['sleep_minutes'] ?? null);
-            $dailyMetrics[$metricDate]['sleep_need_minutes'] = $sleepNeedMinutes ?: ($dailyMetrics[$metricDate]['sleep_need_minutes'] ?? null);
-            $dailyMetrics[$metricDate]['rem_sleep_minutes'] = $this->millisecondsToMinutes($stageSummary['total_rem_sleep_time_milli'] ?? null);
-            $dailyMetrics[$metricDate]['slow_wave_sleep_minutes'] = $this->millisecondsToMinutes($stageSummary['total_slow_wave_sleep_time_milli'] ?? null);
-            $dailyMetrics[$metricDate]['sleep_performance_percentage'] = $score['sleep_performance_percentage'] ?? ($dailyMetrics[$metricDate]['sleep_performance_percentage'] ?? null);
-            $dailyMetrics[$metricDate]['sleep_consistency_percentage'] = $score['sleep_consistency_percentage'] ?? ($dailyMetrics[$metricDate]['sleep_consistency_percentage'] ?? null);
-            $dailyMetrics[$metricDate]['sleep_efficiency_percentage'] = $score['sleep_efficiency_percentage'] ?? ($dailyMetrics[$metricDate]['sleep_efficiency_percentage'] ?? null);
-            $dailyMetrics[$metricDate]['respiratory_rate'] = $score['respiratory_rate'] ?? ($dailyMetrics[$metricDate]['respiratory_rate'] ?? null);
-        }
-
-        foreach ($workouts as $workout) {
-            $metricDate = $this->metricDateFromPayload($workout);
-
-            if (! $metricDate) {
-                continue;
-            }
-
-            $score = $workout['score'] ?? [];
-            $activeMinutes = $this->durationMinutes($workout['start'] ?? null, $workout['end'] ?? null);
-
-            $dailyMetrics[$metricDate] ??= [];
-            $dailyMetrics[$metricDate]['distance_meters'] = ($dailyMetrics[$metricDate]['distance_meters'] ?? 0) + (int) round((float) ($score['distance_meter'] ?? 0));
-            $dailyMetrics[$metricDate]['active_minutes'] = ($dailyMetrics[$metricDate]['active_minutes'] ?? 0) + ($activeMinutes ?? 0);
-        }
-
-        $metricDates = array_keys($dailyMetrics);
-
-        foreach ($dailyMetrics as $metricDate => $metrics) {
-            $this->ingestionService->ingest($connection, [
-                'metric_date' => $metricDate,
-                'external_event_id' => sprintf('whoop-%s-%s', $connection->external_user_id ?? $connection->user_id, $metricDate),
-                'metrics' => $metrics,
-                'raw_payload' => [
-                    'provider' => 'whoop',
-                    'metric_date' => $metricDate,
-                    'collections' => [
-                        'cycles' => array_values(array_filter($cycles, fn (array $cycle) => $this->metricDateFromPayload($cycle) === $metricDate)),
-                        'recoveries' => array_values(array_filter($recoveries, fn (array $recovery) => $this->metricDateFromPayload($recovery) === $metricDate)),
-                        'sleep' => array_values(array_filter($sleepActivities, fn (array $sleep) => $this->metricDateFromPayload($sleep) === $metricDate)),
-                        'workouts' => array_values(array_filter($workouts, fn (array $workout) => $this->metricDateFromPayload($workout) === $metricDate)),
-                    ],
-                ],
-            ]);
-        }
-
         $connection->forceFill([
-            'status' => DeviceConnectionStatus::Connected,
-            'last_synced_at' => now(),
+            'last_sync_started_at' => now(),
         ])->save();
 
-        return [
-            'snapshots_synced' => count($metricDates),
-            'metric_dates' => $metricDates,
-        ];
+        try {
+            $accessToken = $this->freshAccessToken($connection);
+            $days = $lookbackDays ?? (int) config('throughline.integrations.whoop.lookback_days', 10);
+            $start = now()->subDays(max($days - 1, 0))->startOfDay()->toIso8601String();
+            $end = now()->endOfDay()->toIso8601String();
+
+            $cycles = $this->client->fetchCycles($accessToken, $start, $end);
+            $recoveries = $this->client->fetchRecoveries($accessToken, $start, $end);
+            $sleepActivities = $this->client->fetchSleepActivities($accessToken, $start, $end);
+            $workouts = $this->client->fetchWorkouts($accessToken, $start, $end);
+
+            $dailyMetrics = [];
+
+            foreach ($cycles as $cycle) {
+                $metricDate = $this->metricDateFromPayload($cycle);
+
+                if (! $metricDate) {
+                    continue;
+                }
+
+                $score = $cycle['score'] ?? [];
+                $dailyMetrics[$metricDate] ??= [];
+                $dailyMetrics[$metricDate]['strain_score'] = $score['strain'] ?? ($dailyMetrics[$metricDate]['strain_score'] ?? null);
+                $dailyMetrics[$metricDate]['training_load'] = $score['kilojoule'] ?? ($dailyMetrics[$metricDate]['training_load'] ?? null);
+            }
+
+            foreach ($recoveries as $recovery) {
+                $metricDate = $this->metricDateFromPayload($recovery);
+
+                if (! $metricDate) {
+                    continue;
+                }
+
+                $score = $recovery['score'] ?? [];
+                $dailyMetrics[$metricDate] ??= [];
+                $dailyMetrics[$metricDate]['readiness_score'] = $score['recovery_score'] ?? ($dailyMetrics[$metricDate]['readiness_score'] ?? null);
+                $dailyMetrics[$metricDate]['resting_heart_rate'] = $score['resting_heart_rate'] ?? ($dailyMetrics[$metricDate]['resting_heart_rate'] ?? null);
+                $dailyMetrics[$metricDate]['heart_rate_variability'] = $score['hrv_rmssd_milli'] ?? ($dailyMetrics[$metricDate]['heart_rate_variability'] ?? null);
+                $dailyMetrics[$metricDate]['blood_oxygen_percent'] = $score['spo2_percentage'] ?? ($dailyMetrics[$metricDate]['blood_oxygen_percent'] ?? null);
+                $dailyMetrics[$metricDate]['skin_temperature_celsius'] = $score['skin_temp_celsius'] ?? ($dailyMetrics[$metricDate]['skin_temperature_celsius'] ?? null);
+            }
+
+            foreach ($sleepActivities as $sleep) {
+                $metricDate = $this->metricDateFromPayload($sleep);
+
+                if (! $metricDate) {
+                    continue;
+                }
+
+                $score = $sleep['score'] ?? [];
+                $stageSummary = $score['stage_summary'] ?? [];
+                $sleepNeeded = $score['sleep_needed'] ?? [];
+                $sleepMinutes = $this->millisecondsToMinutes(
+                    ($stageSummary['total_light_sleep_time_milli'] ?? 0)
+                    + ($stageSummary['total_slow_wave_sleep_time_milli'] ?? 0)
+                    + ($stageSummary['total_rem_sleep_time_milli'] ?? 0),
+                );
+
+                $sleepNeedMinutes = $this->millisecondsToMinutes(
+                    ($sleepNeeded['baseline_milli'] ?? 0)
+                    + ($sleepNeeded['need_from_sleep_debt_milli'] ?? 0)
+                    + ($sleepNeeded['need_from_recent_strain_milli'] ?? 0)
+                    + ($sleepNeeded['need_from_recent_nap_milli'] ?? 0),
+                );
+
+                $dailyMetrics[$metricDate] ??= [];
+                $dailyMetrics[$metricDate]['sleep_minutes'] = $sleepMinutes ?: ($dailyMetrics[$metricDate]['sleep_minutes'] ?? null);
+                $dailyMetrics[$metricDate]['sleep_need_minutes'] = $sleepNeedMinutes ?: ($dailyMetrics[$metricDate]['sleep_need_minutes'] ?? null);
+                $dailyMetrics[$metricDate]['rem_sleep_minutes'] = $this->millisecondsToMinutes($stageSummary['total_rem_sleep_time_milli'] ?? null);
+                $dailyMetrics[$metricDate]['slow_wave_sleep_minutes'] = $this->millisecondsToMinutes($stageSummary['total_slow_wave_sleep_time_milli'] ?? null);
+                $dailyMetrics[$metricDate]['sleep_performance_percentage'] = $score['sleep_performance_percentage'] ?? ($dailyMetrics[$metricDate]['sleep_performance_percentage'] ?? null);
+                $dailyMetrics[$metricDate]['sleep_consistency_percentage'] = $score['sleep_consistency_percentage'] ?? ($dailyMetrics[$metricDate]['sleep_consistency_percentage'] ?? null);
+                $dailyMetrics[$metricDate]['sleep_efficiency_percentage'] = $score['sleep_efficiency_percentage'] ?? ($dailyMetrics[$metricDate]['sleep_efficiency_percentage'] ?? null);
+                $dailyMetrics[$metricDate]['respiratory_rate'] = $score['respiratory_rate'] ?? ($dailyMetrics[$metricDate]['respiratory_rate'] ?? null);
+            }
+
+            foreach ($workouts as $workout) {
+                $metricDate = $this->metricDateFromPayload($workout);
+
+                if (! $metricDate) {
+                    continue;
+                }
+
+                $score = $workout['score'] ?? [];
+                $activeMinutes = $this->durationMinutes($workout['start'] ?? null, $workout['end'] ?? null);
+
+                $dailyMetrics[$metricDate] ??= [];
+                $dailyMetrics[$metricDate]['distance_meters'] = ($dailyMetrics[$metricDate]['distance_meters'] ?? 0) + (int) round((float) ($score['distance_meter'] ?? 0));
+                $dailyMetrics[$metricDate]['active_minutes'] = ($dailyMetrics[$metricDate]['active_minutes'] ?? 0) + ($activeMinutes ?? 0);
+            }
+
+            $metricDates = array_keys($dailyMetrics);
+
+            foreach ($dailyMetrics as $metricDate => $metrics) {
+                $this->ingestionService->ingest($connection, [
+                    'metric_date' => $metricDate,
+                    'external_event_id' => sprintf('whoop-%s-%s', $connection->external_user_id ?? $connection->user_id, $metricDate),
+                    'metrics' => $metrics,
+                    'raw_payload' => [
+                        'provider' => 'whoop',
+                        'metric_date' => $metricDate,
+                        'collections' => [
+                            'cycles' => array_values(array_filter($cycles, fn (array $cycle) => $this->metricDateFromPayload($cycle) === $metricDate)),
+                            'recoveries' => array_values(array_filter($recoveries, fn (array $recovery) => $this->metricDateFromPayload($recovery) === $metricDate)),
+                            'sleep' => array_values(array_filter($sleepActivities, fn (array $sleep) => $this->metricDateFromPayload($sleep) === $metricDate)),
+                            'workouts' => array_values(array_filter($workouts, fn (array $workout) => $this->metricDateFromPayload($workout) === $metricDate)),
+                        ],
+                    ],
+                ]);
+            }
+
+            $connection->forceFill([
+                'status' => DeviceConnectionStatus::Connected,
+                'last_synced_at' => now(),
+                'last_sync_started_at' => null,
+                'last_error_at' => null,
+                'last_error_message' => null,
+                'sync_failures_count' => 0,
+            ])->save();
+
+            return [
+                'snapshots_synced' => count($metricDates),
+                'metric_dates' => $metricDates,
+            ];
+        } catch (\Throwable $exception) {
+            $this->markFailure($connection, $exception);
+
+            throw $exception;
+        }
     }
 
     private function freshAccessToken(DeviceConnection $connection): string
@@ -240,5 +254,16 @@ class WhoopSyncService
         }
 
         return Carbon::parse($start)->diffInMinutes(Carbon::parse($end));
+    }
+
+    private function markFailure(DeviceConnection $connection, \Throwable $exception): void
+    {
+        $connection->forceFill([
+            'status' => DeviceConnectionStatus::Attention,
+            'last_sync_started_at' => null,
+            'last_error_at' => now(),
+            'last_error_message' => $exception->getMessage(),
+            'sync_failures_count' => (int) $connection->sync_failures_count + 1,
+        ])->save();
     }
 }

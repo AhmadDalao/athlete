@@ -23,6 +23,12 @@ class ContactSubmissionTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('contact')
             );
+
+        $this->get(route('contact.show', ['coach' => 'Nadia Stone', 'goal' => 'Strength blocks']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('contact')
+                ->where('prefill.requestedCoach', 'Nadia Stone')
+            );
     }
 
     public function test_guest_can_submit_contact_form(): void

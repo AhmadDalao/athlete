@@ -1,5 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Chrome, LoaderCircle } from 'lucide-react';
+import { Chrome, LoaderCircle, LockKeyhole, Phone } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 import InputError from '@/components/input-error';
@@ -35,7 +35,7 @@ export default function Login({ status, canResetPassword, signupMethods }: Login
         password: '',
         remember: false,
     });
-    const googleMethod = signupMethods.find((method) => method.value === 'google' && method.enabled && method.authorizationUrl);
+    const actionableMethods = signupMethods.filter((method) => method.value !== 'email' && method.enabled && method.authorizationUrl);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -48,8 +48,8 @@ export default function Login({ status, canResetPassword, signupMethods }: Login
         <AuthLayout
             title="Log in to your account"
             description={
-                googleMethod
-                    ? 'Email/password still works. Google sign-in is live too, which is the sane option if you already linked it.'
+                actionableMethods.length > 0
+                    ? `Email/password still works. ${actionableMethods.map((method) => method.label).join(' and ')} sign-in are live too if the account is already linked.`
                     : 'Enter your email and password below to log in.'
             }
         >
@@ -61,16 +61,23 @@ export default function Login({ status, canResetPassword, signupMethods }: Login
                 </div>
             )}
 
-            {googleMethod && googleMethod.authorizationUrl && (
+            {actionableMethods.length > 0 && (
                 <div className="space-y-3">
-                    <Button asChild variant="outline" className="w-full">
-                        <Link href={googleMethod.authorizationUrl} className="flex w-full items-center justify-center gap-2">
-                            <Chrome className="size-4" />
-                            Continue with Google
-                        </Link>
-                    </Button>
+                    {actionableMethods.map((method) => {
+                        const Icon = method.value === 'google' ? Chrome : method.value === 'apple' ? LockKeyhole : Phone;
+
+                        return (
+                            <Button key={method.value} asChild variant="outline" className="w-full">
+                                <Link href={method.authorizationUrl!} className="flex w-full items-center justify-center gap-2">
+                                    <Icon className="size-4" />
+                                    Continue with {method.label}
+                                </Link>
+                            </Button>
+                        );
+                    })}
                     <p className="text-muted-foreground text-center text-xs leading-5">
-                        Use Google only for an existing linked account. New Google users should start from sign up so we can assign the right role.
+                        Use Apple, Google, or phone only when that account path was actually set up. New users should start from sign up so we can
+                        assign the right role.
                     </p>
                 </div>
             )}

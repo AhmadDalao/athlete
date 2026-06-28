@@ -11,6 +11,9 @@ use App\Http\Controllers\Api\MeController;
 use App\Http\Controllers\Api\MembershipIndexController;
 use App\Http\Controllers\Api\ProgressIndexController;
 use App\Http\Controllers\Api\RosterIndexController;
+use App\Http\Controllers\Api\TrainingSessionCompleteController;
+use App\Http\Controllers\Api\TrainingSessionExecutionController;
+use App\Http\Controllers\Api\TrainingSessionSetStoreController;
 use App\Http\Controllers\Api\TrainingIndexController;
 use App\Http\Controllers\Api\WearableIndexController;
 use App\Http\Controllers\Api\WorkoutLogStoreController;
@@ -47,6 +50,18 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('training/sessions/{trainingSession}/workout-log', WorkoutLogStoreController::class)
             ->middleware('abilities:training:write')
             ->name('training.sessions.workout-log.store');
+
+        Route::get('training/sessions/{trainingSession}/execution', TrainingSessionExecutionController::class)
+            ->middleware('abilities:training:read')
+            ->name('training.sessions.execution');
+
+        Route::post('training/sessions/{trainingSession}/sets', TrainingSessionSetStoreController::class)
+            ->middleware('abilities:training:write')
+            ->name('training.sessions.sets.store');
+
+        Route::post('training/sessions/{trainingSession}/complete', TrainingSessionCompleteController::class)
+            ->middleware('abilities:training:write')
+            ->name('training.sessions.complete');
 
         Route::get('progress', ProgressIndexController::class)
             ->middleware('abilities:progress:read')

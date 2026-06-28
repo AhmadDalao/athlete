@@ -21,6 +21,13 @@ interface ContactFormData {
     message: string;
 }
 
+interface ContactPageProps {
+    prefill?: {
+        requestedCoach?: string | null;
+        message?: string | null;
+    };
+}
+
 const roleOptions: Array<{ value: RoleInterest; label: string }> = [
     { value: '', label: 'Choose one' },
     { value: 'coach', label: 'Coach' },
@@ -30,7 +37,7 @@ const roleOptions: Array<{ value: RoleInterest; label: string }> = [
 ];
 
 export default function Contact() {
-    const { auth, flash } = usePage<SharedData>().props;
+    const { auth, flash, prefill } = usePage<SharedData & ContactPageProps>().props;
     const { data, setData, post, processing, errors } = useForm<ContactFormData>({
         name: auth.user?.name ?? '',
         email: auth.user?.email ?? '',
@@ -40,7 +47,7 @@ export default function Contact() {
             auth.user?.primary_role === 'coach' || auth.user?.primary_role === 'athlete' || auth.user?.primary_role === 'admin'
                 ? (auth.user.primary_role as RoleInterest)
                 : '',
-        message: '',
+        message: prefill?.message ?? '',
     });
 
     const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -60,14 +67,19 @@ export default function Contact() {
 
             <section className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
                 <div className="space-y-6">
-                    <div className="rounded-[2rem] border border-stone-900/10 bg-stone-950 p-7 text-stone-50 shadow-[0_28px_64px_rgba(55,41,19,0.22)]">
-                        <p className="text-xs font-semibold tracking-[0.24em] text-stone-400 uppercase">Contact us</p>
+                    <div className="rounded-[2rem] border border-white/70 bg-[linear-gradient(135deg,rgba(255,247,237,0.94),rgba(255,255,255,0.96)_44%,rgba(236,253,245,0.94))] p-7 text-stone-950 shadow-[0_28px_64px_rgba(55,41,19,0.12)]">
+                        <p className="text-xs font-semibold tracking-[0.24em] text-stone-500 uppercase">Contact us</p>
                         <h1 className="mt-3 font-['Space_Grotesk'] text-4xl font-bold tracking-tight">
                             Send the real problem, not a vague “let’s connect.”
                         </h1>
-                        <p className="mt-4 text-sm leading-7 text-stone-300">
+                        <p className="mt-4 text-sm leading-7 text-stone-700">
                             Tell us what you are building, who needs access, what should integrate, and where the current workflow is breaking down.
                         </p>
+                        {prefill?.requestedCoach ? (
+                            <p className="mt-4 rounded-2xl border border-stone-900/10 bg-white/72 px-4 py-3 text-sm leading-6 text-stone-700">
+                                Coach request: <span className="font-semibold text-stone-950">{prefill.requestedCoach}</span>
+                            </p>
+                        ) : null}
                     </div>
 
                     <div className="rounded-[1.75rem] border border-stone-900/10 bg-white/75 p-6 shadow-[0_18px_40px_rgba(61,47,27,0.08)] backdrop-blur">

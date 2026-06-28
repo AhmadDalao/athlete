@@ -66,11 +66,13 @@ class WhoopCallbackController extends Controller
         } catch (\Throwable $exception) {
             report($exception);
 
-            $connection->forceFill([
-                'status' => DeviceConnectionStatus::Attention,
-            ])->save();
+            return redirect()
+                ->route('wearables.index')
+                ->with('status', 'WHOOP connected, but the first sync failed. The connection review now shows the exact problem.');
         }
 
-        return redirect()->route('wearables.index');
+        return redirect()
+            ->route('wearables.index')
+            ->with('success', 'WHOOP connected and synced.');
     }
 }
