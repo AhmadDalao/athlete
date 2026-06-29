@@ -491,7 +491,7 @@ function AthleteProgressView({ athleteProfile, canManageOwnCheckIns }: { athlete
     }));
 
     return (
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6 overflow-x-hidden">
             <AthleteHero
                 eyebrow="Athlete progress board"
                 title="Food, body metrics, and training context in one place."
@@ -533,7 +533,7 @@ function AthleteProgressView({ athleteProfile, canManageOwnCheckIns }: { athlete
                 </div>
             </AthleteHero>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <AthleteMetricCard
                     title="Current weight"
                     value={formatWeight(athleteProfile.metrics.latestWeightKg)}
@@ -582,7 +582,7 @@ function AthleteProgressView({ athleteProfile, canManageOwnCheckIns }: { athlete
                     title="Body and fuel trend"
                     description="This is the part that shows whether the athlete is actually supporting the training, not just surviving it."
                 />
-                <div className="grid gap-4 xl:grid-cols-2">
+                <div className="grid min-w-0 gap-4 xl:grid-cols-2">
                     <TrendBars
                         title="Weight trend"
                         description="Short-term bodyweight trend across the latest seven logged entries."
@@ -600,51 +600,53 @@ function AthleteProgressView({ athleteProfile, canManageOwnCheckIns }: { athlete
                 </div>
             </section>
 
-            <div className="grid gap-4 xl:grid-cols-3">
+            <div className="grid min-w-0 gap-4 xl:grid-cols-3">
                 <AthletePanel
                     title="Latest check-in"
                     description="The freshest manual progress entry, which often explains the training week better than a readiness number does."
                     className="xl:col-span-2"
-                    contentClassName="grid gap-4 md:grid-cols-3"
+                    contentClassName="grid min-w-0 gap-3 md:grid-cols-3 md:gap-4"
                 >
-                    <div className="rounded-2xl border border-stone-200/80 bg-stone-50/70 p-4">
+                    <div className="min-w-0 overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-50/70 p-4">
                         <p className="text-xs tracking-[0.18em] text-stone-500 uppercase">Fuel</p>
-                        <p className="mt-2 font-medium text-stone-950">
+                        <p className="mt-2 leading-7 font-medium break-words text-stone-950">
                             {formatCalories(athleteProfile.latestCheckIn?.caloriesConsumed ?? null)} ·{' '}
                             {formatGrams(athleteProfile.latestCheckIn?.proteinGrams ?? null)}
                         </p>
-                        <p className="mt-1 text-sm text-stone-600">
+                        <p className="mt-1 text-sm leading-6 break-words text-stone-600">
                             {formatGrams(athleteProfile.latestCheckIn?.carbsGrams ?? null)} carbs ·{' '}
                             {formatGrams(athleteProfile.latestCheckIn?.fatGrams ?? null)} fat
                         </p>
                     </div>
-                    <div className="rounded-2xl border border-stone-200/80 bg-stone-50/70 p-4">
+                    <div className="min-w-0 overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-50/70 p-4">
                         <p className="text-xs tracking-[0.18em] text-stone-500 uppercase">Body metrics</p>
-                        <p className="mt-2 font-medium text-stone-950">
+                        <p className="mt-2 leading-7 font-medium break-words text-stone-950">
                             {formatWeight(athleteProfile.latestCheckIn?.weightKg ?? null)} ·{' '}
                             {formatPercent(athleteProfile.latestCheckIn?.bodyFatPercentage ?? null)}
                         </p>
-                        <p className="mt-1 text-sm text-stone-600">
+                        <p className="mt-1 text-sm leading-6 break-words text-stone-600">
                             Waist{' '}
                             {athleteProfile.latestCheckIn?.waistCm === null || athleteProfile.latestCheckIn?.waistCm === undefined
                                 ? 'N/A'
                                 : `${athleteProfile.latestCheckIn.waistCm.toFixed(1)} cm`}
                         </p>
                     </div>
-                    <div className="rounded-2xl border border-stone-200/80 bg-stone-50/70 p-4">
+                    <div className="min-w-0 overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-50/70 p-4">
                         <p className="text-xs tracking-[0.18em] text-stone-500 uppercase">Subjective state</p>
-                        <p className="mt-2 font-medium text-stone-950">
+                        <p className="mt-2 leading-7 font-medium break-words text-stone-950">
                             Energy {formatScore(athleteProfile.latestCheckIn?.energyScore ?? null)} · Soreness{' '}
                             {formatScore(athleteProfile.latestCheckIn?.sorenessScore ?? null)}
                         </p>
-                        <p className="mt-1 text-sm text-stone-600">
+                        <p className="mt-1 text-sm leading-6 break-words text-stone-600">
                             Stress {formatScore(athleteProfile.latestCheckIn?.stressScore ?? null)} · Sleep{' '}
                             {formatScore(athleteProfile.latestCheckIn?.sleepQualityScore ?? null)}
                         </p>
                     </div>
-                    <div className="rounded-2xl border border-stone-200/80 bg-stone-50/70 p-4 md:col-span-3">
+                    <div className="min-w-0 overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-50/70 p-4 md:col-span-3">
                         <p className="text-xs tracking-[0.18em] text-stone-500 uppercase">Coach-facing note</p>
-                        <p className="mt-2 text-sm leading-6 text-stone-700">{athleteProfile.latestCheckIn?.notes ?? 'No note logged yet.'}</p>
+                        <p className="mt-2 text-sm leading-6 break-words text-stone-700">
+                            {athleteProfile.latestCheckIn?.notes ?? 'No note logged yet.'}
+                        </p>
                     </div>
                 </AthletePanel>
 
@@ -975,7 +977,7 @@ export default function ProgressIndex({ viewerRole, scopeLabel, canManageOwnChec
             <AthleteAppShell active="progress">
                 <Head title="Progress" />
 
-                <div className="mx-auto max-w-6xl space-y-5 px-4 py-5 md:space-y-6 md:px-6">
+                <div className="mx-auto max-w-6xl space-y-5 px-4 pt-5 pb-32 md:space-y-6 md:px-6 md:pt-6 md:pb-6">
                     <AthleteProgressView athleteProfile={athleteProfile} canManageOwnCheckIns={canManageOwnCheckIns} />
                 </div>
             </AthleteAppShell>
