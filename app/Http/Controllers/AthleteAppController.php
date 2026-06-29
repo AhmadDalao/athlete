@@ -191,7 +191,7 @@ class AthleteAppController extends Controller
     {
         $range = (int) $request->input('range', 30);
 
-        return in_array($range, [7, 14, 30], true) ? $range : 30;
+        return in_array($range, [7, 30, 60, 90], true) ? $range : 30;
     }
 
     /**
@@ -199,63 +199,82 @@ class AthleteAppController extends Controller
      */
     private function chartPayload(User $athlete, int $rangeDays): array
     {
-        $startDate = now()->subDays($rangeDays - 1)->toDateString();
+        $endDate = CarbonImmutable::now()->startOfDay();
+        $startDate = $endDate->subDays($rangeDays - 1);
 
         $snapshots = MetricSnapshot::query()
             ->where('user_id', $athlete->id)
-            ->whereDate('metric_date', '>=', $startDate)
+            ->whereDate('metric_date', '>=', $startDate->toDateString())
+            ->whereDate('metric_date', '<=', $endDate->toDateString())
             ->orderBy('metric_date')
             ->get();
 
         $checkIns = $athlete->athleteCheckIns()
-            ->whereDate('logged_date', '>=', $startDate)
+            ->whereDate('logged_date', '>=', $startDate->toDateString())
+            ->whereDate('logged_date', '<=', $endDate->toDateString())
             ->orderBy('logged_date')
             ->get();
 
         return [
             'rangeDays' => $rangeDays,
-            'rangeOptions' => [7, 14, 30],
+            'rangeOptions' => [7, 30, 60, 90],
+            'from' => $startDate->toDateString(),
+            'to' => $endDate->toDateString(),
             'wearable' => [
-                'readiness' => $this->series($snapshots, 'metric_date', fn (MetricSnapshot $snapshot) => $snapshot->readiness_score),
-                'strain' => $this->series($snapshots, 'metric_date', fn (MetricSnapshot $snapshot) => $snapshot->strain_score),
-                'sleepHours' => $this->series($snapshots, 'metric_date', fn (MetricSnapshot $snapshot) => $snapshot->sleepHours()),
-                'heartRateVariability' => $this->series($snapshots, 'metric_date', fn (MetricSnapshot $snapshot) => $snapshot->heart_rate_variability),
-                'restingHeartRate' => $this->series($snapshots, 'metric_date', fn (MetricSnapshot $snapshot) => $snapshot->resting_heart_rate),
-                'steps' => $this->series($snapshots, 'metric_date', fn (MetricSnapshot $snapshot) => $snapshot->steps),
-                'caloriesBurned' => $this->series($snapshots, 'metric_date', fn (MetricSnapshot $snapshot) => $snapshot->calories_burned),
+                'readiness' => $this->dailySeries($snapshots, 'metric_date', $startDate, $rangeDays, fn (MetricSnapshot $snapshot) => $snapshot->readiness_score),
+                'strain' => $this->dailySeries($snapshots, 'metric_date', $startDate, $rangeDays, fn (MetricSnapshot $snapshot) => $snapshot->strain_score),
+                'sleepHours' => $this->dailySeries($snapshots, 'metric_date', $startDate, $rangeDays, fn (MetricSnapshot $snapshot) => $snapshot->sleepHours()),
+                'heartRateVariability' => $this->dailySeries($snapshots, 'metric_date', $startDate, $rangeDays, fn (MetricSnapshot $snapshot) => $snapshot->heart_rate_variability),
+                'restingHeartRate' => $this->dailySeries($snapshots, 'metric_date', $startDate, $rangeDays, fn (MetricSnapshot $snapshot) => $snapshot->resting_heart_rate),
+                'steps' => $this->dailySeries($snapshots, 'metric_date', $startDate, $rangeDays, fn (MetricSnapshot $snapshot) => $snapshot->steps),
+                'caloriesBurned' => $this->dailySeries($snapshots, 'metric_date', $startDate, $rangeDays, fn (MetricSnapshot $snapshot) => $snapshot->calories_burned),
+                'activeMinutes' => $this->dailySeries($snapshots, 'metric_date', $startDate, $rangeDays, fn (MetricSnapshot $snapshot) => $snapshot->active_minutes),
             ],
             'progress' => [
-                'weightKg' => $this->series($checkIns, 'logged_date', fn ($checkIn) => $checkIn->weight_kg),
-                'proteinGrams' => $this->series($checkIns, 'logged_date', fn ($checkIn) => $checkIn->protein_grams),
-                'waterLiters' => $this->series($checkIns, 'logged_date', fn ($checkIn) => $checkIn->water_liters),
-                'energyScore' => $this->series($checkIns, 'logged_date', fn ($checkIn) => $checkIn->energy_score),
-                'sorenessScore' => $this->series($checkIns, 'logged_date', fn ($checkIn) => $checkIn->soreness_score),
-                'stressScore' => $this->series($checkIns, 'logged_date', fn ($checkIn) => $checkIn->stress_score),
-                'sleepQualityScore' => $this->series($checkIns, 'logged_date', fn ($checkIn) => $checkIn->sleep_quality_score),
+                'weightKg' => $this->dailySeries($checkIns, 'logged_date', $startDate, $rangeDays, fn ($checkIn) => $checkIn->weight_kg),
+                'bodyFatPercentage' => $this->dailySeries($checkIns, 'logged_date', $startDate, $rangeDays, fn ($checkIn) => $checkIn->body_fat_percentage),
+                'waistCm' => $this->dailySeries($checkIns, 'logged_date', $startDate, $rangeDays, fn ($checkIn) => $checkIn->waist_cm),
+                'caloriesConsumed' => $this->dailySeries($checkIns, 'logged_date', $startDate, $rangeDays, fn ($checkIn) => $checkIn->calories_consumed),
+                'proteinGrams' => $this->dailySeries($checkIns, 'logged_date', $startDate, $rangeDays, fn ($checkIn) => $checkIn->protein_grams),
+                'carbsGrams' => $this->dailySeries($checkIns, 'logged_date', $startDate, $rangeDays, fn ($checkIn) => $checkIn->carbs_grams),
+                'fatGrams' => $this->dailySeries($checkIns, 'logged_date', $startDate, $rangeDays, fn ($checkIn) => $checkIn->fat_grams),
+                'waterLiters' => $this->dailySeries($checkIns, 'logged_date', $startDate, $rangeDays, fn ($checkIn) => $checkIn->water_liters),
+                'energyScore' => $this->dailySeries($checkIns, 'logged_date', $startDate, $rangeDays, fn ($checkIn) => $checkIn->energy_score),
+                'sorenessScore' => $this->dailySeries($checkIns, 'logged_date', $startDate, $rangeDays, fn ($checkIn) => $checkIn->soreness_score),
+                'stressScore' => $this->dailySeries($checkIns, 'logged_date', $startDate, $rangeDays, fn ($checkIn) => $checkIn->stress_score),
+                'sleepQualityScore' => $this->dailySeries($checkIns, 'logged_date', $startDate, $rangeDays, fn ($checkIn) => $checkIn->sleep_quality_score),
             ],
         ];
     }
 
     /**
      * @param  Collection<int, mixed>  $records
-     * @return list<array{date:string,value:float|int}>
+     * @return list<array{date:string,value:float|int|null}>
      */
-    private function series(Collection $records, string $dateColumn, callable $valueResolver): array
+    private function dailySeries(Collection $records, string $dateColumn, CarbonImmutable $startDate, int $rangeDays, callable $valueResolver): array
     {
-        return $records
-            ->map(function ($record) use ($dateColumn, $valueResolver): ?array {
+        $valuesByDate = $records
+            ->mapWithKeys(function ($record) use ($dateColumn, $valueResolver): array {
                 $value = $valueResolver($record);
+                $date = $record->{$dateColumn}?->toDateString();
 
-                if ($value === null) {
-                    return null;
+                if ($date === null) {
+                    return [];
                 }
 
+                return [$date => $value === null ? null : (is_float($value) ? round($value, 2) : $value)];
+            })
+            ->all();
+
+        return collect(range(0, $rangeDays - 1))
+            ->map(function (int $offset) use ($startDate, $valuesByDate): array {
+                $date = $startDate->addDays($offset)->toDateString();
+
                 return [
-                    'date' => $record->{$dateColumn}?->toDateString(),
-                    'value' => is_float($value) ? round($value, 2) : $value,
+                    'date' => $date,
+                    'value' => $valuesByDate[$date] ?? null,
                 ];
             })
-            ->filter(fn (?array $point): bool => $point !== null && $point['date'] !== null)
             ->values()
             ->all();
     }

@@ -131,9 +131,18 @@ class AthleteAppExperienceTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('charts.rangeDays', 30)
-                ->where('charts.wearable.readiness.0.value', 78)
-                ->where('charts.progress.weightKg.0.value', 82.1)
-                ->where('charts.progress.sleepQualityScore.0.value', 7)
+                ->has('charts.wearable.readiness', 30)
+                ->where('charts.wearable.readiness.28.value', 78)
+                ->where('charts.progress.weightKg.29.value', 82.1)
+                ->where('charts.progress.sleepQualityScore.29.value', 7)
+            );
+
+        $this->actingAs($athlete)
+            ->get('/app?range=90')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('charts.rangeDays', 90)
+                ->has('charts.wearable.readiness', 90)
             );
     }
 
