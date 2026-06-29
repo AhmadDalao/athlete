@@ -1,8 +1,5 @@
-import { Badge } from '@/components/ui/badge';
-import AppLayout from '@/layouts/app-layout';
-import { cn } from '@/lib/utils';
+import { UserAppShell } from '@/components/user-app-shell';
 import { type BreadcrumbItem } from '@/types';
-import { Link } from '@inertiajs/react';
 import { CalendarDays, HeartPulse, LayoutDashboard, MessageCircle, UserRound, Watch } from 'lucide-react';
 import { type ReactNode } from 'react';
 
@@ -37,33 +34,15 @@ export function AthleteAppShell({
     ] as const;
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="min-h-screen bg-[#fbfaf6] pb-24 md:pb-8">
-                {children}
-
-                <nav className="fixed inset-x-3 bottom-3 z-40 rounded-[1.5rem] border border-stone-200 bg-white/95 p-2 shadow-[0_18px_50px_-26px_rgba(15,23,42,0.45)] backdrop-blur md:hidden">
-                    <div className="grid grid-cols-6 gap-1">
-                        {navItems.map(({ key, label, href, icon: Icon, count }) => (
-                            <Link
-                                key={key}
-                                href={href}
-                                className={cn(
-                                    'relative flex min-h-14 flex-col items-center justify-center gap-1 rounded-[1.05rem] px-1 text-[0.68rem] font-semibold text-stone-500 transition-colors',
-                                    active === key && 'bg-emerald-700 text-white shadow-[0_14px_30px_-22px_rgba(4,120,87,0.9)]',
-                                )}
-                            >
-                                <Icon className="size-4" />
-                                <span>{label}</span>
-                                {count > 0 && (
-                                    <Badge className="absolute -top-1 -right-1 h-5 min-w-5 justify-center rounded-full bg-amber-300 px-1 text-[0.62rem] text-stone-950">
-                                        {count}
-                                    </Badge>
-                                )}
-                            </Link>
-                        ))}
-                    </div>
-                </nav>
-            </div>
-        </AppLayout>
+        <UserAppShell
+            active={active}
+            navItems={navItems}
+            eyebrow={breadcrumbs.at(-1)?.title ?? 'Athlete app'}
+            title="Throughline"
+            description="Your programs, calendar, workouts, coach messages, recovery trends, and membership live here. The admin dashboard stays out of the way."
+            accentClassName="bg-emerald-700"
+        >
+            {children}
+        </UserAppShell>
     );
 }

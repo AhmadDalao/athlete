@@ -1,17 +1,10 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    WorkspaceHero,
-    WorkspaceMetricCard,
-    WorkspacePanel,
-    WorkspaceTable,
-    WorkspaceTableEmpty,
-    WorkspaceTableHeader,
-} from '@/components/workspace-primitives';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
+import { CoachAppShell } from '@/components/coach-app-shell';
+import { WorkspacePanel, WorkspaceTable, WorkspaceTableEmpty, WorkspaceTableHeader } from '@/components/workspace-primitives';
 import { Head, Link } from '@inertiajs/react';
-import { CalendarDays, CheckCircle2, Dumbbell, MailPlus, MessageCircle, Users } from 'lucide-react';
+import { ArrowRight, CalendarDays, CheckCircle2, Dumbbell, MailPlus, MessageCircle, type LucideIcon, Users } from 'lucide-react';
+import { type ReactNode } from 'react';
 
 interface CoachAppProps {
     viewer: {
@@ -88,13 +81,6 @@ interface CoachAppProps {
     }>;
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Coach app',
-        href: '/coach',
-    },
-];
-
 function formatDate(value: string | null) {
     if (!value) {
         return 'Not scheduled';
@@ -121,44 +107,151 @@ function badgeVariant(status: string): BadgeVariant {
     return 'outline';
 }
 
+function SummaryTile({ label, value, note, icon: Icon }: { label: string; value: string; note: string; icon: LucideIcon }) {
+    return (
+        <div className="rounded-[1.35rem] border border-stone-200 bg-white p-4 shadow-[0_18px_38px_-34px_rgba(15,23,42,0.35)]">
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <p className="text-xs font-semibold tracking-[0.18em] text-stone-400 uppercase">{label}</p>
+                    <p className="mt-2 text-3xl font-black tracking-[-0.06em] text-stone-950">{value}</p>
+                </div>
+                <span className="grid size-10 place-items-center rounded-2xl bg-amber-100 text-amber-800">
+                    <Icon className="size-5" />
+                </span>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-stone-600">{note}</p>
+        </div>
+    );
+}
+
+function MobileSection({ title, description, children }: { title: string; description: string; children: ReactNode }) {
+    return (
+        <section className="space-y-3 md:hidden">
+            <div>
+                <p className="text-xs font-semibold tracking-[0.18em] text-stone-400 uppercase">{title}</p>
+                <p className="mt-1 text-sm leading-6 text-stone-600">{description}</p>
+            </div>
+            {children}
+        </section>
+    );
+}
+
+function EmptyMobileState({ message }: { message: string }) {
+    return <div className="rounded-[1.25rem] border border-dashed border-stone-300 bg-white p-4 text-sm leading-6 text-stone-600">{message}</div>;
+}
+
 export default function CoachAppIndex({ viewer, summary, athletes, programs, schedule, pendingLogs }: CoachAppProps) {
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <CoachAppShell active="home" unreadMessages={summary.unreadMessages}>
             <Head title="Coach app" />
 
-            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
-                <WorkspaceHero
-                    eyebrow="Coach app"
-                    title={`Coach home, ${viewer.name}`}
-                    description="Your athletes, assigned programs, schedule, messages, and missed logs without entering the business admin dashboard."
-                    badges={[`${summary.assignedAthletes} athletes`, `${summary.activePrograms} active programs`]}
-                    actions={
-                        <>
-                            <Button asChild className="bg-amber-500 text-stone-950 hover:bg-amber-400">
-                                <Link href="/training">
-                                    Open programs
-                                    <Dumbbell className="size-4" />
-                                </Link>
-                            </Button>
-                            <Button asChild variant="outline">
-                                <Link href="/roster/invites">
-                                    Invite athlete
-                                    <MailPlus className="size-4" />
-                                </Link>
-                            </Button>
-                        </>
-                    }
-                />
-
-                <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                    <WorkspaceMetricCard title="Assigned athletes" value={String(summary.assignedAthletes)} note="Active coach-athlete relationships." icon={Users} />
-                    <WorkspaceMetricCard title="Active programs" value={String(summary.activePrograms)} note="Live blocks owned by you." icon={Dumbbell} />
-                    <WorkspaceMetricCard title="Next 14 days" value={String(summary.upcomingSessions)} note="Scheduled sessions coming up." icon={CalendarDays} />
-                    <WorkspaceMetricCard title="Pending logs" value={String(summary.pendingLogs)} note="Past sessions missing execution data." icon={CheckCircle2} />
-                    <WorkspaceMetricCard title="Unread messages" value={String(summary.unreadMessages)} note="Athlete messages waiting." icon={MessageCircle} />
+            <div className="mx-auto max-w-6xl space-y-6 px-4 py-5 md:px-6 md:py-8">
+                <section className="overflow-hidden rounded-[2rem] border border-amber-200 bg-gradient-to-br from-amber-100 via-white to-stone-50 p-5 shadow-[0_24px_60px_-45px_rgba(120,53,15,0.5)] md:p-8">
+                    <Badge className="rounded-full bg-stone-950 text-white hover:bg-stone-950">Coach app</Badge>
+                    <h1 className="mt-4 font-['Space_Grotesk'] text-3xl leading-tight font-bold tracking-[-0.06em] text-stone-950 sm:text-5xl">
+                        Today’s coaching board
+                    </h1>
+                    <p className="mt-3 max-w-2xl text-sm leading-7 text-stone-700">
+                        {viewer.name}, this is your app home: athletes, schedule, programs, messages, and missing logs. Admin controls stay in the backend.
+                    </p>
+                    <div className="mt-5 grid gap-2 sm:flex sm:flex-wrap">
+                        <Button asChild className="h-12 rounded-2xl bg-amber-500 text-stone-950 hover:bg-amber-400">
+                            <Link href="/training">
+                                Open programs
+                                <Dumbbell className="size-4" />
+                            </Link>
+                        </Button>
+                        <Button asChild variant="outline" className="h-12 rounded-2xl border-stone-300 bg-white">
+                            <Link href="/roster/invites">
+                                Invite athlete
+                                <MailPlus className="size-4" />
+                            </Link>
+                        </Button>
+                        <Button asChild variant="outline" className="h-12 rounded-2xl border-stone-300 bg-white">
+                            <Link href="/messages">
+                                Messages
+                                <MessageCircle className="size-4" />
+                            </Link>
+                        </Button>
+                    </div>
                 </section>
 
-                <WorkspacePanel title="Assigned athletes" description="Only athletes actively assigned to you are shown here." contentClassName="p-0">
+                <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+                    <SummaryTile label="Athletes" value={String(summary.assignedAthletes)} note="Active relationships." icon={Users} />
+                    <SummaryTile label="Programs" value={String(summary.activePrograms)} note="Live blocks." icon={Dumbbell} />
+                    <SummaryTile label="Schedule" value={String(summary.upcomingSessions)} note="Upcoming sessions." icon={CalendarDays} />
+                    <SummaryTile label="Missing" value={String(summary.pendingLogs)} note="Needs follow-up." icon={CheckCircle2} />
+                    <SummaryTile label="Messages" value={String(summary.unreadMessages)} note="Waiting replies." icon={MessageCircle} />
+                </section>
+
+                <MobileSection title="Schedule" description="Upcoming sessions from your programs. Tap athlete names for detail.">
+                    {schedule.length === 0 ? (
+                        <EmptyMobileState message="No sessions scheduled over the next 14 days." />
+                    ) : (
+                        <div className="space-y-3" id="schedule">
+                            {schedule.slice(0, 8).map((session) => (
+                                <article key={session.id} className="rounded-[1.35rem] border border-stone-200 bg-white p-4 shadow-[0_18px_38px_-34px_rgba(15,23,42,0.35)]">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="text-xs font-semibold tracking-[0.16em] text-stone-400 uppercase">{formatDate(session.scheduledDate)}</p>
+                                            <p className="mt-1 font-semibold text-stone-950">{session.title}</p>
+                                            <Link href={route('athletes.show', session.athlete.id)} className="mt-1 inline-flex text-sm font-semibold text-amber-800">
+                                                {session.athlete.name}
+                                            </Link>
+                                        </div>
+                                        <Badge variant={badgeVariant(session.completionStatus)}>{humanize(session.completionStatus)}</Badge>
+                                    </div>
+                                    <p className="mt-3 text-sm leading-6 text-stone-600">{session.exercisePreview.join(', ') || session.focus || 'No exercises entered.'}</p>
+                                    <div className="mt-3 flex items-center justify-between text-sm text-stone-500">
+                                        <span>{session.program.title}</span>
+                                        <span>{session.mediaCount} media</span>
+                                    </div>
+                                </article>
+                            ))}
+                        </div>
+                    )}
+                </MobileSection>
+
+                <MobileSection title="Athletes" description="Assigned athletes and what needs attention.">
+                    {athletes.length === 0 ? (
+                        <EmptyMobileState message="No athletes are assigned yet." />
+                    ) : (
+                        <div className="space-y-3">
+                            {athletes.map((athlete) => (
+                                <article key={athlete.id} className="rounded-[1.35rem] border border-stone-200 bg-white p-4 shadow-[0_18px_38px_-34px_rgba(15,23,42,0.35)]">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <Link href={route('athletes.show', athlete.id)} className="font-semibold text-stone-950">
+                                                {athlete.name}
+                                            </Link>
+                                            <p className="mt-1 text-sm text-stone-500">{athlete.email}</p>
+                                        </div>
+                                        <Badge variant={athlete.membershipNeedsAttention ? 'destructive' : 'outline'}>{humanize(athlete.membershipStatus)}</Badge>
+                                    </div>
+                                    <p className="mt-3 text-sm leading-6 text-stone-600">{athlete.goal ?? 'No goal set.'}</p>
+                                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                                        <div className="rounded-2xl bg-stone-50 p-3">
+                                            <span className="block text-stone-400">Devices</span>
+                                            <span className="font-semibold text-stone-900">{athlete.connectedDevices}</span>
+                                        </div>
+                                        <div className="rounded-2xl bg-stone-50 p-3">
+                                            <span className="block text-stone-400">Check-in</span>
+                                            <span className="font-semibold text-stone-900">{formatDate(athlete.latestCheckInAt)}</span>
+                                        </div>
+                                    </div>
+                                    <Button asChild variant="outline" className="mt-3 h-11 w-full rounded-2xl">
+                                        <Link href={route('athletes.show', athlete.id)}>
+                                            Open profile
+                                            <ArrowRight className="size-4" />
+                                        </Link>
+                                    </Button>
+                                </article>
+                            ))}
+                        </div>
+                    )}
+                </MobileSection>
+
+                <WorkspacePanel title="Assigned athletes" description="Only athletes actively assigned to you are shown here." contentClassName="p-0" className="hidden md:block">
                     <WorkspaceTable minWidth="min-w-[960px]">
                         <WorkspaceTableHeader labels={['Athlete', 'Goal', 'Membership', 'Devices', 'Check-in', 'Program', 'Actions']} />
                         {athletes.length === 0 ? (
@@ -206,7 +299,7 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                     </WorkspaceTable>
                 </WorkspacePanel>
 
-                <div id="schedule" className="scroll-mt-8">
+                <div id="schedule" className="hidden scroll-mt-8 md:block">
                     <WorkspacePanel title="Schedule" description="Upcoming sessions from your own programs only." contentClassName="p-0">
                         <WorkspaceTable minWidth="min-w-[980px]">
                             <WorkspaceTableHeader labels={['Date', 'Athlete', 'Program', 'Workout', 'Exercises', 'Media', 'Status']} />
@@ -241,7 +334,48 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                     </WorkspacePanel>
                 </div>
 
-                <section className="grid gap-6 xl:grid-cols-2">
+                <MobileSection title="Programs" description="Active and draft blocks you own.">
+                    {programs.length === 0 ? (
+                        <EmptyMobileState message="No programs found." />
+                    ) : (
+                        <div className="space-y-3">
+                            {programs.slice(0, 8).map((program) => (
+                                <article key={program.id} className="rounded-[1.35rem] border border-stone-200 bg-white p-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="font-semibold text-stone-950">{program.title}</p>
+                                            <p className="mt-1 text-sm text-stone-600">{program.athlete.name}</p>
+                                        </div>
+                                        <Badge variant={badgeVariant(program.status)}>{humanize(program.status)}</Badge>
+                                    </div>
+                                    <p className="mt-3 text-sm text-stone-600">{program.completedSessionCount}/{program.sessionCount} sessions complete</p>
+                                    <p className="mt-1 text-sm text-stone-500">Next: {formatDate(program.nextSessionDate)}</p>
+                                </article>
+                            ))}
+                        </div>
+                    )}
+                </MobileSection>
+
+                <MobileSection title="Pending logs" description="Past sessions still missing athlete execution data.">
+                    {pendingLogs.length === 0 ? (
+                        <EmptyMobileState message="No pending logs. Clean." />
+                    ) : (
+                        <div className="space-y-3">
+                            {pendingLogs.map((log) => (
+                                <article key={log.id} className="rounded-[1.35rem] border border-stone-200 bg-white p-4">
+                                    <p className="text-xs font-semibold tracking-[0.16em] text-stone-400 uppercase">{formatDate(log.scheduledDate)}</p>
+                                    <p className="mt-1 font-semibold text-stone-950">{log.title}</p>
+                                    <Link href={route('athletes.show', log.athleteId)} className="mt-2 inline-flex text-sm font-semibold text-amber-800">
+                                        {log.athleteName}
+                                    </Link>
+                                    <p className="mt-2 text-sm text-stone-600">{log.programTitle}</p>
+                                </article>
+                            ))}
+                        </div>
+                    )}
+                </MobileSection>
+
+                <section className="hidden gap-6 md:grid xl:grid-cols-2">
                     <WorkspacePanel title="Owned programs" description="Active and draft blocks currently assigned by you." contentClassName="p-0">
                         <WorkspaceTable minWidth="min-w-[780px]">
                             <WorkspaceTableHeader labels={['Program', 'Athlete', 'Sessions', 'Next', 'Status']} />
@@ -295,6 +429,6 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                     </WorkspacePanel>
                 </section>
             </div>
-        </AppLayout>
+        </CoachAppShell>
     );
 }
