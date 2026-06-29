@@ -441,17 +441,17 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                     </div>
                 </header>
 
-                <div className="grid grid-cols-3 gap-2 rounded-[1.5rem] border border-stone-200 bg-white p-2">
-                    <button type="button" onClick={() => setTab('workout')} className={`rounded-[1.05rem] px-4 py-3 text-sm font-semibold ${tabClass(tab === 'workout')}`}>
-                        <ListChecks className="mr-2 inline size-4" />
+                <div className="grid grid-cols-3 gap-1 rounded-[1.5rem] border border-stone-200 bg-white p-1.5 sm:gap-2 sm:p-2">
+                    <button type="button" onClick={() => setTab('workout')} className={`rounded-[1.05rem] px-2 py-3 text-xs font-semibold sm:px-4 sm:text-sm ${tabClass(tab === 'workout')}`}>
+                        <ListChecks className="mr-1 hidden size-4 min-[380px]:inline sm:mr-2" />
                         Workout
                     </button>
-                    <button type="button" onClick={() => setTab('journal')} className={`rounded-[1.05rem] px-4 py-3 text-sm font-semibold ${tabClass(tab === 'journal')}`}>
-                        <FileText className="mr-2 inline size-4" />
+                    <button type="button" onClick={() => setTab('journal')} className={`rounded-[1.05rem] px-2 py-3 text-xs font-semibold sm:px-4 sm:text-sm ${tabClass(tab === 'journal')}`}>
+                        <FileText className="mr-1 hidden size-4 min-[380px]:inline sm:mr-2" />
                         Journal
                     </button>
-                    <button type="button" onClick={() => setTab('media')} className={`rounded-[1.05rem] px-4 py-3 text-sm font-semibold ${tabClass(tab === 'media')}`}>
-                        <Film className="mr-2 inline size-4" />
+                    <button type="button" onClick={() => setTab('media')} className={`rounded-[1.05rem] px-2 py-3 text-xs font-semibold sm:px-4 sm:text-sm ${tabClass(tab === 'media')}`}>
+                        <Film className="mr-1 hidden size-4 min-[380px]:inline sm:mr-2" />
                         Media
                     </button>
                 </div>
@@ -516,7 +516,92 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                                     </div>
                                 </div>
 
-                                <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
+                                <div className="space-y-3 md:hidden">
+                                    {currentSetRows.length === 0 ? (
+                                        <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-5 text-sm text-stone-600">
+                                            No set rows for this exercise.
+                                        </div>
+                                    ) : (
+                                        currentSetRows.map((set) => {
+                                            const target = execution.setLogs.find(
+                                                (row) => row.exerciseIndex === set.exercise_index && row.setNumber === set.set_number,
+                                            );
+
+                                            return (
+                                                <div key={`${set.exercise_index}-${set.set_number}`} className="rounded-2xl border border-stone-200 bg-white p-4">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div>
+                                                            <p className="text-xs font-semibold tracking-[0.18em] text-stone-400 uppercase">Set {set.set_number}</p>
+                                                            <p className="mt-1 text-sm text-stone-600">
+                                                                Target: {target?.targetReps ?? 'N/A'} · {target?.targetLoad ?? 'N/A'}
+                                                            </p>
+                                                        </div>
+                                                        <label className="flex items-center gap-2 rounded-full border border-stone-200 px-3 py-2 text-xs font-semibold text-stone-700">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={set.completed}
+                                                                onChange={(event) =>
+                                                                    updateSet(set.exercise_index, set.set_number, { completed: event.target.checked })
+                                                                }
+                                                                className="size-4 rounded border-stone-300 text-emerald-700"
+                                                            />
+                                                            Done
+                                                        </label>
+                                                    </div>
+                                                    <div className="mt-3 grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">Actual reps/time</label>
+                                                            <Input
+                                                                value={set.actual_reps}
+                                                                onChange={(event) =>
+                                                                    updateSet(set.exercise_index, set.set_number, { actual_reps: event.target.value })
+                                                                }
+                                                                placeholder="8 or 40s"
+                                                                className="mt-1 h-11"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">Actual load</label>
+                                                            <Input
+                                                                value={set.actual_load}
+                                                                onChange={(event) =>
+                                                                    updateSet(set.exercise_index, set.set_number, { actual_load: event.target.value })
+                                                                }
+                                                                placeholder="120 kg"
+                                                                className="mt-1 h-11"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">RPE</label>
+                                                            <Input
+                                                                type="number"
+                                                                min="1"
+                                                                max="10"
+                                                                value={set.actual_rpe}
+                                                                onChange={(event) =>
+                                                                    updateSet(set.exercise_index, set.set_number, { actual_rpe: event.target.value })
+                                                                }
+                                                                placeholder="8"
+                                                                className="mt-1 h-11"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">Notes</label>
+                                                            <Input
+                                                                value={set.notes}
+                                                                onChange={(event) => updateSet(set.exercise_index, set.set_number, { notes: event.target.value })}
+                                                                placeholder="Optional"
+                                                                className="mt-1 h-11"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+
+                                <div className="hidden overflow-x-auto rounded-2xl border border-stone-200 bg-white md:block">
                                     <table className="w-full min-w-[860px] text-left text-sm">
                                         <thead className="bg-stone-50 text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
                                             <tr>

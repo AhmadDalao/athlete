@@ -94,12 +94,12 @@ export function AthletePanel({
     contentClassName?: string;
 }) {
     return (
-        <Card className={cn('border-stone-200/75 bg-white/92 shadow-[0_24px_60px_-46px_rgba(15,23,42,0.65)]', className)}>
-            <CardHeader>
-                <CardTitle className="text-xl tracking-[-0.03em] text-stone-950">{title}</CardTitle>
+        <Card className={cn('overflow-hidden border-stone-200/75 bg-white/92 shadow-[0_24px_60px_-46px_rgba(15,23,42,0.65)]', className)}>
+            <CardHeader className="p-4 pb-3 md:p-6">
+                <CardTitle className="text-lg tracking-[-0.03em] text-stone-950 md:text-xl">{title}</CardTitle>
                 {description && <CardDescription className="max-w-3xl leading-6 text-stone-600">{description}</CardDescription>}
             </CardHeader>
-            <CardContent className={contentClassName}>{children}</CardContent>
+            <CardContent className={cn('p-4 pt-0 md:p-6 md:pt-0', contentClassName)}>{children}</CardContent>
         </Card>
     );
 }

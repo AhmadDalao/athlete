@@ -99,6 +99,46 @@ function exerciseLine(exercise: ExerciseRow) {
         .join(' · ');
 }
 
+function ProgramSessionCard({ session }: { session: ProgramSession }) {
+    return (
+        <article className="rounded-[1.25rem] border border-stone-200 bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <p className="text-xs font-semibold tracking-[0.18em] text-stone-400 uppercase">{formatDate(session.scheduledDate)}</p>
+                    <p className="mt-1 truncate font-semibold text-stone-950">{session.title}</p>
+                    <p className="mt-1 text-sm text-stone-600">{session.focus ?? 'Training'}</p>
+                </div>
+                <Badge variant={session.completionStatus === 'completed' ? 'default' : 'outline'} className="shrink-0 capitalize">
+                    {statusLabel(session.completionStatus)}
+                </Badge>
+            </div>
+            {session.instructions && <p className="mt-3 line-clamp-2 text-sm leading-6 text-stone-600">{session.instructions}</p>}
+            <div className="mt-3 space-y-2">
+                {session.exercises.length === 0 ? (
+                    <p className="text-sm text-stone-600">No exercises entered.</p>
+                ) : (
+                    session.exercises.slice(0, 3).map((exercise) => (
+                        <div key={`${session.id}-${exercise.name}`} className="rounded-2xl bg-stone-50 p-3 text-sm">
+                            <p className="font-semibold text-stone-950">{exercise.name}</p>
+                            <p className="mt-1 text-stone-600">{exerciseLine(exercise) || 'No prescription entered'}</p>
+                        </div>
+                    ))
+                )}
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm text-stone-600">
+                    {session.videoUrl && <Video className="size-4 text-emerald-700" />}
+                    {session.mediaItems.some((item) => item.type === 'image') && <Image className="size-4 text-amber-600" />}
+                    <span>{session.mediaCount > 0 ? `${session.mediaCount} media` : 'No media'}</span>
+                </div>
+                <Button asChild size="sm" className="rounded-xl bg-emerald-800 text-white hover:bg-emerald-900">
+                    <Link href={route('athlete.workouts.show', session.id)}>{session.completionStatus === 'scheduled' ? 'Start' : 'Open'}</Link>
+                </Button>
+            </div>
+        </article>
+    );
+}
+
 export default function AthleteProgramShow({ program }: AthleteProgramProps) {
     const imageItems = program.sessions.flatMap((session) => session.mediaItems.filter((item) => item.type === 'image').map((item) => ({ ...item, session })));
     const videoCount = program.sessions.filter((session) => session.videoUrl).length;
@@ -120,11 +160,11 @@ export default function AthleteProgramShow({ program }: AthleteProgramProps) {
                     </Badge>
                 </div>
 
-                <section className="overflow-hidden rounded-[2rem] bg-emerald-800 p-6 text-white shadow-[0_28px_70px_-46px_rgba(6,78,59,0.9)] md:p-8">
+                <section className="overflow-hidden rounded-[1.75rem] bg-emerald-800 p-5 text-white shadow-[0_28px_70px_-46px_rgba(6,78,59,0.9)] md:rounded-[2rem] md:p-8">
                     <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
                         <div>
                             <p className="text-xs font-semibold tracking-[0.22em] text-emerald-100 uppercase">Assigned program</p>
-                            <h1 className="mt-3 font-['Space_Grotesk'] text-4xl leading-tight font-bold tracking-[-0.05em] md:text-5xl">{program.title}</h1>
+                            <h1 className="mt-3 font-['Space_Grotesk'] text-3xl leading-tight font-bold tracking-[-0.05em] md:text-5xl">{program.title}</h1>
                             <p className="mt-4 max-w-3xl text-sm leading-7 text-emerald-50">{program.goal ?? 'No program goal written yet.'}</p>
                         </div>
                         <div className="rounded-3xl border border-white/15 bg-white/10 p-5">
@@ -151,7 +191,7 @@ export default function AthleteProgramShow({ program }: AthleteProgramProps) {
                     </div>
                 </section>
 
-                <div className="grid gap-3 md:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                     <div className="rounded-2xl border border-stone-200 bg-white p-4">
                         <CalendarDays className="size-4 text-emerald-700" />
                         <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-stone-950">{program.sessionCount}</p>
@@ -175,7 +215,12 @@ export default function AthleteProgramShow({ program }: AthleteProgramProps) {
                 </div>
 
                 <AthletePanel title="Program sessions" description="Open any row to execute the workout, record set completion, and review media.">
-                    <div className="overflow-hidden rounded-[1.35rem] border border-stone-200 bg-white">
+                    <div className="space-y-3 md:hidden">
+                        {program.sessions.map((session) => (
+                            <ProgramSessionCard key={session.id} session={session} />
+                        ))}
+                    </div>
+                    <div className="hidden overflow-hidden rounded-[1.35rem] border border-stone-200 bg-white md:block">
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[980px] text-left text-sm">
                                 <thead className="bg-stone-50 text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
@@ -246,7 +291,7 @@ export default function AthleteProgramShow({ program }: AthleteProgramProps) {
                     ) : (
                         <div className="flex gap-4 overflow-x-auto pb-2">
                             {imageItems.map((item) => (
-                                <a key={`${item.session.id}-${item.url}`} href={item.url} target="_blank" rel="noreferrer" className="min-w-72 overflow-hidden rounded-2xl border border-stone-200 bg-white">
+                                <a key={`${item.session.id}-${item.url}`} href={item.url} target="_blank" rel="noreferrer" className="w-72 shrink-0 overflow-hidden rounded-2xl border border-stone-200 bg-white">
                                     <img src={item.url} alt={item.title ?? item.session.title} className="h-44 w-full object-cover" />
                                     <div className="p-4">
                                         <p className="font-semibold text-stone-950">{item.title ?? 'Workout reference'}</p>

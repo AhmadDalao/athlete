@@ -294,11 +294,11 @@ function statusLabel(status: string) {
 
 function TopHeader({ props }: { props: AthleteAppHomeProps }) {
     return (
-        <section className="overflow-hidden rounded-b-[2.2rem] bg-emerald-800 px-5 pt-8 pb-7 text-white shadow-[0_28px_70px_-46px_rgba(6,78,59,0.9)] md:mx-6 md:mt-6 md:rounded-[2.2rem] md:px-8">
+        <section className="overflow-hidden rounded-b-[1.75rem] bg-emerald-800 px-4 pt-5 pb-5 text-white shadow-[0_28px_70px_-46px_rgba(6,78,59,0.9)] md:mx-6 md:mt-6 md:rounded-[2.2rem] md:px-8 md:pt-8 md:pb-7">
             <div className="flex items-start justify-between gap-4">
                 <div className="space-y-2">
                     <Badge className="rounded-full bg-white/15 text-white hover:bg-white/15">Athlete app</Badge>
-                    <h1 className="font-['Space_Grotesk'] text-3xl leading-tight font-bold tracking-[-0.04em] sm:text-5xl">
+                    <h1 className="font-['Space_Grotesk'] text-2xl leading-tight font-bold tracking-[-0.04em] sm:text-5xl">
                         {props.viewer.name}
                     </h1>
                     <p className="max-w-2xl text-sm leading-6 text-emerald-50">
@@ -328,8 +328,42 @@ function ProgramsPanel({ programs }: { programs: ProgramSummary[] }) {
                     <p className="mt-2 text-sm leading-6 text-stone-600">When your coach assigns a program, it will appear here with its schedule and media.</p>
                 </div>
             ) : (
-                <div className="overflow-hidden rounded-[1.35rem] border border-stone-200 bg-white">
-                    <div className="overflow-x-auto">
+                <>
+                    <div className="space-y-3 md:hidden">
+                        {programs.map((program) => (
+                            <article key={program.id} className="rounded-[1.25rem] border border-stone-200 bg-white p-4">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <Link href={route('athlete.programs.show', program.id)} className="block truncate font-semibold text-stone-950">
+                                            {program.title}
+                                        </Link>
+                                        <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{program.goal ?? 'No goal written yet.'}</p>
+                                    </div>
+                                    <Badge variant="outline" className="shrink-0 capitalize">
+                                        {statusLabel(program.status)}
+                                    </Badge>
+                                </div>
+                                <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                                    <div className="rounded-2xl bg-stone-50 p-3">
+                                        <span className="block text-stone-400">Sessions</span>
+                                        <span className="font-semibold text-stone-950">
+                                            {program.completedSessionCount}/{program.sessionCount}
+                                        </span>
+                                    </div>
+                                    <div className="rounded-2xl bg-stone-50 p-3">
+                                        <span className="block text-stone-400">Next</span>
+                                        <span className="font-semibold text-stone-950">{formatDate(program.nextSessionDate)}</span>
+                                    </div>
+                                </div>
+                                <Button asChild className="mt-3 h-11 w-full rounded-2xl bg-emerald-800 text-white hover:bg-emerald-900">
+                                    <Link href={route('athlete.programs.show', program.id)}>Open program</Link>
+                                </Button>
+                            </article>
+                        ))}
+                    </div>
+
+                    <div className="hidden overflow-hidden rounded-[1.35rem] border border-stone-200 bg-white md:block">
+                        <div className="overflow-x-auto">
                         <table className="w-full min-w-[760px] text-left text-sm">
                             <thead className="bg-stone-50 text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
                                 <tr>
@@ -372,10 +406,49 @@ function ProgramsPanel({ programs }: { programs: ProgramSummary[] }) {
                                 ))}
                             </tbody>
                         </table>
+                        </div>
                     </div>
-                </div>
+                </>
             )}
         </AthletePanel>
+    );
+}
+
+function DailyWorkoutCard({ session }: { session: SelectedDaySession }) {
+    return (
+        <article className="rounded-[1.25rem] border border-stone-200 bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <p className="truncate font-semibold text-stone-950">{session.title}</p>
+                    <p className="mt-1 text-sm text-stone-600">{session.focus ?? 'Training session'}</p>
+                </div>
+                <Badge variant={session.completionStatus === 'completed' ? 'default' : 'outline'} className="shrink-0 capitalize">
+                    {statusLabel(session.completionStatus)}
+                </Badge>
+            </div>
+            <div className="mt-3 space-y-1 text-sm text-stone-600">
+                <p>
+                    <span className="font-semibold text-stone-900">Coach:</span> {session.coach.name}
+                </p>
+                <p>
+                    <span className="font-semibold text-stone-900">Program:</span> {session.program.title}
+                </p>
+                <p>
+                    <span className="font-semibold text-stone-900">Work:</span>{' '}
+                    {session.exercisePreview.length > 0 ? session.exercisePreview.slice(0, 2).join(' · ') : 'No exercises entered'}
+                </p>
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm text-stone-600">
+                    {session.videoUrl && <Video className="size-4 text-emerald-700" />}
+                    {session.mediaCount > 0 && <Image className="size-4 text-amber-600" />}
+                    <span>{session.videoUrl || session.mediaCount > 0 ? `${session.mediaCount} media` : 'No media'}</span>
+                </div>
+                <Button asChild size="sm" className="rounded-xl bg-emerald-800 text-white hover:bg-emerald-900">
+                    <Link href={route('athlete.workouts.show', session.id)}>{session.completionStatus === 'scheduled' ? 'Start' : 'Open'}</Link>
+                </Button>
+            </div>
+        </article>
     );
 }
 
@@ -397,26 +470,53 @@ function CalendarPanel({ schedule, sessions, rangeDays }: { schedule: AthleteApp
                         <p className="text-xs font-semibold tracking-[0.18em] text-stone-400 uppercase">Selected day</p>
                         <p className="mt-1 text-xl font-semibold tracking-[-0.03em] text-stone-950">{selectedDate}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button asChild variant="outline" size="sm">
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:flex sm:items-center">
+                        <Button asChild variant="outline" size="sm" className="justify-center">
                             <Link href={monthHref(schedule.previousMonth)}>
                                 <ChevronLeft className="size-4" />
-                                Previous
+                                <span className="hidden min-[380px]:inline">Previous</span>
                             </Link>
                         </Button>
-                        <Badge variant="outline" className="rounded-full px-3 py-1.5 text-stone-700">
+                        <Badge variant="outline" className="justify-center rounded-full px-3 py-1.5 text-center text-stone-700">
                             {schedule.monthLabel}
                         </Badge>
-                        <Button asChild variant="outline" size="sm">
+                        <Button asChild variant="outline" size="sm" className="justify-center">
                             <Link href={monthHref(schedule.nextMonth)}>
-                                Next
+                                <span className="hidden min-[380px]:inline">Next</span>
                                 <ChevronRight className="size-4" />
                             </Link>
                         </Button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-7 gap-2">
+                <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-2 md:hidden">
+                    {schedule.days.map((day) => (
+                        <Link
+                            key={day.date}
+                            href={dayHref(day)}
+                            preserveScroll
+                            preserveState
+                            className={[
+                                'min-h-24 w-20 shrink-0 snap-start rounded-2xl border p-3 text-left transition',
+                                day.isSelected
+                                    ? 'border-emerald-700 bg-emerald-700 text-white shadow-[0_14px_36px_-25px_rgba(4,120,87,0.8)]'
+                                    : day.sessionCount > 0
+                                      ? 'border-emerald-200 bg-emerald-50 text-stone-950'
+                                      : 'border-stone-200 bg-white text-stone-500',
+                            ].join(' ')}
+                        >
+                            <span className="block text-[0.62rem] font-semibold tracking-[0.16em] uppercase opacity-70">{day.weekday}</span>
+                            <span className="mt-1 block text-2xl font-semibold tracking-[-0.04em]">{day.dayNumber}</span>
+                            <span className="mt-1 flex items-center gap-1 text-[0.68rem] font-medium">
+                                {day.sessionCount > 0 ? `${day.sessionCount}x` : 'Rest'}
+                                {day.hasMedia && <Video className="size-3" />}
+                            </span>
+                            {day.isToday && <span className="mt-1 block text-[0.68rem] font-semibold">Today</span>}
+                        </Link>
+                    ))}
+                </div>
+
+                <div className="hidden grid-cols-7 gap-2 md:grid">
                     {schedule.days.map((day) => (
                         <Link
                             key={day.date}
@@ -450,7 +550,13 @@ function CalendarPanel({ schedule, sessions, rangeDays }: { schedule: AthleteApp
                     {sessions.length === 0 ? (
                         <div className="p-5 text-sm leading-6 text-stone-600">No scheduled workout for this day.</div>
                     ) : (
-                        <div className="overflow-x-auto">
+                        <>
+                        <div className="space-y-3 p-3 md:hidden">
+                            {sessions.map((session) => (
+                                <DailyWorkoutCard key={session.id} session={session} />
+                            ))}
+                        </div>
+                        <div className="hidden overflow-x-auto md:block">
                             <table className="w-full min-w-[860px] text-left text-sm">
                                 <thead className="bg-white text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
                                     <tr>
@@ -507,6 +613,7 @@ function CalendarPanel({ schedule, sessions, rangeDays }: { schedule: AthleteApp
                                 </tbody>
                             </table>
                         </div>
+                        </>
                     )}
                 </div>
             </div>
