@@ -266,6 +266,8 @@ interface AthleteAppHomeProps {
     charts: AthleteCharts;
 }
 
+const calendarWeekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 function formatDate(value: string | null) {
     if (!value) {
         return 'Not set';
@@ -290,6 +292,12 @@ function exerciseLine(exercise: ExerciseRow) {
 
 function statusLabel(status: string) {
     return status.replace(/_/g, ' ');
+}
+
+function leadingCalendarBlanks(month: string) {
+    const firstDay = new Date(`${month}-01T00:00:00`);
+
+    return Number.isNaN(firstDay.getTime()) ? 0 : firstDay.getDay();
 }
 
 function TopHeader({ props }: { props: AthleteAppHomeProps }) {
@@ -456,6 +464,7 @@ function CalendarPanel({ schedule, sessions, rangeDays }: { schedule: AthleteApp
     const selectedDate = formatDate(schedule.selectedDate);
     const monthHref = (month: string) => `/app?month=${month}&date=${month}-01&range=${rangeDays}`;
     const dayHref = (day: ScheduleDay) => `/app?month=${schedule.month}&date=${day.date}&range=${rangeDays}`;
+    const blankDays = Array.from({ length: leadingCalendarBlanks(schedule.month) });
 
     return (
         <AthletePanel
@@ -470,7 +479,7 @@ function CalendarPanel({ schedule, sessions, rangeDays }: { schedule: AthleteApp
                         <p className="text-xs font-semibold tracking-[0.18em] text-stone-400 uppercase">Selected day</p>
                         <p className="mt-1 text-xl font-semibold tracking-[-0.03em] text-stone-950">{selectedDate}</p>
                     </div>
-                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:flex sm:items-center">
+                    <div className="hidden grid-cols-[1fr_auto_1fr] items-center gap-2 sm:flex sm:items-center">
                         <Button asChild variant="outline" size="sm" className="justify-center">
                             <Link href={monthHref(schedule.previousMonth)}>
                                 <ChevronLeft className="size-4" />
@@ -489,31 +498,75 @@ function CalendarPanel({ schedule, sessions, rangeDays }: { schedule: AthleteApp
                     </div>
                 </div>
 
-                <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-2 md:hidden">
-                    {schedule.days.map((day) => (
-                        <Link
-                            key={day.date}
-                            href={dayHref(day)}
-                            preserveScroll
-                            preserveState
-                            className={[
-                                'min-h-24 w-20 shrink-0 snap-start rounded-2xl border p-3 text-left transition',
-                                day.isSelected
-                                    ? 'border-emerald-700 bg-emerald-700 text-white shadow-[0_14px_36px_-25px_rgba(4,120,87,0.8)]'
-                                    : day.sessionCount > 0
-                                      ? 'border-emerald-200 bg-emerald-50 text-stone-950'
-                                      : 'border-stone-200 bg-white text-stone-500',
-                            ].join(' ')}
-                        >
-                            <span className="block text-[0.62rem] font-semibold tracking-[0.16em] uppercase opacity-70">{day.weekday}</span>
-                            <span className="mt-1 block text-2xl font-semibold tracking-[-0.04em]">{day.dayNumber}</span>
-                            <span className="mt-1 flex items-center gap-1 text-[0.68rem] font-medium">
-                                {day.sessionCount > 0 ? `${day.sessionCount}x` : 'Rest'}
-                                {day.hasMedia && <Video className="size-3" />}
-                            </span>
-                            {day.isToday && <span className="mt-1 block text-[0.68rem] font-semibold">Today</span>}
-                        </Link>
-                    ))}
+                <div className="rounded-[1.5rem] border border-stone-200 bg-white p-3 shadow-[0_18px_45px_-42px_rgba(15,23,42,0.45)] md:hidden">
+                    <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-[0.68rem] font-semibold text-stone-500">
+                        <span className="inline-flex items-center gap-1">
+                            <span className="size-2 rounded-full bg-stone-300" />
+                            Rest
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                            <span className="size-2 rounded-full bg-emerald-500" />
+                            Workout
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                            <span className="size-2 rounded-full bg-emerald-800" />
+                            Selected
+                        </span>
+                    </div>
+
+                    <div className="mb-4 grid grid-cols-[2.5rem_1fr_2.5rem] items-center gap-2">
+                        <Button asChild variant="outline" size="icon" className="size-10 rounded-2xl bg-white">
+                            <Link href={monthHref(schedule.previousMonth)} aria-label="Previous month">
+                                <ChevronLeft className="size-4" />
+                            </Link>
+                        </Button>
+                        <p className="text-center text-lg font-semibold tracking-[-0.04em] text-stone-950">{schedule.monthLabel}</p>
+                        <Button asChild variant="outline" size="icon" className="size-10 rounded-2xl bg-white">
+                            <Link href={monthHref(schedule.nextMonth)} aria-label="Next month">
+                                <ChevronRight className="size-4" />
+                            </Link>
+                        </Button>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1 text-center text-[0.68rem] font-semibold text-stone-400">
+                        {calendarWeekdays.map((weekday) => (
+                            <span key={weekday}>{weekday}</span>
+                        ))}
+                    </div>
+                    <div className="mt-2 grid grid-cols-7 gap-1.5">
+                        {blankDays.map((_, index) => (
+                            <span key={`blank-${index}`} className="aspect-square" aria-hidden="true" />
+                        ))}
+                        {schedule.days.map((day) => (
+                            <Link
+                                key={day.date}
+                                href={dayHref(day)}
+                                preserveScroll
+                                preserveState
+                                aria-label={`${day.weekday} ${day.dayNumber}, ${day.sessionCount} workout${day.sessionCount === 1 ? '' : 's'}`}
+                                className={[
+                                    'relative flex aspect-square min-h-0 flex-col items-center justify-center rounded-xl border text-center transition',
+                                    day.isSelected
+                                        ? 'border-emerald-700 bg-emerald-700 text-white shadow-[0_12px_24px_-18px_rgba(4,120,87,0.85)]'
+                                        : day.sessionCount > 0
+                                          ? 'border-emerald-200 bg-emerald-50 text-stone-950'
+                                          : 'border-stone-100 bg-white text-stone-400',
+                                    day.isToday && !day.isSelected ? 'ring-1 ring-emerald-300' : '',
+                                ].join(' ')}
+                            >
+                                <span className="text-sm font-semibold leading-none">{day.dayNumber}</span>
+                                {day.sessionCount > 0 && (
+                                    <span
+                                        className={[
+                                            'absolute bottom-1.5 h-1 w-5 rounded-full',
+                                            day.isSelected ? 'bg-white' : 'bg-emerald-500',
+                                        ].join(' ')}
+                                    />
+                                )}
+                                {day.hasMedia && <Video className="absolute top-1 right-1 size-2.5 opacity-75" />}
+                            </Link>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="hidden grid-cols-7 gap-2 md:grid">
