@@ -215,7 +215,7 @@ export default function AthleteProgramShow({ program }: AthleteProgramProps) {
                 </div>
 
                 <AthletePanel title="Program sessions" description="Open any row to execute the workout, record set completion, and review media.">
-                    <div className="space-y-3 md:hidden">
+                    <div className="max-h-[42rem] space-y-3 overflow-y-auto pr-1 md:hidden">
                         {program.sessions.map((session) => (
                             <ProgramSessionCard key={session.id} session={session} />
                         ))}

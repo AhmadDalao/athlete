@@ -941,37 +941,75 @@ function HealthTrendsPanel({ charts, schedule }: { charts: AthleteCharts; schedu
                     </div>
                 </div>
 
-                <ChartSection title="Recovery" description="WHOOP-style signals that explain whether the athlete should push, control effort, or recover.">
-                    <TrendCard title="Readiness" points={charts.wearable.readiness} unit="%" accent="#047857" icon={HeartPulse} />
-                    <TrendCard title="Sleep" points={charts.wearable.sleepHours} unit="h" accent="#2563eb" icon={Moon} />
-                    <TrendCard title="Strain" points={charts.wearable.strain} accent="#f59e0b" icon={Activity} />
-                    <TrendCard title="HRV" points={charts.wearable.heartRateVariability} unit="ms" accent="#0d9488" icon={HeartPulse} />
-                    <TrendCard title="Resting HR" points={charts.wearable.restingHeartRate} unit=" bpm" accent="#dc2626" icon={Gauge} />
-                </ChartSection>
+                <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 md:hidden">
+                    {[
+                        {
+                            key: 'readiness',
+                            card: <TrendCard title="Readiness" points={charts.wearable.readiness} unit="%" accent="#047857" icon={HeartPulse} />,
+                        },
+                        {
+                            key: 'sleep',
+                            card: <TrendCard title="Sleep" points={charts.wearable.sleepHours} unit="h" accent="#2563eb" icon={Moon} />,
+                        },
+                        {
+                            key: 'strain',
+                            card: <TrendCard title="Strain" points={charts.wearable.strain} accent="#f59e0b" icon={Activity} />,
+                        },
+                        {
+                            key: 'weight',
+                            card: <TrendCard title="Weight" points={charts.progress.weightKg} unit="kg" accent="#44403c" icon={Scale} />,
+                        },
+                        {
+                            key: 'protein',
+                            card: <TrendCard title="Protein" points={charts.progress.proteinGrams} unit="g" type="bar" accent="#65a30d" icon={Utensils} />,
+                        },
+                        {
+                            key: 'hydration',
+                            card: <TrendCard title="Hydration" points={charts.progress.waterLiters} unit="L" type="bar" accent="#0284c7" icon={Droplets} />,
+                        },
+                    ].map((item) => (
+                        <div key={item.key} className="w-[18rem] shrink-0">
+                            {item.card}
+                        </div>
+                    ))}
+                </div>
+                <p className="text-sm leading-6 text-stone-600 md:hidden">
+                    Swipe the key trends here. Open Progress for the full food, body, hydration, and check-in board.
+                </p>
 
-                <ChartSection title="Activity" description="Daily movement and output from the wearable stream.">
-                    <TrendCard title="Steps" points={charts.wearable.steps} type="bar" accent="#16a34a" icon={Activity} />
-                    <TrendCard title="Burned calories" points={charts.wearable.caloriesBurned} type="bar" accent="#ea580c" icon={Flame} />
-                    <TrendCard title="Active minutes" points={charts.wearable.activeMinutes} unit="m" type="bar" accent="#0891b2" icon={Watch} />
-                </ChartSection>
+                <div className="hidden space-y-4 md:block">
+                    <ChartSection title="Recovery" description="WHOOP-style signals that explain whether the athlete should push, control effort, or recover.">
+                        <TrendCard title="Readiness" points={charts.wearable.readiness} unit="%" accent="#047857" icon={HeartPulse} />
+                        <TrendCard title="Sleep" points={charts.wearable.sleepHours} unit="h" accent="#2563eb" icon={Moon} />
+                        <TrendCard title="Strain" points={charts.wearable.strain} accent="#f59e0b" icon={Activity} />
+                        <TrendCard title="HRV" points={charts.wearable.heartRateVariability} unit="ms" accent="#0d9488" icon={HeartPulse} />
+                        <TrendCard title="Resting HR" points={charts.wearable.restingHeartRate} unit=" bpm" accent="#dc2626" icon={Gauge} />
+                    </ChartSection>
 
-                <ChartSection title="Nutrition and hydration" description="Manual food and water check-ins so coaching decisions are not based only on the watch.">
-                    <TrendCard title="Calories eaten" points={charts.progress.caloriesConsumed} type="bar" accent="#f97316" icon={Flame} />
-                    <TrendCard title="Protein" points={charts.progress.proteinGrams} unit="g" type="bar" accent="#65a30d" icon={Utensils} />
-                    <TrendCard title="Carbs" points={charts.progress.carbsGrams} unit="g" type="bar" accent="#eab308" icon={Utensils} />
-                    <TrendCard title="Fat" points={charts.progress.fatGrams} unit="g" type="bar" accent="#a16207" icon={Utensils} />
-                    <TrendCard title="Hydration" points={charts.progress.waterLiters} unit="L" type="bar" accent="#0284c7" icon={Droplets} />
-                </ChartSection>
+                    <ChartSection title="Activity" description="Daily movement and output from the wearable stream.">
+                        <TrendCard title="Steps" points={charts.wearable.steps} type="bar" accent="#16a34a" icon={Activity} />
+                        <TrendCard title="Burned calories" points={charts.wearable.caloriesBurned} type="bar" accent="#ea580c" icon={Flame} />
+                        <TrendCard title="Active minutes" points={charts.wearable.activeMinutes} unit="m" type="bar" accent="#0891b2" icon={Watch} />
+                    </ChartSection>
 
-                <ChartSection title="Body and daily feel" description="Body metrics plus the subjective scores that explain why a session felt strong or rough.">
-                    <TrendCard title="Weight" points={charts.progress.weightKg} unit="kg" accent="#44403c" icon={Scale} />
-                    <TrendCard title="Body fat" points={charts.progress.bodyFatPercentage} unit="%" accent="#78716c" icon={Scale} />
-                    <TrendCard title="Waist" points={charts.progress.waistCm} unit="cm" accent="#57534e" icon={Scale} />
-                    <TrendCard title="Energy" points={charts.progress.energyScore} unit="/10" accent="#16a34a" icon={TrendingUp} />
-                    <TrendCard title="Soreness" points={charts.progress.sorenessScore} unit="/10" accent="#be123c" icon={Dumbbell} />
-                    <TrendCard title="Stress" points={charts.progress.stressScore} unit="/10" accent="#7c3aed" icon={HeartPulse} />
-                    <TrendCard title="Sleep quality" points={charts.progress.sleepQualityScore} unit="/10" accent="#2563eb" icon={Moon} />
-                </ChartSection>
+                    <ChartSection title="Nutrition and hydration" description="Manual food and water check-ins so coaching decisions are not based only on the watch.">
+                        <TrendCard title="Calories eaten" points={charts.progress.caloriesConsumed} type="bar" accent="#f97316" icon={Flame} />
+                        <TrendCard title="Protein" points={charts.progress.proteinGrams} unit="g" type="bar" accent="#65a30d" icon={Utensils} />
+                        <TrendCard title="Carbs" points={charts.progress.carbsGrams} unit="g" type="bar" accent="#eab308" icon={Utensils} />
+                        <TrendCard title="Fat" points={charts.progress.fatGrams} unit="g" type="bar" accent="#a16207" icon={Utensils} />
+                        <TrendCard title="Hydration" points={charts.progress.waterLiters} unit="L" type="bar" accent="#0284c7" icon={Droplets} />
+                    </ChartSection>
+
+                    <ChartSection title="Body and daily feel" description="Body metrics plus the subjective scores that explain why a session felt strong or rough.">
+                        <TrendCard title="Weight" points={charts.progress.weightKg} unit="kg" accent="#44403c" icon={Scale} />
+                        <TrendCard title="Body fat" points={charts.progress.bodyFatPercentage} unit="%" accent="#78716c" icon={Scale} />
+                        <TrendCard title="Waist" points={charts.progress.waistCm} unit="cm" accent="#57534e" icon={Scale} />
+                        <TrendCard title="Energy" points={charts.progress.energyScore} unit="/10" accent="#16a34a" icon={TrendingUp} />
+                        <TrendCard title="Soreness" points={charts.progress.sorenessScore} unit="/10" accent="#be123c" icon={Dumbbell} />
+                        <TrendCard title="Stress" points={charts.progress.stressScore} unit="/10" accent="#7c3aed" icon={HeartPulse} />
+                        <TrendCard title="Sleep quality" points={charts.progress.sleepQualityScore} unit="/10" accent="#2563eb" icon={Moon} />
+                    </ChartSection>
+                </div>
             </div>
         </AthletePanel>
     );
