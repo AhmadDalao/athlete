@@ -3,7 +3,6 @@ import { AthletePanel, ReadinessDial } from '@/components/athlete-page-primitive
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Head, Link, router } from '@inertiajs/react';
-import type { ReactNode } from 'react';
 import {
     Activity,
     ArrowRight,
@@ -27,6 +26,7 @@ import {
     Video,
     Watch,
 } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 interface WorkoutSetLogRow {
     exerciseIndex: number;
@@ -306,11 +306,10 @@ function TopHeader({ props }: { props: AthleteAppHomeProps }) {
             <div className="flex items-start justify-between gap-4">
                 <div className="space-y-2">
                     <Badge className="rounded-full bg-white/15 text-white hover:bg-white/15">Athlete app</Badge>
-                    <h1 className="font-['Space_Grotesk'] text-2xl leading-tight font-bold tracking-[-0.04em] sm:text-5xl">
-                        {props.viewer.name}
-                    </h1>
+                    <h1 className="font-['Space_Grotesk'] text-2xl leading-tight font-bold tracking-[-0.04em] sm:text-5xl">{props.viewer.name}</h1>
                     <p className="max-w-2xl text-sm leading-6 text-emerald-50">
-                        Coach: {props.coach?.name ?? props.coaches[0]?.name ?? 'Not assigned yet'} · Programs: {props.programs.length || 'No active blocks'}
+                        Coach: {props.coach?.name ?? props.coaches[0]?.name ?? 'Not assigned yet'} · Programs:{' '}
+                        {props.programs.length || 'No active blocks'}
                     </p>
                 </div>
                 <div className="hidden rounded-3xl border border-white/15 bg-white/10 p-4 text-right md:block">
@@ -333,7 +332,9 @@ function ProgramsPanel({ programs }: { programs: ProgramSummary[] }) {
             {programs.length === 0 ? (
                 <div className="rounded-[1.5rem] border border-dashed border-stone-300 bg-stone-50 p-5">
                     <p className="font-medium text-stone-950">No assigned programs yet.</p>
-                    <p className="mt-2 text-sm leading-6 text-stone-600">When your coach assigns a program, it will appear here with its schedule and media.</p>
+                    <p className="mt-2 text-sm leading-6 text-stone-600">
+                        When your coach assigns a program, it will appear here with its schedule and media.
+                    </p>
                 </div>
             ) : (
                 <>
@@ -342,7 +343,10 @@ function ProgramsPanel({ programs }: { programs: ProgramSummary[] }) {
                             <article key={program.id} className="rounded-[1.25rem] border border-stone-200 bg-white p-4">
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
-                                        <Link href={route('athlete.programs.show', program.id)} className="block truncate font-semibold text-stone-950">
+                                        <Link
+                                            href={route('athlete.programs.show', program.id)}
+                                            className="block truncate font-semibold text-stone-950"
+                                        >
                                             {program.title}
                                         </Link>
                                         <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{program.goal ?? 'No goal written yet.'}</p>
@@ -372,48 +376,54 @@ function ProgramsPanel({ programs }: { programs: ProgramSummary[] }) {
 
                     <div className="hidden overflow-hidden rounded-[1.35rem] border border-stone-200 bg-white md:block">
                         <div className="overflow-x-auto">
-                        <table className="w-full min-w-[760px] text-left text-sm">
-                            <thead className="bg-stone-50 text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
-                                <tr>
-                                    <th className="px-4 py-3">Program</th>
-                                    <th className="px-4 py-3">Coach</th>
-                                    <th className="px-4 py-3">Dates</th>
-                                    <th className="px-4 py-3">Sessions</th>
-                                    <th className="px-4 py-3">Next</th>
-                                    <th className="px-4 py-3 text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-stone-100">
-                                {programs.map((program) => (
-                                    <tr key={program.id} className="align-top">
-                                        <td className="px-4 py-4">
-                                            <Link href={route('athlete.programs.show', program.id)} className="font-semibold text-stone-950 hover:text-emerald-800">
-                                                {program.title}
-                                            </Link>
-                                            <p className="mt-1 text-stone-600">{program.goal ?? 'No goal written yet.'}</p>
-                                            <Badge variant="outline" className="mt-2 capitalize">
-                                                {statusLabel(program.status)}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-4 py-4 text-stone-700">{program.coach.name}</td>
-                                        <td className="px-4 py-4 text-stone-700">
-                                            {formatDate(program.startDate)}
-                                            <span className="block text-stone-400">to {formatDate(program.endDate)}</span>
-                                        </td>
-                                        <td className="px-4 py-4 text-stone-700">
-                                            <span className="font-semibold text-stone-950">{program.completedSessionCount}</span> / {program.sessionCount} complete
-                                            {program.pendingSessionCount > 0 && <span className="block text-amber-700">{program.pendingSessionCount} due</span>}
-                                        </td>
-                                        <td className="px-4 py-4 text-stone-700">{formatDate(program.nextSessionDate)}</td>
-                                        <td className="px-4 py-4 text-right">
-                                            <Button asChild size="sm" variant="outline">
-                                                <Link href={route('athlete.programs.show', program.id)}>Open</Link>
-                                            </Button>
-                                        </td>
+                            <table className="w-full min-w-[760px] text-left text-sm">
+                                <thead className="bg-stone-50 text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
+                                    <tr>
+                                        <th className="px-4 py-3">Program</th>
+                                        <th className="px-4 py-3">Coach</th>
+                                        <th className="px-4 py-3">Dates</th>
+                                        <th className="px-4 py-3">Sessions</th>
+                                        <th className="px-4 py-3">Next</th>
+                                        <th className="px-4 py-3 text-right">Action</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-stone-100">
+                                    {programs.map((program) => (
+                                        <tr key={program.id} className="align-top">
+                                            <td className="px-4 py-4">
+                                                <Link
+                                                    href={route('athlete.programs.show', program.id)}
+                                                    className="font-semibold text-stone-950 hover:text-emerald-800"
+                                                >
+                                                    {program.title}
+                                                </Link>
+                                                <p className="mt-1 text-stone-600">{program.goal ?? 'No goal written yet.'}</p>
+                                                <Badge variant="outline" className="mt-2 capitalize">
+                                                    {statusLabel(program.status)}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-4 text-stone-700">{program.coach.name}</td>
+                                            <td className="px-4 py-4 text-stone-700">
+                                                {formatDate(program.startDate)}
+                                                <span className="block text-stone-400">to {formatDate(program.endDate)}</span>
+                                            </td>
+                                            <td className="px-4 py-4 text-stone-700">
+                                                <span className="font-semibold text-stone-950">{program.completedSessionCount}</span> /{' '}
+                                                {program.sessionCount} complete
+                                                {program.pendingSessionCount > 0 && (
+                                                    <span className="block text-amber-700">{program.pendingSessionCount} due</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-4 text-stone-700">{formatDate(program.nextSessionDate)}</td>
+                                            <td className="px-4 py-4 text-right">
+                                                <Button asChild size="sm" variant="outline">
+                                                    <Link href={route('athlete.programs.show', program.id)}>Open</Link>
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </>
@@ -460,21 +470,25 @@ function DailyWorkoutCard({ session }: { session: SelectedDaySession }) {
     );
 }
 
-function CalendarPanel({ schedule, sessions, rangeDays }: { schedule: AthleteAppHomeProps['schedule']; sessions: SelectedDaySession[]; rangeDays: number }) {
+function CalendarPanel({
+    schedule,
+    sessions,
+    rangeDays,
+}: {
+    schedule: AthleteAppHomeProps['schedule'];
+    sessions: SelectedDaySession[];
+    rangeDays: number;
+}) {
     const selectedDate = formatDate(schedule.selectedDate);
     const monthHref = (month: string) => `/app?month=${month}&date=${month}-01&range=${rangeDays}`;
     const dayHref = (day: ScheduleDay) => `/app?month=${schedule.month}&date=${day.date}&range=${rangeDays}`;
     const blankDays = Array.from({ length: leadingCalendarBlanks(schedule.month) });
 
     return (
-        <AthletePanel
-            title="Calendar and daily schedule"
-            description="Pick a day to see assigned workouts only for that date. This is your client schedule, not the admin dashboard."
-            className="scroll-mt-8"
-        >
+        <AthletePanel title="Calendar and daily schedule" description="Pick a day to see assigned workouts for that date." className="scroll-mt-8">
             <div id="schedule" className="-mt-20 pt-20" />
-            <div className="space-y-5">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-4 md:space-y-5">
+                <div className="hidden flex-col gap-3 sm:flex sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p className="text-xs font-semibold tracking-[0.18em] text-stone-400 uppercase">Selected day</p>
                         <p className="mt-1 text-xl font-semibold tracking-[-0.03em] text-stone-950">{selectedDate}</p>
@@ -498,44 +512,50 @@ function CalendarPanel({ schedule, sessions, rangeDays }: { schedule: AthleteApp
                     </div>
                 </div>
 
-                <div className="rounded-[1.5rem] border border-stone-200 bg-white p-3 shadow-[0_18px_45px_-42px_rgba(15,23,42,0.45)] md:hidden">
-                    <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-[0.68rem] font-semibold text-stone-500">
-                        <span className="inline-flex items-center gap-1">
-                            <span className="size-2 rounded-full bg-stone-300" />
-                            Rest
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                            <span className="size-2 rounded-full bg-emerald-500" />
-                            Workout
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                            <span className="size-2 rounded-full bg-emerald-800" />
-                            Selected
-                        </span>
-                    </div>
-
-                    <div className="mb-4 grid grid-cols-[2.5rem_1fr_2.5rem] items-center gap-2">
-                        <Button asChild variant="outline" size="icon" className="size-10 rounded-2xl bg-white">
-                            <Link href={monthHref(schedule.previousMonth)} aria-label="Previous month">
+                <div className="rounded-[1.35rem] border border-stone-200 bg-white p-3 shadow-[0_18px_45px_-42px_rgba(15,23,42,0.45)] md:hidden">
+                    <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_2.25rem] items-center gap-2">
+                        <Button asChild variant="outline" size="icon" className="size-9 rounded-full bg-white">
+                            <Link href={monthHref(schedule.previousMonth)} preserveScroll preserveState aria-label="Previous month">
                                 <ChevronLeft className="size-4" />
                             </Link>
                         </Button>
-                        <p className="text-center text-lg font-semibold tracking-[-0.04em] text-stone-950">{schedule.monthLabel}</p>
-                        <Button asChild variant="outline" size="icon" className="size-10 rounded-2xl bg-white">
-                            <Link href={monthHref(schedule.nextMonth)} aria-label="Next month">
+                        <div className="min-w-0 text-center">
+                            <p className="truncate text-sm font-semibold tracking-[-0.03em] text-stone-950">{schedule.monthLabel}</p>
+                            <p className="mt-0.5 truncate text-[0.68rem] font-medium text-stone-500">{selectedDate}</p>
+                        </div>
+                        <Button asChild variant="outline" size="icon" className="size-9 rounded-full bg-white">
+                            <Link href={monthHref(schedule.nextMonth)} preserveScroll preserveState aria-label="Next month">
                                 <ChevronRight className="size-4" />
                             </Link>
                         </Button>
                     </div>
 
-                    <div className="grid grid-cols-7 gap-1 text-center text-[0.68rem] font-semibold text-stone-400">
+                    <div className="mt-3 grid grid-cols-3 gap-1 text-[0.58rem] font-bold text-stone-500">
+                        <span className="inline-flex items-center justify-center gap-1 rounded-full bg-stone-50 px-2 py-1">
+                            <span className="size-1.5 rounded-full bg-stone-300" />
+                            Rest
+                        </span>
+                        <span className="inline-flex items-center justify-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">
+                            <span className="size-1.5 rounded-full bg-emerald-500" />
+                            Workout
+                        </span>
+                        <span className="inline-flex items-center justify-center gap-1 rounded-full bg-emerald-700 px-2 py-1 text-white">
+                            <span className="size-1.5 rounded-full bg-white" />
+                            Selected
+                        </span>
+                    </div>
+
+                    <div
+                        className="mt-3 grid gap-1 text-center text-[0.58rem] font-bold text-stone-500 uppercase"
+                        style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
+                    >
                         {calendarWeekdays.map((weekday) => (
                             <span key={weekday}>{weekday}</span>
                         ))}
                     </div>
-                    <div className="mt-2 grid grid-cols-7 gap-1.5">
+                    <div className="mt-1.5 grid gap-1" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
                         {blankDays.map((_, index) => (
-                            <span key={`blank-${index}`} className="aspect-square" aria-hidden="true" />
+                            <span key={`blank-${index}`} className="block h-10 min-w-0" aria-hidden="true" />
                         ))}
                         {schedule.days.map((day) => (
                             <Link
@@ -545,25 +565,24 @@ function CalendarPanel({ schedule, sessions, rangeDays }: { schedule: AthleteApp
                                 preserveState
                                 aria-label={`${day.weekday} ${day.dayNumber}, ${day.sessionCount} workout${day.sessionCount === 1 ? '' : 's'}`}
                                 className={[
-                                    'relative flex aspect-square min-h-0 flex-col items-center justify-center rounded-xl border text-center transition',
+                                    'relative flex h-10 w-full min-w-0 flex-col items-center justify-center rounded-xl border text-center text-xs font-bold transition',
                                     day.isSelected
-                                        ? 'border-emerald-700 bg-emerald-700 text-white shadow-[0_12px_24px_-18px_rgba(4,120,87,0.85)]'
+                                        ? 'border-emerald-700 bg-emerald-700 text-white shadow-[0_10px_22px_-16px_rgba(4,120,87,0.85)]'
                                         : day.sessionCount > 0
-                                          ? 'border-emerald-200 bg-emerald-50 text-stone-950'
-                                          : 'border-stone-100 bg-white text-stone-400',
+                                          ? 'border-emerald-200 bg-emerald-50 text-emerald-950'
+                                          : 'border-stone-200 bg-stone-50 text-stone-700',
                                     day.isToday && !day.isSelected ? 'ring-1 ring-emerald-300' : '',
                                 ].join(' ')}
                             >
-                                <span className="text-sm font-semibold leading-none">{day.dayNumber}</span>
+                                <span className="leading-none">{day.dayNumber}</span>
                                 {day.sessionCount > 0 && (
                                     <span
-                                        className={[
-                                            'absolute bottom-1.5 h-1 w-5 rounded-full',
-                                            day.isSelected ? 'bg-white' : 'bg-emerald-500',
-                                        ].join(' ')}
+                                        className={['absolute bottom-1.5 h-1 w-4 rounded-full', day.isSelected ? 'bg-white' : 'bg-emerald-500'].join(
+                                            ' ',
+                                        )}
                                     />
                                 )}
-                                {day.hasMedia && <Video className="absolute top-1 right-1 size-2.5 opacity-75" />}
+                                {day.hasMedia && <Video className="absolute top-1 right-1 size-2.5 opacity-80" />}
                             </Link>
                         ))}
                     </div>
@@ -604,68 +623,73 @@ function CalendarPanel({ schedule, sessions, rangeDays }: { schedule: AthleteApp
                         <div className="p-5 text-sm leading-6 text-stone-600">No scheduled workout for this day.</div>
                     ) : (
                         <>
-                        <div className="space-y-3 p-3 md:hidden">
-                            {sessions.map((session) => (
-                                <DailyWorkoutCard key={session.id} session={session} />
-                            ))}
-                        </div>
-                        <div className="hidden overflow-x-auto md:block">
-                            <table className="w-full min-w-[860px] text-left text-sm">
-                                <thead className="bg-white text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
-                                    <tr>
-                                        <th className="px-4 py-3">Workout</th>
-                                        <th className="px-4 py-3">Coach</th>
-                                        <th className="px-4 py-3">Program</th>
-                                        <th className="px-4 py-3">Sets / reps</th>
-                                        <th className="px-4 py-3">Media</th>
-                                        <th className="px-4 py-3">Status</th>
-                                        <th className="px-4 py-3 text-right">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-stone-100">
-                                    {sessions.map((session) => (
-                                        <tr key={session.id} className="align-top">
-                                            <td className="px-4 py-4">
-                                                <p className="font-semibold text-stone-950">{session.title}</p>
-                                                <p className="mt-1 text-stone-600">{session.focus ?? 'Training session'}</p>
-                                            </td>
-                                            <td className="px-4 py-4 text-stone-700">{session.coach.name}</td>
-                                            <td className="px-4 py-4 text-stone-700">{session.program.title}</td>
-                                            <td className="px-4 py-4 text-stone-700">
-                                                {session.exercisePreview.length > 0 ? (
-                                                    <ul className="space-y-1">
-                                                        {session.exercisePreview.map((line) => (
-                                                            <li key={line}>{line}</li>
-                                                        ))}
-                                                    </ul>
-                                                ) : (
-                                                    'No exercises entered'
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-4 text-stone-700">
-                                                <div className="flex items-center gap-2">
-                                                    {session.videoUrl && <Video className="size-4 text-emerald-700" />}
-                                                    {session.mediaCount > 0 && <Image className="size-4 text-amber-600" />}
-                                                    {session.videoUrl || session.mediaCount > 0 ? `${session.mediaCount} item${session.mediaCount === 1 ? '' : 's'}` : 'None'}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-4">
-                                                <Badge variant={session.completionStatus === 'completed' ? 'default' : 'outline'} className="capitalize">
-                                                    {statusLabel(session.completionStatus)}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-4 py-4 text-right">
-                                                <Button asChild size="sm" className="bg-emerald-800 text-white hover:bg-emerald-900">
-                                                    <Link href={route('athlete.workouts.show', session.id)}>
-                                                        {session.completionStatus === 'scheduled' ? 'Start' : 'Open'}
-                                                    </Link>
-                                                </Button>
-                                            </td>
+                            <div className="space-y-3 p-3 md:hidden">
+                                {sessions.map((session) => (
+                                    <DailyWorkoutCard key={session.id} session={session} />
+                                ))}
+                            </div>
+                            <div className="hidden overflow-x-auto md:block">
+                                <table className="w-full min-w-[860px] text-left text-sm">
+                                    <thead className="bg-white text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
+                                        <tr>
+                                            <th className="px-4 py-3">Workout</th>
+                                            <th className="px-4 py-3">Coach</th>
+                                            <th className="px-4 py-3">Program</th>
+                                            <th className="px-4 py-3">Sets / reps</th>
+                                            <th className="px-4 py-3">Media</th>
+                                            <th className="px-4 py-3">Status</th>
+                                            <th className="px-4 py-3 text-right">Action</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody className="divide-y divide-stone-100">
+                                        {sessions.map((session) => (
+                                            <tr key={session.id} className="align-top">
+                                                <td className="px-4 py-4">
+                                                    <p className="font-semibold text-stone-950">{session.title}</p>
+                                                    <p className="mt-1 text-stone-600">{session.focus ?? 'Training session'}</p>
+                                                </td>
+                                                <td className="px-4 py-4 text-stone-700">{session.coach.name}</td>
+                                                <td className="px-4 py-4 text-stone-700">{session.program.title}</td>
+                                                <td className="px-4 py-4 text-stone-700">
+                                                    {session.exercisePreview.length > 0 ? (
+                                                        <ul className="space-y-1">
+                                                            {session.exercisePreview.map((line) => (
+                                                                <li key={line}>{line}</li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : (
+                                                        'No exercises entered'
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-4 text-stone-700">
+                                                    <div className="flex items-center gap-2">
+                                                        {session.videoUrl && <Video className="size-4 text-emerald-700" />}
+                                                        {session.mediaCount > 0 && <Image className="size-4 text-amber-600" />}
+                                                        {session.videoUrl || session.mediaCount > 0
+                                                            ? `${session.mediaCount} item${session.mediaCount === 1 ? '' : 's'}`
+                                                            : 'None'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <Badge
+                                                        variant={session.completionStatus === 'completed' ? 'default' : 'outline'}
+                                                        className="capitalize"
+                                                    >
+                                                        {statusLabel(session.completionStatus)}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-4 py-4 text-right">
+                                                    <Button asChild size="sm" className="bg-emerald-800 text-white hover:bg-emerald-900">
+                                                        <Link href={route('athlete.workouts.show', session.id)}>
+                                                            {session.completionStatus === 'scheduled' ? 'Start' : 'Open'}
+                                                        </Link>
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </>
                     )}
                 </div>
@@ -699,7 +723,9 @@ function TodayWorkoutCard({ session }: { session: TodaySession | null }) {
                         <div>
                             <p className="text-sm text-emerald-100">{session.program.title}</p>
                             <h2 className="mt-1 text-2xl font-bold tracking-[-0.04em]">{session.session.title}</h2>
-                            {session.session.instructions && <p className="mt-3 max-w-2xl text-sm leading-6 text-emerald-50">{session.session.instructions}</p>}
+                            {session.session.instructions && (
+                                <p className="mt-3 max-w-2xl text-sm leading-6 text-emerald-50">{session.session.instructions}</p>
+                            )}
                         </div>
                         <Button asChild className="bg-white text-emerald-950 hover:bg-emerald-50">
                             <Link href={route('athlete.workouts.show', session.session.id)}>
@@ -836,7 +862,15 @@ function LineChart({ points, stroke = '#047857' }: { points: ChartPoint[]; strok
             {segments.length > 0 && (
                 <>
                     {segments.map((segment) => (
-                        <polyline key={segment.join(' ')} points={segment.join(' ')} fill="none" stroke={stroke} strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" />
+                        <polyline
+                            key={segment.join(' ')}
+                            points={segment.join(' ')}
+                            fill="none"
+                            stroke={stroke}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="4"
+                        />
                     ))}
                     {points.map((point, index) => {
                         if (typeof point.value !== 'number' || (index !== lastDataIndex && index % markerStep !== 0)) {
@@ -846,7 +880,17 @@ function LineChart({ points, stroke = '#047857' }: { points: ChartPoint[]; strok
                         const x = points.length === 1 ? 50 : (index / denominator) * 100;
                         const y = 92 - ((point.value - stats.min) / (stats.max - stats.min)) * 78;
 
-                        return <circle key={`${point.date}-${point.value}-${index}`} cx={x} cy={y} r={index === lastDataIndex ? '3.4' : '2.3'} fill="white" stroke={stroke} strokeWidth="2" />;
+                        return (
+                            <circle
+                                key={`${point.date}-${point.value}-${index}`}
+                                cx={x}
+                                cy={y}
+                                r={index === lastDataIndex ? '3.4' : '2.3'}
+                                fill="white"
+                                stroke={stroke}
+                                strokeWidth="2"
+                            />
+                        );
                     })}
                 </>
             )}
@@ -893,7 +937,8 @@ function TrendCard({
     icon?: typeof Dumbbell;
 }) {
     const stats = chartStats(points);
-    const trend = stats.delta === null ? 'No trend yet' : stats.delta > 0 ? `+${formatChartNumber(stats.delta, unit)}` : formatChartNumber(stats.delta, unit);
+    const trend =
+        stats.delta === null ? 'No trend yet' : stats.delta > 0 ? `+${formatChartNumber(stats.delta, unit)}` : formatChartNumber(stats.delta, unit);
     const trendClass = stats.delta === null ? 'text-stone-500' : stats.delta >= 0 ? 'text-emerald-700' : 'text-red-700';
 
     return (
@@ -914,7 +959,9 @@ function TrendCard({
                 </Badge>
             </div>
             {points.length === 0 ? (
-                <div className="mt-4 rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-4 text-sm text-stone-500">No data in this range.</div>
+                <div className="mt-4 rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-4 text-sm text-stone-500">
+                    No data in this range.
+                </div>
             ) : type === 'bar' ? (
                 <BarChart points={points} fill={accent} />
             ) : (
@@ -1014,11 +1061,29 @@ function HealthTrendsPanel({ charts, schedule }: { charts: AthleteCharts; schedu
                         },
                         {
                             key: 'protein',
-                            card: <TrendCard title="Protein" points={charts.progress.proteinGrams} unit="g" type="bar" accent="#65a30d" icon={Utensils} />,
+                            card: (
+                                <TrendCard
+                                    title="Protein"
+                                    points={charts.progress.proteinGrams}
+                                    unit="g"
+                                    type="bar"
+                                    accent="#65a30d"
+                                    icon={Utensils}
+                                />
+                            ),
                         },
                         {
                             key: 'hydration',
-                            card: <TrendCard title="Hydration" points={charts.progress.waterLiters} unit="L" type="bar" accent="#0284c7" icon={Droplets} />,
+                            card: (
+                                <TrendCard
+                                    title="Hydration"
+                                    points={charts.progress.waterLiters}
+                                    unit="L"
+                                    type="bar"
+                                    accent="#0284c7"
+                                    icon={Droplets}
+                                />
+                            ),
                         },
                     ].map((item) => (
                         <div key={item.key} className="w-[18rem] shrink-0">
@@ -1031,7 +1096,10 @@ function HealthTrendsPanel({ charts, schedule }: { charts: AthleteCharts; schedu
                 </p>
 
                 <div className="hidden space-y-4 md:block">
-                    <ChartSection title="Recovery" description="WHOOP-style signals that explain whether the athlete should push, control effort, or recover.">
+                    <ChartSection
+                        title="Recovery"
+                        description="WHOOP-style signals that explain whether the athlete should push, control effort, or recover."
+                    >
                         <TrendCard title="Readiness" points={charts.wearable.readiness} unit="%" accent="#047857" icon={HeartPulse} />
                         <TrendCard title="Sleep" points={charts.wearable.sleepHours} unit="h" accent="#2563eb" icon={Moon} />
                         <TrendCard title="Strain" points={charts.wearable.strain} accent="#f59e0b" icon={Activity} />
@@ -1045,7 +1113,10 @@ function HealthTrendsPanel({ charts, schedule }: { charts: AthleteCharts; schedu
                         <TrendCard title="Active minutes" points={charts.wearable.activeMinutes} unit="m" type="bar" accent="#0891b2" icon={Watch} />
                     </ChartSection>
 
-                    <ChartSection title="Nutrition and hydration" description="Manual food and water check-ins so coaching decisions are not based only on the watch.">
+                    <ChartSection
+                        title="Nutrition and hydration"
+                        description="Manual food and water check-ins so coaching decisions are not based only on the watch."
+                    >
                         <TrendCard title="Calories eaten" points={charts.progress.caloriesConsumed} type="bar" accent="#f97316" icon={Flame} />
                         <TrendCard title="Protein" points={charts.progress.proteinGrams} unit="g" type="bar" accent="#65a30d" icon={Utensils} />
                         <TrendCard title="Carbs" points={charts.progress.carbsGrams} unit="g" type="bar" accent="#eab308" icon={Utensils} />
@@ -1053,7 +1124,10 @@ function HealthTrendsPanel({ charts, schedule }: { charts: AthleteCharts; schedu
                         <TrendCard title="Hydration" points={charts.progress.waterLiters} unit="L" type="bar" accent="#0284c7" icon={Droplets} />
                     </ChartSection>
 
-                    <ChartSection title="Body and daily feel" description="Body metrics plus the subjective scores that explain why a session felt strong or rough.">
+                    <ChartSection
+                        title="Body and daily feel"
+                        description="Body metrics plus the subjective scores that explain why a session felt strong or rough."
+                    >
                         <TrendCard title="Weight" points={charts.progress.weightKg} unit="kg" accent="#44403c" icon={Scale} />
                         <TrendCard title="Body fat" points={charts.progress.bodyFatPercentage} unit="%" accent="#78716c" icon={Scale} />
                         <TrendCard title="Waist" points={charts.progress.waistCm} unit="cm" accent="#57534e" icon={Scale} />
@@ -1072,18 +1146,14 @@ export default function AthleteAppHome(props: AthleteAppHomeProps) {
     const readiness = props.wearable.latestSnapshot?.readinessScore ?? null;
 
     return (
-        <AthleteAppShell
-            active="app"
-            unreadMessages={props.feed.unreadMessages}
-            unreadNotifications={props.feed.unreadNotifications}
-        >
+        <AthleteAppShell active="app" unreadMessages={props.feed.unreadMessages} unreadNotifications={props.feed.unreadNotifications}>
             <Head title="Athlete app" />
 
             <div className="mx-auto max-w-6xl space-y-6">
                 <TopHeader props={props} />
 
-                <main className="grid gap-6 px-4 md:px-6 lg:grid-cols-[1.1fr_0.9fr]">
-                    <div className="space-y-6">
+                <main className="grid min-w-0 gap-6 px-4 md:px-6 lg:grid-cols-[1.1fr_0.9fr]">
+                    <div className="min-w-0 space-y-6">
                         <CalendarPanel schedule={props.schedule} sessions={props.selectedDaySessions} rangeDays={props.charts.rangeDays} />
 
                         <ProgramsPanel programs={props.programs} />
@@ -1092,13 +1162,25 @@ export default function AthleteAppHome(props: AthleteAppHomeProps) {
 
                         <AthletePanel
                             title="Exertion and readiness"
-                            description={props.wearable.latestSnapshot ? `Latest wearable sync from ${props.wearable.latestSnapshot.provider}.` : 'Connect WHOOP or another wearable to make this board useful.'}
+                            description={
+                                props.wearable.latestSnapshot
+                                    ? `Latest wearable sync from ${props.wearable.latestSnapshot.provider}.`
+                                    : 'Connect WHOOP or another wearable to make this board useful.'
+                            }
                         >
                             {props.wearable.latestSnapshot ? (
                                 <ReadinessDial
                                     score={readiness}
                                     label="Recovery signal"
-                                    note={readiness === null ? 'Readiness not reported yet' : readiness >= 80 ? 'Green light' : readiness >= 60 ? 'Controlled push' : 'Recovery priority'}
+                                    note={
+                                        readiness === null
+                                            ? 'Readiness not reported yet'
+                                            : readiness >= 80
+                                              ? 'Green light'
+                                              : readiness >= 60
+                                                ? 'Controlled push'
+                                                : 'Recovery priority'
+                                    }
                                     detail={`Sleep ${metricValue(props.wearable.latestSnapshot.sleepHours, 'h')} · Strain ${metricValue(props.wearable.latestSnapshot.strainScore)}`}
                                 />
                             ) : (
@@ -1116,7 +1198,12 @@ export default function AthleteAppHome(props: AthleteAppHomeProps) {
 
                         <HealthTrendsPanel charts={props.charts} schedule={props.schedule} />
 
-                        <AthletePanel title="Feed" description="Coach updates, system notices, and anything that needs your attention." className="scroll-mt-8" contentClassName="space-y-3">
+                        <AthletePanel
+                            title="Feed"
+                            description="Coach updates, system notices, and anything that needs your attention."
+                            className="scroll-mt-8"
+                            contentClassName="space-y-3"
+                        >
                             <div id="feed" className="-mt-20 pt-20" />
                             {props.feed.items.length === 0 ? (
                                 <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-5 text-sm text-stone-600">
@@ -1143,12 +1230,16 @@ export default function AthleteAppHome(props: AthleteAppHomeProps) {
                         </AthletePanel>
                     </div>
 
-                    <aside className="space-y-6">
+                    <aside className="min-w-0 space-y-6">
                         <AthletePanel title="Membership" description="Your access window and renewal state.">
                             {props.membership ? (
                                 <div className="grid gap-3">
                                     <StatTile label="Current plan" value={props.membership.planName} icon={ShieldCheck} />
-                                    <StatTile label="Days left" value={props.membership.daysRemaining === null ? 'Open' : String(props.membership.daysRemaining)} icon={CalendarDays} />
+                                    <StatTile
+                                        label="Days left"
+                                        value={props.membership.daysRemaining === null ? 'Open' : String(props.membership.daysRemaining)}
+                                        icon={CalendarDays}
+                                    />
                                     <StatTile label="Status" value={props.membership.status.replace(/_/g, ' ')} icon={CheckCircle2} />
                                     <p className="text-sm text-stone-600">Renews/ends: {formatDate(props.membership.effectiveEndDate)}</p>
                                 </div>
@@ -1174,7 +1265,8 @@ export default function AthleteAppHome(props: AthleteAppHomeProps) {
                                 </div>
                             ) : (
                                 <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-5 text-sm leading-6 text-stone-600">
-                                    No progress check-in yet. Your weight, food, sleep quality, soreness, and energy will appear after the first entry.
+                                    No progress check-in yet. Your weight, food, sleep quality, soreness, and energy will appear after the first
+                                    entry.
                                 </div>
                             )}
                         </AthletePanel>
@@ -1191,7 +1283,9 @@ export default function AthleteAppHome(props: AthleteAppHomeProps) {
                                             <p className="text-sm text-stone-600">{props.coach.email}</p>
                                         </div>
                                     </div>
-                                    <p className="text-sm leading-6 text-stone-600">{props.coach.goal ?? props.viewer.goal ?? 'No coach goal is written yet.'}</p>
+                                    <p className="text-sm leading-6 text-stone-600">
+                                        {props.coach.goal ?? props.viewer.goal ?? 'No coach goal is written yet.'}
+                                    </p>
                                     <Button asChild variant="outline">
                                         <Link href="/messages">
                                             Message coach
