@@ -325,7 +325,7 @@ function ImageSlider({ items }: { items: MediaItem[] }) {
 }
 
 function tabClass(active: boolean) {
-    return active ? 'bg-emerald-700 text-white shadow-sm' : 'bg-white text-stone-700 hover:bg-stone-50';
+    return active ? 'bg-stone-950 text-white shadow-sm' : 'text-stone-500 hover:bg-white hover:text-stone-950';
 }
 
 export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
@@ -441,16 +441,28 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                     </div>
                 </header>
 
-                <div className="grid grid-cols-3 gap-1 rounded-[1.5rem] border border-stone-200 bg-white p-1.5 sm:gap-2 sm:p-2">
-                    <button type="button" onClick={() => setTab('workout')} className={`rounded-[1.05rem] px-2 py-3 text-xs font-semibold sm:px-4 sm:text-sm ${tabClass(tab === 'workout')}`}>
+                <div className="sticky top-3 z-30 grid grid-cols-3 gap-1 rounded-full border border-stone-200 bg-stone-100/90 p-1 shadow-sm backdrop-blur md:static">
+                    <button
+                        type="button"
+                        onClick={() => setTab('workout')}
+                        className={`rounded-full px-2 py-2.5 text-xs font-semibold sm:px-4 sm:text-sm ${tabClass(tab === 'workout')}`}
+                    >
                         <ListChecks className="mr-1 hidden size-4 min-[380px]:inline sm:mr-2" />
                         Workout
                     </button>
-                    <button type="button" onClick={() => setTab('journal')} className={`rounded-[1.05rem] px-2 py-3 text-xs font-semibold sm:px-4 sm:text-sm ${tabClass(tab === 'journal')}`}>
+                    <button
+                        type="button"
+                        onClick={() => setTab('journal')}
+                        className={`rounded-full px-2 py-2.5 text-xs font-semibold sm:px-4 sm:text-sm ${tabClass(tab === 'journal')}`}
+                    >
                         <FileText className="mr-1 hidden size-4 min-[380px]:inline sm:mr-2" />
                         Journal
                     </button>
-                    <button type="button" onClick={() => setTab('media')} className={`rounded-[1.05rem] px-2 py-3 text-xs font-semibold sm:px-4 sm:text-sm ${tabClass(tab === 'media')}`}>
+                    <button
+                        type="button"
+                        onClick={() => setTab('media')}
+                        className={`rounded-full px-2 py-2.5 text-xs font-semibold sm:px-4 sm:text-sm ${tabClass(tab === 'media')}`}
+                    >
                         <Film className="mr-1 hidden size-4 min-[380px]:inline sm:mr-2" />
                         Media
                     </button>
@@ -480,7 +492,9 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                                                 <div>
                                                     <p className="font-semibold text-stone-950">{exercise.name}</p>
                                                     <p className="mt-1 text-sm text-stone-600">
-                                                        {exercise.sets && exercise.reps ? `${exercise.sets} x ${exercise.reps}` : exercise.prescription ?? 'No target'}
+                                                        {exercise.sets && exercise.reps
+                                                            ? `${exercise.sets} x ${exercise.reps}`
+                                                            : (exercise.prescription ?? 'No target')}
                                                     </p>
                                                 </div>
                                                 <Badge variant="outline">{exercise.target ?? 'Target'}</Badge>
@@ -500,11 +514,17 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                         <div>
                                             <p className="text-xs font-semibold tracking-[0.22em] text-stone-400 uppercase">Rest timer</p>
-                                            <p className="mt-2 text-4xl font-semibold tracking-[-0.05em] text-stone-950">{formatTimer(timerSeconds)}</p>
+                                            <p className="mt-2 text-4xl font-semibold tracking-[-0.05em] text-stone-950">
+                                                {formatTimer(timerSeconds)}
+                                            </p>
                                             <p className="mt-1 text-sm text-stone-600">Prescribed: {restLabel(currentExercise)}</p>
                                         </div>
                                         <div className="flex gap-2">
-                                            <Button type="button" variant="outline" onClick={() => setTimerSeconds(currentExercise?.restSeconds ?? 0)}>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => setTimerSeconds(currentExercise?.restSeconds ?? 0)}
+                                            >
                                                 <TimerReset className="size-4" />
                                                 Reset
                                             </Button>
@@ -528,10 +548,15 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                                             );
 
                                             return (
-                                                <div key={`${set.exercise_index}-${set.set_number}`} className="rounded-2xl border border-stone-200 bg-white p-4">
+                                                <div
+                                                    key={`${set.exercise_index}-${set.set_number}`}
+                                                    className="rounded-2xl border border-stone-200 bg-white p-4"
+                                                >
                                                     <div className="flex items-start justify-between gap-3">
                                                         <div>
-                                                            <p className="text-xs font-semibold tracking-[0.18em] text-stone-400 uppercase">Set {set.set_number}</p>
+                                                            <p className="text-xs font-semibold tracking-[0.18em] text-stone-400 uppercase">
+                                                                Set {set.set_number}
+                                                            </p>
                                                             <p className="mt-1 text-sm text-stone-600">
                                                                 Target: {target?.targetReps ?? 'N/A'} · {target?.targetLoad ?? 'N/A'}
                                                             </p>
@@ -550,7 +575,9 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                                                     </div>
                                                     <div className="mt-3 grid grid-cols-2 gap-3">
                                                         <div>
-                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">Actual reps/time</label>
+                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">
+                                                                Actual reps/time
+                                                            </label>
                                                             <Input
                                                                 value={set.actual_reps}
                                                                 onChange={(event) =>
@@ -561,7 +588,9 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                                                             />
                                                         </div>
                                                         <div>
-                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">Actual load</label>
+                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">
+                                                                Actual load
+                                                            </label>
                                                             <Input
                                                                 value={set.actual_load}
                                                                 onChange={(event) =>
@@ -572,7 +601,9 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                                                             />
                                                         </div>
                                                         <div>
-                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">RPE</label>
+                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">
+                                                                RPE
+                                                            </label>
                                                             <Input
                                                                 type="number"
                                                                 min="1"
@@ -586,10 +617,14 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                                                             />
                                                         </div>
                                                         <div>
-                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">Notes</label>
+                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">
+                                                                Notes
+                                                            </label>
                                                             <Input
                                                                 value={set.notes}
-                                                                onChange={(event) => updateSet(set.exercise_index, set.set_number, { notes: event.target.value })}
+                                                                onChange={(event) =>
+                                                                    updateSet(set.exercise_index, set.set_number, { notes: event.target.value })
+                                                                }
                                                                 placeholder="Optional"
                                                                 className="mt-1 h-11"
                                                             />
@@ -627,12 +662,14 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                                                     <tr key={`${set.exercise_index}-${set.set_number}`} className="border-t border-stone-100">
                                                         <td className="px-4 py-3 font-semibold text-stone-950">{set.set_number}</td>
                                                         <td className="px-4 py-3 text-stone-600">
-                                                            {execution.setLogs.find((row) => row.exerciseIndex === set.exercise_index && row.setNumber === set.set_number)
-                                                                ?.targetReps ?? 'N/A'}
+                                                            {execution.setLogs.find(
+                                                                (row) => row.exerciseIndex === set.exercise_index && row.setNumber === set.set_number,
+                                                            )?.targetReps ?? 'N/A'}
                                                         </td>
                                                         <td className="px-4 py-3 text-stone-600">
-                                                            {execution.setLogs.find((row) => row.exerciseIndex === set.exercise_index && row.setNumber === set.set_number)
-                                                                ?.targetLoad ?? 'N/A'}
+                                                            {execution.setLogs.find(
+                                                                (row) => row.exerciseIndex === set.exercise_index && row.setNumber === set.set_number,
+                                                            )?.targetLoad ?? 'N/A'}
                                                         </td>
                                                         <td className="px-4 py-3">
                                                             <Input
@@ -680,7 +717,9 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                                                         <td className="px-4 py-3">
                                                             <Input
                                                                 value={set.notes}
-                                                                onChange={(event) => updateSet(set.exercise_index, set.set_number, { notes: event.target.value })}
+                                                                onChange={(event) =>
+                                                                    updateSet(set.exercise_index, set.set_number, { notes: event.target.value })
+                                                                }
                                                                 placeholder="Optional"
                                                                 className="h-10"
                                                             />

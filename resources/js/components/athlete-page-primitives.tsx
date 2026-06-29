@@ -163,8 +163,10 @@ export function TrendBars({
     formatter?: (value: number | null) => string;
     tone?: 'teal' | 'amber' | 'rose';
 }) {
-    const values = points.map((point) => point.value ?? 0);
-    const max = Math.max(...values, 1);
+    const values = points.map((point) => point.value).filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+    const min = values.length > 0 ? Math.min(...values) : 0;
+    const max = values.length > 0 ? Math.max(...values) : 1;
+    const range = Math.max(max - min, 1);
     const tones = {
         teal: 'from-teal-500 via-teal-400 to-cyan-300',
         amber: 'from-orange-500 via-amber-400 to-yellow-300',
@@ -172,29 +174,29 @@ export function TrendBars({
     } as const;
 
     return (
-        <div className="rounded-[1.5rem] border border-stone-200/80 bg-stone-50/80 p-5">
-            <div className="space-y-1">
-                <p className="text-sm font-medium text-stone-950">{title}</p>
+        <div className="rounded-[1.65rem] border border-stone-200/80 bg-white p-4 shadow-[0_24px_55px_-48px_rgba(15,23,42,0.55)] md:p-5">
+            <div className="space-y-2">
+                <p className="text-base font-semibold tracking-[-0.02em] text-stone-950">{title}</p>
                 <p className="text-sm leading-6 text-stone-600">{description}</p>
             </div>
-            <div className="mt-6 flex h-40 items-end gap-2">
+            <div className="mt-5 grid grid-cols-7 gap-2">
                 {points.map((point) => {
-                    const height = point.value === null ? 14 : Math.max(22, Math.round((point.value / max) * 100));
+                    const height = point.value === null ? 14 : Math.max(30, Math.round(((point.value - min) / range) * 58) + 34);
 
                     return (
-                        <div key={`${point.label}-${point.note ?? 'base'}`} className="flex flex-1 flex-col items-center gap-2">
-                            <span className="text-[0.7rem] font-medium text-stone-500">
+                        <div key={`${point.label}-${point.note ?? 'base'}`} className="min-w-0 text-center">
+                            <span className="block h-5 truncate text-[0.68rem] font-medium text-stone-500">
                                 {formatter ? formatter(point.value) : (point.value ?? 'N/A')}
                             </span>
-                            <div className="flex h-28 w-full items-end rounded-full bg-white/80 px-1.5 pb-1.5">
+                            <div className="mt-2 flex h-28 items-end justify-center">
                                 <div
-                                    className={cn('w-full rounded-full bg-linear-to-t shadow-sm transition-all', tones[tone])}
+                                    className={cn('w-8 max-w-full rounded-full bg-linear-to-t shadow-sm transition-all md:w-10', tones[tone])}
                                     style={{ height: `${height}%` }}
                                 />
                             </div>
-                            <div className="text-center">
-                                <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">{point.label}</p>
-                                {point.note && <p className="mt-1 text-[0.72rem] text-stone-500">{point.note}</p>}
+                            <div className="mt-3 min-h-12 text-center">
+                                <p className="text-[0.62rem] font-semibold tracking-[0.16em] text-stone-500 uppercase">{point.label}</p>
+                                {point.note && <p className="mt-1 truncate text-[0.68rem] text-stone-500">{point.note}</p>}
                             </div>
                         </div>
                     );
