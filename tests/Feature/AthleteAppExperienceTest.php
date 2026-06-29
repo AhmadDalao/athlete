@@ -41,6 +41,54 @@ class AthleteAppExperienceTest extends TestCase
             );
     }
 
+    public function test_athlete_app_lists_assigned_programs_and_selected_day_schedule(): void
+    {
+        [$athlete, $session] = $this->athleteWorkoutFixture();
+
+        $this->actingAs($athlete)
+            ->get('/app?date='.now()->toDateString().'&month='.now()->format('Y-m'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('athlete-app/index')
+                ->where('programs.0.title', 'Strength Block')
+                ->where('programs.0.coach.name', 'Coach Riley')
+                ->where('schedule.selectedDate', now()->toDateString())
+                ->where('schedule.month', now()->format('Y-m'))
+                ->where('selectedDaySessions.0.id', $session->id)
+                ->where('selectedDaySessions.0.title', 'Lower strength')
+                ->where('selectedDaySessions.0.program.title', 'Strength Block')
+                ->where('selectedDaySessions.0.exercisePreview.0', 'Back squat - 2 x 6 - Load 120 kg')
+            );
+    }
+
+    public function test_athlete_can_open_assigned_program_detail(): void
+    {
+        [$athlete, $session] = $this->athleteWorkoutFixture();
+
+        $this->actingAs($athlete)
+            ->get(route('athlete.programs.show', $session->program, absolute: false))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('athlete-app/program')
+                ->where('program.title', 'Strength Block')
+                ->where('program.coach.name', 'Coach Riley')
+                ->where('program.sessions.0.title', 'Lower strength')
+                ->where('program.sessions.0.mediaItems.0.type', 'video')
+                ->where('program.sessions.0.exercises.0.sets', 2)
+            );
+    }
+
+    public function test_athlete_cannot_open_another_athletes_program(): void
+    {
+        [, $session] = $this->athleteWorkoutFixture();
+        $otherAthlete = User::factory()->create();
+        $otherAthlete->assignRole(RoleName::Athlete);
+
+        $this->actingAs($otherAthlete)
+            ->get(route('athlete.programs.show', $session->program, absolute: false))
+            ->assertForbidden();
+    }
+
     public function test_athlete_app_includes_health_chart_series(): void
     {
         [$athlete] = $this->athleteWorkoutFixture();

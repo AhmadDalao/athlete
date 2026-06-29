@@ -67,7 +67,7 @@ class RegistrationTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_new_coaches_land_in_roster_after_registration()
+    public function test_new_coaches_land_in_coach_app_after_registration()
     {
         $response = $this->post('/register', [
             'name' => 'Coach User',
@@ -83,6 +83,6 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $this->assertTrue(auth()->user()->hasRole(RoleName::Coach));
-        $response->assertRedirect('/roster');
+        $response->assertRedirect('/coach');
     }
 }

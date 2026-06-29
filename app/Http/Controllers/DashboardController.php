@@ -48,6 +48,8 @@ class DashboardController extends Controller
             'trainingProgramsAsAthlete.sessions.workoutLog',
         ]);
 
+        abort_unless($user->hasRole(RoleName::Owner) || $user->hasRole(RoleName::Admin), 403);
+
         return Inertia::render('dashboard', [
             'viewer' => [
                 'name' => $user->name,
@@ -62,9 +64,9 @@ class DashboardController extends Controller
                     ->all(),
                 'primaryRole' => $user->primaryRoleName(),
             ],
-            'admin' => $user->hasRole(RoleName::Admin) ? $this->adminOverview() : null,
-            'coach' => $user->hasRole(RoleName::Coach) ? $this->coachOverview($user, $coachWeeklyBriefs) : null,
-            'athlete' => $user->hasRole(RoleName::Athlete) ? $this->athleteOverview($user, $metricAnalytics, $progressAnalytics) : null,
+            'admin' => $this->adminOverview(),
+            'coach' => null,
+            'athlete' => null,
         ]);
     }
 

@@ -65,7 +65,7 @@ class AppleAuthenticationTest extends TestCase
             ])
             ->post(route('auth.oauth.callback', ['provider' => SignupMethod::Apple->value], absolute: false));
 
-        $response->assertRedirect('/roster');
+        $response->assertRedirect('/coach');
         $this->assertAuthenticated();
         $this->assertTrue(auth()->user()->hasRole(RoleName::Coach));
         $this->assertSame(SignupMethod::Apple->value, auth()->user()->registration_channel);

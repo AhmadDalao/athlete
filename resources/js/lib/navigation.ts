@@ -2,6 +2,7 @@ import { type NavGroup, type NavItem, type User } from '@/types';
 import {
     Bell,
     Cable,
+    CalendarDays,
     CreditCard,
     Dumbbell,
     Files,
@@ -14,6 +15,7 @@ import {
     Settings2,
     Shield,
     Smartphone,
+    UserRound,
     Users,
     Watch,
 } from 'lucide-react';
@@ -28,8 +30,8 @@ export function buildMainNavGroups(user: User | null): NavGroup[] {
                 title: 'Overview',
                 items: [
                     {
-                        title: 'Dashboard',
-                        url: '/dashboard',
+                        title: 'Admin dashboard',
+                        url: '/admin/dashboard',
                         icon: LayoutGrid,
                     },
                     ...(can('admin.control_center.view')
@@ -189,9 +191,9 @@ export function buildMainNavGroups(user: User | null): NavGroup[] {
                 title: 'Overview',
                 items: [
                     {
-                        title: 'Dashboard',
-                        url: '/dashboard',
-                        icon: LayoutGrid,
+                        title: 'Coach home',
+                        url: '/coach',
+                        icon: Smartphone,
                     },
                     {
                         title: 'Roster',
@@ -223,9 +225,14 @@ export function buildMainNavGroups(user: User | null): NavGroup[] {
                 title: 'Athlete work',
                 items: [
                     {
-                        title: 'Training',
+                        title: 'Programs',
                         url: '/training',
                         icon: Dumbbell,
+                    },
+                    {
+                        title: 'Schedule',
+                        url: '/coach#schedule',
+                        icon: CalendarDays,
                     },
                     {
                         title: 'Progress',
@@ -247,11 +254,6 @@ export function buildMainNavGroups(user: User | null): NavGroup[] {
                         url: '/memberships',
                         icon: CreditCard,
                     },
-                    {
-                        title: 'API access',
-                        url: '/api-access',
-                        icon: Cable,
-                    },
                 ],
             },
         ];
@@ -262,19 +264,14 @@ export function buildMainNavGroups(user: User | null): NavGroup[] {
             title: 'My workspace',
             items: [
                 {
-                    title: 'Athlete app',
+                    title: 'App',
                     url: '/app',
                     icon: Smartphone,
                 },
                 {
-                    title: 'Analytics dashboard',
-                    url: '/dashboard',
-                    icon: LayoutGrid,
-                },
-                {
-                    title: 'Training',
-                    url: '/training',
-                    icon: Dumbbell,
+                    title: 'Programs & calendar',
+                    url: '/app#programs',
+                    icon: CalendarDays,
                 },
                 {
                     title: 'Progress',
@@ -285,11 +282,6 @@ export function buildMainNavGroups(user: User | null): NavGroup[] {
                     title: 'Wearables',
                     url: '/wearables',
                     icon: Watch,
-                },
-                {
-                    title: 'Notifications',
-                    url: '/notifications',
-                    icon: Bell,
                 },
                 {
                     title: 'Messages',
@@ -307,9 +299,9 @@ export function buildMainNavGroups(user: User | null): NavGroup[] {
                     icon: CreditCard,
                 },
                 {
-                    title: 'API access',
-                    url: '/api-access',
-                    icon: Cable,
+                    title: 'Profile',
+                    url: '/settings/profile',
+                    icon: UserRound,
                 },
             ],
         },

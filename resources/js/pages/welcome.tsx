@@ -23,7 +23,7 @@ const operatingLayers = [
 ];
 
 const productSignals = [
-    { label: 'Role-aware dashboard', value: 'Admin, coach, and athlete views' },
+    { label: 'Role-aware app', value: 'Admin, coach, and athlete views' },
     { label: 'Manual + wearable metrics', value: 'WHOOP-ready with progress check-ins' },
     { label: 'Training detail', value: 'Programs, sets, reps, load, and logs' },
 ];
@@ -69,7 +69,7 @@ export default function Welcome({ content }: WelcomePageProps) {
                         {auth.user ? (
                             <Button asChild size="lg" className="rounded-full bg-stone-950 px-7 text-stone-50 hover:bg-stone-800">
                                 <Link href={route('dashboard')}>
-                                    Open dashboard
+                                    Open app
                                     <ArrowRight className="h-4 w-4" />
                                 </Link>
                             </Button>

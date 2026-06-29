@@ -15,7 +15,7 @@ class PermissionCatalog
             'overview' => [
                 'label' => 'Overview',
                 'permissions' => [
-                    'dashboard.view' => 'Open the dashboard.',
+                    'dashboard.view' => 'Open the owner/admin dashboard.',
                     'admin.control_center.view' => 'Open the admin control center.',
                     'notifications.manage' => 'Create system notifications.',
                 ],
@@ -89,7 +89,6 @@ class PermissionCatalog
 
         if ($roleName === RoleName::Coach) {
             return [
-                'dashboard.view',
                 'notifications.manage',
                 'roster.view',
                 'roster.manage',
@@ -108,7 +107,6 @@ class PermissionCatalog
         }
 
         return [
-            'dashboard.view',
             'training.view',
             'training.manage',
             'progress.view',

@@ -8,6 +8,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { Bell, Search, Settings2 } from 'lucide-react';
 
 const descriptions: Record<string, string> = {
+    'Admin dashboard': 'The fastest route to business operations today.',
     Dashboard: 'The fastest route to what matters today.',
     'Control center': 'Platform-wide operations without the scavenger hunt.',
     Roster: 'Coach-athlete assignments, gaps, and ownership in one place.',
@@ -29,7 +30,7 @@ const descriptions: Record<string, string> = {
 
 export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: BreadcrumbItemType[] }) {
     const { auth, notifications } = usePage<AuthenticatedSharedData>().props;
-    const currentPage = breadcrumbs.at(-1)?.title ?? 'Dashboard';
+    const currentPage = breadcrumbs.at(-1)?.title ?? 'Workspace';
     const unreadCount = notifications?.unreadCount ?? 0;
 
     return (

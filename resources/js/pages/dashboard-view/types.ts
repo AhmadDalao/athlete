@@ -2,8 +2,8 @@ import { type BreadcrumbItem } from '@/types';
 
 export const dashboardBreadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Dashboard',
-        href: '/dashboard',
+        title: 'Admin dashboard',
+        href: '/admin/dashboard',
     },
 ];
 

@@ -52,7 +52,7 @@ export default function MarketingLayout({ children, title, description }: Market
                                 {auth.user ? (
                                     <Button asChild className="rounded-full bg-stone-950 px-5 text-stone-50 hover:bg-stone-800">
                                         <Link href={route('dashboard')}>
-                                            Dashboard
+                                            Open app
                                             <ArrowRight className="h-4 w-4" />
                                         </Link>
                                     </Button>

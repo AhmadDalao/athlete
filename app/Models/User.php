@@ -401,11 +401,11 @@ class User extends Authenticatable
     public function landingPath(): string
     {
         return match ($this->primaryRoleName()) {
-            RoleName::Owner->value => '/admin/control-center',
-            RoleName::Admin->value => '/admin/control-center',
-            RoleName::Coach->value => '/roster',
+            RoleName::Owner->value => '/admin/dashboard',
+            RoleName::Admin->value => '/admin/dashboard',
+            RoleName::Coach->value => '/coach',
             RoleName::Athlete->value => '/app',
-            default => '/dashboard',
+            default => '/settings/profile',
         };
     }
 }

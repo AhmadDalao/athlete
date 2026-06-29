@@ -98,7 +98,7 @@ class PhoneAuthenticationTest extends TestCase
                 'code' => '654321',
             ]);
 
-        $response->assertRedirect('/roster');
+        $response->assertRedirect('/coach');
         $this->assertAuthenticatedAs($user->fresh());
         $this->assertNotNull($user->fresh()->phone_verified_at);
     }

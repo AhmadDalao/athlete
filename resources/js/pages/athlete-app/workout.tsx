@@ -411,7 +411,7 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
     };
 
     return (
-        <AthleteAppShell active="workout" workoutHref={route('athlete.workouts.show', execution.session.id)}>
+        <AthleteAppShell active="programs">
             <Head title={execution.session.title} />
 
             <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 md:px-6">

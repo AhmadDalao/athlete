@@ -297,7 +297,7 @@ export default function NotificationsIndex({ notifications, canCreateNotificatio
                                 Mark all read
                             </Button>
                             <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white text-stone-900">
-                                <Link href={route('dashboard')}>Back to dashboard</Link>
+                                <Link href={route('dashboard')}>Back home</Link>
                             </Button>
                         </>
                     }

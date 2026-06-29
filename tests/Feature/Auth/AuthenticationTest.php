@@ -34,7 +34,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect('/settings/profile');
     }
 
     public function test_coaches_are_redirected_to_their_primary_workspace_after_login()
@@ -48,7 +48,35 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect('/roster');
+        $response->assertRedirect('/coach');
+    }
+
+    public function test_athletes_are_redirected_to_the_app_after_login()
+    {
+        $user = User::factory()->create();
+        $user->assignRole(RoleName::Athlete);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect('/app');
+    }
+
+    public function test_admins_are_redirected_to_the_admin_dashboard_after_login()
+    {
+        $user = User::factory()->create();
+        $user->assignRole(RoleName::Admin);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect('/admin/dashboard');
     }
 
     public function test_users_can_not_authenticate_with_invalid_password()

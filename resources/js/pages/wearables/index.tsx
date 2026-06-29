@@ -317,7 +317,7 @@ function AthleteWearablesExperience({
                     actions={
                         <>
                             <Button asChild size="lg" className="rounded-full bg-stone-950 text-white hover:bg-stone-800">
-                                <Link href="/dashboard">Back to dashboard</Link>
+                                <Link href="/app">Back to app</Link>
                             </Button>
                             {whoopIntegration.oauthReady && (
                                 <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
@@ -640,7 +640,7 @@ export default function WearablesIndex({
                     actions={
                         <>
                             <Button asChild size="lg" className="rounded-full bg-stone-950 text-white hover:bg-stone-800">
-                                <Link href="/dashboard">Back to dashboard</Link>
+                                <Link href="/dashboard">Back home</Link>
                             </Button>
                             {whoopIntegration.oauthReady && (
                                 <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">

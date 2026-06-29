@@ -127,7 +127,7 @@ class GoogleAuthenticationTest extends TestCase
             ])
             ->get(route('auth.oauth.callback', ['provider' => SignupMethod::Google->value], absolute: false));
 
-        $response->assertRedirect('/roster');
+        $response->assertRedirect('/coach');
         $this->assertAuthenticatedAs($user->fresh());
         $this->assertDatabaseHas('social_accounts', [
             'provider' => SignupMethod::Google->value,

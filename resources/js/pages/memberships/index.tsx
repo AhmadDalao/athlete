@@ -717,7 +717,7 @@ export default function MembershipIndex({
                     actions={
                         <>
                             <Button asChild size="lg" className="rounded-full bg-stone-950 text-white hover:bg-stone-800">
-                                <Link href="/dashboard">Back to dashboard</Link>
+                                <Link href="/dashboard">Back home</Link>
                             </Button>
                             {viewerRole === 'admin' ? (
                                 <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">

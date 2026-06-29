@@ -48,14 +48,18 @@ class SearchIndexController extends Controller
     private function emptyState(User $viewer): array
     {
         $items = [
-            ['title' => 'Dashboard', 'meta' => 'Your daily operating board', 'href' => '/dashboard', 'kind' => 'Workspace'],
             ['title' => 'Training', 'meta' => 'Programs, sets, reps, sessions, and logs', 'href' => '/training', 'kind' => 'Workspace'],
             ['title' => 'Progress', 'meta' => 'Food, weight, hydration, soreness, and check-ins', 'href' => '/progress', 'kind' => 'Workspace'],
         ];
 
-        if ($viewer->hasRole(RoleName::Admin)) {
+        if ($viewer->hasRole(RoleName::Owner) || $viewer->hasRole(RoleName::Admin)) {
+            array_unshift($items, ['title' => 'Admin dashboard', 'meta' => 'Owner and admin business operations', 'href' => '/admin/dashboard', 'kind' => 'Admin']);
             $items[] = ['title' => 'Admin users', 'meta' => 'Search accounts, roles, subscriptions, and profiles', 'href' => '/admin/users', 'kind' => 'Admin'];
             $items[] = ['title' => 'Audit log', 'meta' => 'Review system activity and admin changes', 'href' => '/admin/audit-log', 'kind' => 'Admin'];
+        } elseif ($viewer->hasRole(RoleName::Coach)) {
+            array_unshift($items, ['title' => 'Coach home', 'meta' => 'Your athletes, programs, schedule, and invites', 'href' => '/coach', 'kind' => 'Workspace']);
+        } else {
+            array_unshift($items, ['title' => 'App home', 'meta' => 'Your programs, calendar, workouts, and coach messages', 'href' => '/app', 'kind' => 'Workspace']);
         }
 
         return [[

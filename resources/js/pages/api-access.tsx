@@ -162,7 +162,7 @@ export default function ApiAccess({ viewer, abilities, tokens, managedConnection
                                 <Link href="/memberships">Open billing</Link>
                             </Button>
                             <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
-                                <Link href="/dashboard">Back to dashboard</Link>
+                                <Link href="/dashboard">Back home</Link>
                             </Button>
                         </>
                     }
@@ -215,9 +215,9 @@ export default function ApiAccess({ viewer, abilities, tokens, managedConnection
 
                 <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <WorkspaceActionCard
-                        title="Dashboard API"
+                        title="App summary API"
                         href="/dashboard"
-                        note="Use the app dashboard while you compare its JSON equivalent in API v1."
+                        note="Use the role-aware app surface while you compare its JSON equivalent in API v1."
                         icon={Cable}
                     />
                     <WorkspaceActionCard

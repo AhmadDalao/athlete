@@ -11,6 +11,7 @@ import AppLogo from './app-logo';
 export function AppSidebar() {
     const { auth } = usePage<AuthenticatedSharedData>().props;
     const navGroups = buildMainNavGroups(auth.user);
+    const isAdminLike = auth.user.primary_role === 'owner' || auth.user.primary_role === 'admin';
 
     return (
         <Sidebar collapsible="icon" variant="sidebar" className="border-r border-stone-200/90 bg-white">
@@ -18,7 +19,7 @@ export function AppSidebar() {
                 <SidebarMenu className="border-b border-stone-200/90 pb-5">
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild className="h-auto rounded-2xl px-2 py-2 hover:bg-stone-100">
-                            <Link href={auth.user.landing_path ?? '/dashboard'} prefetch>
+                            <Link href={auth.user.landing_path ?? '/app'} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
@@ -45,12 +46,14 @@ export function AppSidebar() {
                             Contact us
                         </Link>
                     </Button>
-                    <Button asChild size="sm" variant="ghost" className="justify-start rounded-xl">
-                        <Link href="/api-access">
-                            <Cable className="size-4" />
-                            API docs and keys
-                        </Link>
-                    </Button>
+                    {isAdminLike && (
+                        <Button asChild size="sm" variant="ghost" className="justify-start rounded-xl">
+                            <Link href="/api-access">
+                                <Cable className="size-4" />
+                                API docs and keys
+                            </Link>
+                        </Button>
+                    )}
                 </div>
                 <NavUser />
             </SidebarFooter>

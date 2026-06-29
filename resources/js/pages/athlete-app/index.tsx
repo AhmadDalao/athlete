@@ -3,7 +3,21 @@ import { AthletePanel, ReadinessDial } from '@/components/athlete-page-primitive
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowRight, CalendarDays, CheckCircle2, Dumbbell, HeartPulse, MessageCircle, ShieldCheck, UserRound, Watch } from 'lucide-react';
+import {
+    ArrowRight,
+    CalendarDays,
+    CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
+    Dumbbell,
+    HeartPulse,
+    Image,
+    MessageCircle,
+    ShieldCheck,
+    UserRound,
+    Video,
+    Watch,
+} from 'lucide-react';
 
 interface WorkoutSetLogRow {
     exerciseIndex: number;
@@ -53,6 +67,60 @@ interface TodaySession {
     };
     exercises: ExerciseRow[];
     setLogs: WorkoutSetLogRow[];
+}
+
+interface ProgramSummary {
+    id: number;
+    title: string;
+    goal: string | null;
+    status: string;
+    startDate: string | null;
+    endDate: string | null;
+    notes: string | null;
+    coach: {
+        id: number;
+        name: string;
+        email: string;
+    };
+    sessionCount: number;
+    completedSessionCount: number;
+    pendingSessionCount: number;
+    nextSessionDate: string | null;
+}
+
+interface ScheduleDay {
+    date: string;
+    dayNumber: number;
+    weekday: string;
+    isToday: boolean;
+    isSelected: boolean;
+    sessionCount: number;
+    completedCount: number;
+    hasMedia: boolean;
+}
+
+interface SelectedDaySession {
+    id: number;
+    title: string;
+    scheduledDate: string | null;
+    focus: string | null;
+    instructions: string | null;
+    videoUrl: string | null;
+    mediaCount: number;
+    exerciseCount: number;
+    exercisePreview: string[];
+    completionStatus: string;
+    program: {
+        id: number;
+        title: string;
+        goal: string | null;
+        status: string;
+    };
+    coach: {
+        id: number;
+        name: string;
+        email: string;
+    };
 }
 
 interface ChartPoint {
@@ -109,6 +177,24 @@ interface AthleteAppHomeProps {
         } | null;
         todaySession: TodaySession | null;
     };
+    coaches: Array<{
+        id: number;
+        name: string;
+        email: string;
+        goal: string | null;
+        status: string;
+        startedAt: string | null;
+    }>;
+    programs: ProgramSummary[];
+    schedule: {
+        selectedDate: string;
+        month: string;
+        monthLabel: string;
+        previousMonth: string;
+        nextMonth: string;
+        days: ScheduleDay[];
+    };
+    selectedDaySessions: SelectedDaySession[];
     membership: {
         id: number;
         planName: string;
@@ -185,6 +271,10 @@ function exerciseLine(exercise: ExerciseRow) {
     return pieces.join(' · ');
 }
 
+function statusLabel(status: string) {
+    return status.replace(/_/g, ' ');
+}
+
 function TopHeader({ props }: { props: AthleteAppHomeProps }) {
     return (
         <section className="overflow-hidden rounded-b-[2.2rem] bg-emerald-800 px-5 pt-8 pb-7 text-white shadow-[0_28px_70px_-46px_rgba(6,78,59,0.9)] md:mx-6 md:mt-6 md:rounded-[2.2rem] md:px-8">
@@ -195,7 +285,7 @@ function TopHeader({ props }: { props: AthleteAppHomeProps }) {
                         {props.viewer.name}
                     </h1>
                     <p className="max-w-2xl text-sm leading-6 text-emerald-50">
-                        Coach: {props.coach?.name ?? 'Not assigned yet'} · Block: {props.training.program?.title ?? 'No active block'}
+                        Coach: {props.coach?.name ?? props.coaches[0]?.name ?? 'Not assigned yet'} · Programs: {props.programs.length || 'No active blocks'}
                     </p>
                 </div>
                 <div className="hidden rounded-3xl border border-white/15 bg-white/10 p-4 text-right md:block">
@@ -204,6 +294,206 @@ function TopHeader({ props }: { props: AthleteAppHomeProps }) {
                 </div>
             </div>
         </section>
+    );
+}
+
+function ProgramsPanel({ programs }: { programs: ProgramSummary[] }) {
+    return (
+        <AthletePanel
+            title="Assigned programs"
+            description="Every active or draft block assigned to you. Open one to see sessions, exercises, videos, images, and logs."
+            className="scroll-mt-8"
+        >
+            <div id="programs" className="-mt-20 pt-20" />
+            {programs.length === 0 ? (
+                <div className="rounded-[1.5rem] border border-dashed border-stone-300 bg-stone-50 p-5">
+                    <p className="font-medium text-stone-950">No assigned programs yet.</p>
+                    <p className="mt-2 text-sm leading-6 text-stone-600">When your coach assigns a program, it will appear here with its schedule and media.</p>
+                </div>
+            ) : (
+                <div className="overflow-hidden rounded-[1.35rem] border border-stone-200 bg-white">
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[760px] text-left text-sm">
+                            <thead className="bg-stone-50 text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
+                                <tr>
+                                    <th className="px-4 py-3">Program</th>
+                                    <th className="px-4 py-3">Coach</th>
+                                    <th className="px-4 py-3">Dates</th>
+                                    <th className="px-4 py-3">Sessions</th>
+                                    <th className="px-4 py-3">Next</th>
+                                    <th className="px-4 py-3 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-stone-100">
+                                {programs.map((program) => (
+                                    <tr key={program.id} className="align-top">
+                                        <td className="px-4 py-4">
+                                            <Link href={route('athlete.programs.show', program.id)} className="font-semibold text-stone-950 hover:text-emerald-800">
+                                                {program.title}
+                                            </Link>
+                                            <p className="mt-1 text-stone-600">{program.goal ?? 'No goal written yet.'}</p>
+                                            <Badge variant="outline" className="mt-2 capitalize">
+                                                {statusLabel(program.status)}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-4 py-4 text-stone-700">{program.coach.name}</td>
+                                        <td className="px-4 py-4 text-stone-700">
+                                            {formatDate(program.startDate)}
+                                            <span className="block text-stone-400">to {formatDate(program.endDate)}</span>
+                                        </td>
+                                        <td className="px-4 py-4 text-stone-700">
+                                            <span className="font-semibold text-stone-950">{program.completedSessionCount}</span> / {program.sessionCount} complete
+                                            {program.pendingSessionCount > 0 && <span className="block text-amber-700">{program.pendingSessionCount} due</span>}
+                                        </td>
+                                        <td className="px-4 py-4 text-stone-700">{formatDate(program.nextSessionDate)}</td>
+                                        <td className="px-4 py-4 text-right">
+                                            <Button asChild size="sm" variant="outline">
+                                                <Link href={route('athlete.programs.show', program.id)}>Open</Link>
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+        </AthletePanel>
+    );
+}
+
+function CalendarPanel({ schedule, sessions, rangeDays }: { schedule: AthleteAppHomeProps['schedule']; sessions: SelectedDaySession[]; rangeDays: number }) {
+    const selectedDate = formatDate(schedule.selectedDate);
+    const monthHref = (month: string) => `/app?month=${month}&date=${month}-01&range=${rangeDays}`;
+    const dayHref = (day: ScheduleDay) => `/app?month=${schedule.month}&date=${day.date}&range=${rangeDays}`;
+
+    return (
+        <AthletePanel
+            title="Calendar and daily schedule"
+            description="Pick a day to see assigned workouts only for that date. This is your client schedule, not the admin dashboard."
+            className="scroll-mt-8"
+        >
+            <div id="schedule" className="-mt-20 pt-20" />
+            <div className="space-y-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-xs font-semibold tracking-[0.18em] text-stone-400 uppercase">Selected day</p>
+                        <p className="mt-1 text-xl font-semibold tracking-[-0.03em] text-stone-950">{selectedDate}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button asChild variant="outline" size="sm">
+                            <Link href={monthHref(schedule.previousMonth)}>
+                                <ChevronLeft className="size-4" />
+                                Previous
+                            </Link>
+                        </Button>
+                        <Badge variant="outline" className="rounded-full px-3 py-1.5 text-stone-700">
+                            {schedule.monthLabel}
+                        </Badge>
+                        <Button asChild variant="outline" size="sm">
+                            <Link href={monthHref(schedule.nextMonth)}>
+                                Next
+                                <ChevronRight className="size-4" />
+                            </Link>
+                        </Button>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-7 gap-2">
+                    {schedule.days.map((day) => (
+                        <Link
+                            key={day.date}
+                            href={dayHref(day)}
+                            preserveScroll
+                            preserveState
+                            className={[
+                                'min-h-20 rounded-2xl border p-2 text-left transition',
+                                day.isSelected
+                                    ? 'border-emerald-700 bg-emerald-700 text-white shadow-[0_14px_36px_-25px_rgba(4,120,87,0.8)]'
+                                    : day.sessionCount > 0
+                                      ? 'border-emerald-200 bg-emerald-50 text-stone-950 hover:border-emerald-400'
+                                      : 'border-stone-200 bg-white text-stone-500 hover:border-stone-300',
+                            ].join(' ')}
+                        >
+                            <span className="block text-[0.64rem] font-semibold tracking-[0.18em] uppercase opacity-70">{day.weekday}</span>
+                            <span className="mt-1 block text-lg font-semibold">{day.dayNumber}</span>
+                            <span className="mt-1 flex flex-wrap items-center gap-1 text-[0.68rem] font-medium">
+                                {day.sessionCount > 0 ? `${day.sessionCount} workout${day.sessionCount === 1 ? '' : 's'}` : 'Rest'}
+                                {day.hasMedia && <Video className="size-3" />}
+                            </span>
+                            {day.isToday && <span className="mt-1 block text-[0.68rem] font-semibold">Today</span>}
+                        </Link>
+                    ))}
+                </div>
+
+                <div className="overflow-hidden rounded-[1.35rem] border border-stone-200 bg-white">
+                    <div className="border-b border-stone-100 bg-stone-50 px-4 py-3">
+                        <p className="font-semibold text-stone-950">Workouts on {selectedDate}</p>
+                    </div>
+                    {sessions.length === 0 ? (
+                        <div className="p-5 text-sm leading-6 text-stone-600">No scheduled workout for this day.</div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[860px] text-left text-sm">
+                                <thead className="bg-white text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
+                                    <tr>
+                                        <th className="px-4 py-3">Workout</th>
+                                        <th className="px-4 py-3">Coach</th>
+                                        <th className="px-4 py-3">Program</th>
+                                        <th className="px-4 py-3">Sets / reps</th>
+                                        <th className="px-4 py-3">Media</th>
+                                        <th className="px-4 py-3">Status</th>
+                                        <th className="px-4 py-3 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-stone-100">
+                                    {sessions.map((session) => (
+                                        <tr key={session.id} className="align-top">
+                                            <td className="px-4 py-4">
+                                                <p className="font-semibold text-stone-950">{session.title}</p>
+                                                <p className="mt-1 text-stone-600">{session.focus ?? 'Training session'}</p>
+                                            </td>
+                                            <td className="px-4 py-4 text-stone-700">{session.coach.name}</td>
+                                            <td className="px-4 py-4 text-stone-700">{session.program.title}</td>
+                                            <td className="px-4 py-4 text-stone-700">
+                                                {session.exercisePreview.length > 0 ? (
+                                                    <ul className="space-y-1">
+                                                        {session.exercisePreview.map((line) => (
+                                                            <li key={line}>{line}</li>
+                                                        ))}
+                                                    </ul>
+                                                ) : (
+                                                    'No exercises entered'
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-4 text-stone-700">
+                                                <div className="flex items-center gap-2">
+                                                    {session.videoUrl && <Video className="size-4 text-emerald-700" />}
+                                                    {session.mediaCount > 0 && <Image className="size-4 text-amber-600" />}
+                                                    {session.videoUrl || session.mediaCount > 0 ? `${session.mediaCount} item${session.mediaCount === 1 ? '' : 's'}` : 'None'}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <Badge variant={session.completionStatus === 'completed' ? 'default' : 'outline'} className="capitalize">
+                                                    {statusLabel(session.completionStatus)}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-4 text-right">
+                                                <Button asChild size="sm" className="bg-emerald-800 text-white hover:bg-emerald-900">
+                                                    <Link href={route('athlete.workouts.show', session.id)}>
+                                                        {session.completionStatus === 'scheduled' ? 'Start' : 'Open'}
+                                                    </Link>
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </AthletePanel>
     );
 }
 
@@ -391,9 +681,17 @@ function TrendCard({
     );
 }
 
-function HealthTrendsPanel({ charts }: { charts: AthleteCharts }) {
+function HealthTrendsPanel({ charts, schedule }: { charts: AthleteCharts; schedule: AthleteAppHomeProps['schedule'] }) {
     const changeRange = (range: number) => {
-        router.get('/app', { range }, { only: ['charts'], preserveScroll: true, preserveState: true, replace: true });
+        router.get(
+            '/app',
+            {
+                range,
+                date: schedule.selectedDate,
+                month: schedule.month,
+            },
+            { only: ['charts'], preserveScroll: true, preserveState: true, replace: true },
+        );
     };
 
     return (
@@ -432,13 +730,11 @@ function HealthTrendsPanel({ charts }: { charts: AthleteCharts }) {
 }
 
 export default function AthleteAppHome(props: AthleteAppHomeProps) {
-    const workoutHref = props.training.todaySession ? route('athlete.workouts.show', props.training.todaySession.session.id) : '/app';
     const readiness = props.wearable.latestSnapshot?.readinessScore ?? null;
 
     return (
         <AthleteAppShell
-            active="feed"
-            workoutHref={workoutHref}
+            active="app"
             unreadMessages={props.feed.unreadMessages}
             unreadNotifications={props.feed.unreadNotifications}
         >
@@ -449,6 +745,12 @@ export default function AthleteAppHome(props: AthleteAppHomeProps) {
 
                 <main className="grid gap-6 px-4 md:px-6 lg:grid-cols-[1.1fr_0.9fr]">
                     <div className="space-y-6">
+                        <CalendarPanel schedule={props.schedule} sessions={props.selectedDaySessions} rangeDays={props.charts.rangeDays} />
+
+                        <ProgramsPanel programs={props.programs} />
+
+                        <TodayWorkoutCard session={props.training.todaySession} />
+
                         <AthletePanel
                             title="Exertion and readiness"
                             description={props.wearable.latestSnapshot ? `Latest wearable sync from ${props.wearable.latestSnapshot.provider}.` : 'Connect WHOOP or another wearable to make this board useful.'}
@@ -473,9 +775,7 @@ export default function AthleteAppHome(props: AthleteAppHomeProps) {
                             )}
                         </AthletePanel>
 
-                        <HealthTrendsPanel charts={props.charts} />
-
-                        <TodayWorkoutCard session={props.training.todaySession} />
+                        <HealthTrendsPanel charts={props.charts} schedule={props.schedule} />
 
                         <AthletePanel title="Feed" description="Coach updates, system notices, and anything that needs your attention." className="scroll-mt-8" contentClassName="space-y-3">
                             <div id="feed" className="-mt-20 pt-20" />

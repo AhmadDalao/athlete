@@ -3,13 +3,12 @@ import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Bell, Dumbbell, LayoutDashboard, MessageCircle, UserRound } from 'lucide-react';
+import { CalendarDays, HeartPulse, LayoutDashboard, MessageCircle, UserRound, Watch } from 'lucide-react';
 import { type ReactNode } from 'react';
 
 interface AthleteAppShellProps {
     children: ReactNode;
-    active: 'feed' | 'board' | 'workout' | 'messages' | 'profile';
-    workoutHref?: string;
+    active: 'app' | 'programs' | 'progress' | 'wearables' | 'messages' | 'profile';
     unreadMessages?: number;
     unreadNotifications?: number;
     breadcrumbs?: BreadcrumbItem[];
@@ -25,15 +24,14 @@ const defaultBreadcrumbs: BreadcrumbItem[] = [
 export function AthleteAppShell({
     children,
     active,
-    workoutHref = '/app',
     unreadMessages = 0,
-    unreadNotifications = 0,
     breadcrumbs = defaultBreadcrumbs,
 }: AthleteAppShellProps) {
     const navItems = [
-        { key: 'feed', label: 'Feed', href: '/app#feed', icon: Bell, count: unreadNotifications },
-        { key: 'board', label: 'Board', href: '/progress', icon: LayoutDashboard, count: 0 },
-        { key: 'workout', label: 'Workout', href: workoutHref, icon: Dumbbell, count: 0 },
+        { key: 'app', label: 'App', href: '/app', icon: LayoutDashboard, count: 0 },
+        { key: 'programs', label: 'Programs', href: '/app#programs', icon: CalendarDays, count: 0 },
+        { key: 'progress', label: 'Progress', href: '/progress', icon: HeartPulse, count: 0 },
+        { key: 'wearables', label: 'Devices', href: '/wearables', icon: Watch, count: 0 },
         { key: 'messages', label: 'Messages', href: '/messages', icon: MessageCircle, count: unreadMessages },
         { key: 'profile', label: 'Profile', href: '/settings/profile', icon: UserRound, count: 0 },
     ] as const;
@@ -44,7 +42,7 @@ export function AthleteAppShell({
                 {children}
 
                 <nav className="fixed inset-x-3 bottom-3 z-40 rounded-[1.5rem] border border-stone-200 bg-white/95 p-2 shadow-[0_18px_50px_-26px_rgba(15,23,42,0.45)] backdrop-blur md:hidden">
-                    <div className="grid grid-cols-5 gap-1">
+                    <div className="grid grid-cols-6 gap-1">
                         {navItems.map(({ key, label, href, icon: Icon, count }) => (
                             <Link
                                 key={key}
