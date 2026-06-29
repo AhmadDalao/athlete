@@ -28,30 +28,37 @@ interface UserAppShellProps {
     accentClassName?: string;
 }
 
-export function UserAppShell({
-    children,
-    active,
-    navItems,
-    eyebrow,
-    title,
-    description,
-    accentClassName = 'bg-emerald-700',
-}: UserAppShellProps) {
+export function UserAppShell({ children, active, navItems, eyebrow, title, description, accentClassName = 'bg-emerald-700' }: UserAppShellProps) {
     const { auth, notifications } = usePage<AuthenticatedSharedData>().props;
     const initials = useInitials();
     const unreadNotifications = notifications?.unreadCount ?? 0;
+    const firstMobileItems = navItems.slice(0, 5);
+    const activeMobileItem = navItems.find((item) => item.key === active);
+    const mobileNavItems =
+        activeMobileItem && !firstMobileItems.some((item) => item.key === active)
+            ? [...firstMobileItems.slice(0, 4), activeMobileItem]
+            : firstMobileItems;
 
     return (
         <div className="min-h-screen overflow-x-hidden bg-[#fbfaf6] pb-[calc(6.75rem+env(safe-area-inset-bottom))] text-stone-950 md:pb-10">
             <header className="sticky top-0 z-40 border-b border-stone-200/80 bg-[#fbfaf6]/95 backdrop-blur-xl md:static md:border-b-0 md:bg-transparent">
                 <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5 md:gap-3 md:px-6 md:py-5">
                     <Link href={auth.user.landing_path ?? '/app'} className="flex min-w-0 items-center gap-3">
-                        <span className={cn('grid size-10 shrink-0 place-items-center rounded-2xl text-white shadow-[0_18px_38px_-28px_rgba(15,23,42,0.55)] md:size-11', accentClassName)}>
+                        <span
+                            className={cn(
+                                'grid size-10 shrink-0 place-items-center rounded-2xl text-white shadow-[0_18px_38px_-28px_rgba(15,23,42,0.55)] md:size-11',
+                                accentClassName,
+                            )}
+                        >
                             <AppLogoIcon className="size-5 fill-current" />
                         </span>
                         <span className="min-w-0">
-                            <span className="block truncate text-[0.64rem] font-semibold tracking-[0.18em] text-stone-400 uppercase md:text-xs">{eyebrow}</span>
-                            <span className="block truncate font-['Space_Grotesk'] text-base font-bold tracking-[-0.04em] text-stone-950 md:text-lg">{title}</span>
+                            <span className="block truncate text-[0.64rem] font-semibold tracking-[0.18em] text-stone-400 uppercase md:text-xs">
+                                {eyebrow}
+                            </span>
+                            <span className="block truncate font-['Space_Grotesk'] text-base font-bold tracking-[-0.04em] text-stone-950 md:text-lg">
+                                {title}
+                            </span>
                         </span>
                     </Link>
 
@@ -68,7 +75,9 @@ export function UserAppShell({
                                 <Icon className="size-4" />
                                 {label}
                                 {count > 0 && (
-                                    <span className="grid min-w-5 place-items-center rounded-full bg-amber-300 px-1.5 text-[0.68rem] text-stone-950">{count}</span>
+                                    <span className="grid min-w-5 place-items-center rounded-full bg-amber-300 px-1.5 text-[0.68rem] text-stone-950">
+                                        {count}
+                                    </span>
                                 )}
                             </Link>
                         ))}
@@ -133,7 +142,7 @@ export function UserAppShell({
 
             <nav className="fixed inset-x-3 bottom-3 z-40 rounded-[1.5rem] border border-stone-200 bg-white/95 p-2 shadow-[0_18px_50px_-26px_rgba(15,23,42,0.45)] backdrop-blur md:hidden">
                 <div className="grid grid-cols-5 gap-1">
-                    {navItems.slice(0, 5).map(({ key, label, href, icon: Icon, count = 0 }) => (
+                    {mobileNavItems.map(({ key, label, href, icon: Icon, count = 0 }) => (
                         <Link
                             key={key}
                             href={href}

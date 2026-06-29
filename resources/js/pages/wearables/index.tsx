@@ -1,3 +1,4 @@
+import { AthleteAppShell } from '@/components/athlete-app-shell';
 import { AthleteHero, AthleteMetricCard, AthletePanel, AthleteSectionHeading, ReadinessDial, TrendBars } from '@/components/athlete-page-primitives';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -289,10 +290,10 @@ function AthleteWearablesExperience({
         })) ?? [];
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AthleteAppShell active="wearables" breadcrumbs={breadcrumbs}>
             <Head title="Wearables" />
 
-            <div className="flex h-full flex-1 flex-col gap-8 bg-white py-8">
+            <div className="mx-auto max-w-6xl space-y-6 px-4 pt-5 pb-32 md:space-y-8 md:px-6 md:pt-6 md:pb-6">
                 <AthleteHero
                     eyebrow="Recovery signal board"
                     title={
@@ -584,7 +585,7 @@ function AthleteWearablesExperience({
                     </div>
                 </section>
             </div>
-        </AppLayout>
+        </AthleteAppShell>
     );
 }
 
@@ -739,9 +740,7 @@ export default function WearablesIndex({
                                             <td className="px-5 py-4">
                                                 <p className="max-w-[18rem] text-sm leading-6 text-stone-700">{entry.issue}</p>
                                                 {entry.lastErrorMessage && (
-                                                    <p className="mt-1 line-clamp-2 max-w-[18rem] text-xs text-stone-500">
-                                                        {entry.lastErrorMessage}
-                                                    </p>
+                                                    <p className="mt-1 line-clamp-2 max-w-[18rem] text-xs text-stone-500">{entry.lastErrorMessage}</p>
                                                 )}
                                             </td>
                                             <td className="px-5 py-4">
@@ -795,7 +794,9 @@ export default function WearablesIndex({
                         </div>
                         <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
                             <WorkspaceTablePageSize value={perPage} onChange={updatePerPage} />
-                            <p className="text-sm text-stone-500">Showing {connections.data.length} of {connections.total} matching connections.</p>
+                            <p className="text-sm text-stone-500">
+                                Showing {connections.data.length} of {connections.total} matching connections.
+                            </p>
                         </div>
 
                         <WorkspaceTable minWidth="min-w-[1320px]">
@@ -840,7 +841,9 @@ export default function WearablesIndex({
                                             <td className="px-5 py-4">
                                                 <p className="text-sm text-stone-700">{connection.lastSyncedAt ?? 'Never synced'}</p>
                                                 <p className="mt-1 text-xs text-stone-500">
-                                                    {connection.review.staleHours !== null ? `${connection.review.staleHours}h stale` : 'No stale data'}
+                                                    {connection.review.staleHours !== null
+                                                        ? `${connection.review.staleHours}h stale`
+                                                        : 'No stale data'}
                                                 </p>
                                             </td>
                                             <td className="px-5 py-4">
