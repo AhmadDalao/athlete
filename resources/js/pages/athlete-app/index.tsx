@@ -371,7 +371,7 @@ function TopHeader({ props }: { props: AthleteAppHomeProps }) {
                 <div className="space-y-2">
                     <Badge className="rounded-full bg-white/15 text-white hover:bg-white/15">Athlete app</Badge>
                     <p className="text-sm text-emerald-50">Welcome, {props.viewer.name}</p>
-                    <h1 className="font-['Space_Grotesk'] text-4xl leading-none font-bold tracking-[-0.06em] sm:text-5xl">Dashboard</h1>
+                    <h1 className="font-['Space_Grotesk'] text-4xl leading-none font-bold tracking-[-0.06em] sm:text-5xl">Today</h1>
                     <p className="max-w-2xl text-sm leading-6 text-emerald-50">
                         Coach: {props.coach?.name ?? props.coaches[0]?.name ?? 'Not assigned yet'} · Programs:{' '}
                         {props.programs.length || 'No active blocks'}

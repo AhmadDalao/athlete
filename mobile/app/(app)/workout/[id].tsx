@@ -1,11 +1,12 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { WebView } from 'react-native-webview';
 
 import { apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
-import { AppHeader, Card, LoadingState, Pill, PrimaryButton, Screen, SecondaryButton, SectionTitle } from '@/components/mobile-ui';
+import { AppHeader, Card, LoadingState, Pill, Screen, SecondaryButton, SectionTitle } from '@/components/mobile-ui';
 import { colors, radius } from '@/theme';
 import type { WorkoutExecution, WorkoutSetRow } from '@/types/api';
 
@@ -22,6 +23,7 @@ export default function WorkoutExecutionScreen() {
   const [timer, setTimer] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [statusText, setStatusText] = useState<string | null>(null);
+  const [journalNotes, setJournalNotes] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -119,7 +121,7 @@ export default function WorkoutExecutionScreen() {
       body: JSON.stringify({
         completion_status: status,
         performed_at: new Date().toISOString(),
-        notes: status === 'missed' ? 'Marked missed from mobile.' : 'Saved from mobile.',
+        notes: journalNotes.trim() || (status === 'missed' ? 'Marked missed from mobile.' : 'Saved from mobile.'),
       }),
     }, token);
     setWorkout(response.data);
@@ -143,7 +145,35 @@ export default function WorkoutExecutionScreen() {
   const mediaUrl = exercise.mediaUrl ?? workout.session.videoUrl ?? workout.session.mediaItems?.[0]?.url;
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <View style={styles.footerActions}>
+          <Pressable
+            onPress={() => setCurrentExercise(Math.max(0, currentExercise - 1))}
+            style={[styles.footerCircle, currentExercise === 0 && styles.footerCircleDisabled]}
+            disabled={currentExercise === 0}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={28} color={colors.ink} />
+          </Pressable>
+          <Pressable onPress={saveSets} style={styles.footerPrimary}>
+            <Text style={styles.footerPrimaryText}>Save</Text>
+          </Pressable>
+          <Pressable onPress={() => complete('completed')} style={styles.footerPrimary}>
+            <Text style={styles.footerPrimaryText}>Complete</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setCurrentExercise(Math.min(workout.exercises.length - 1, currentExercise + 1))}
+            style={[
+              styles.footerCircle,
+              currentExercise === workout.exercises.length - 1 && styles.footerCircleDisabled,
+            ]}
+            disabled={currentExercise === workout.exercises.length - 1}
+          >
+            <MaterialCommunityIcons name="arrow-right" size={28} color={colors.ink} />
+          </Pressable>
+        </View>
+      }
+    >
       <AppHeader title="Workout" eyebrow={workout.session.scheduledDate ?? 'Training'} onBack={() => router.back()} />
 
       <View style={styles.hero}>
@@ -169,13 +199,7 @@ export default function WorkoutExecutionScreen() {
         })}
       </ScrollView>
 
-      {mediaUrl ? (
-        <Pressable onPress={() => Linking.openURL(mediaUrl)} style={styles.mediaHero}>
-          <MaterialCommunityIcons name="play-circle-outline" size={48} color="#ffffff" />
-          <Text style={styles.mediaTitle} numberOfLines={2}>{exercise.name}</Text>
-          <Text style={styles.mediaNote}>Tap to open movement media</Text>
-        </Pressable>
-      ) : null}
+      {mediaUrl ? <MovementMedia title={exercise.name} url={mediaUrl} /> : null}
 
       <Card style={styles.exerciseCard}>
         <View style={styles.exerciseHeader}>
@@ -190,10 +214,21 @@ export default function WorkoutExecutionScreen() {
         </View>
 
         <View style={styles.actionRow}>
-          {mediaUrl ? <SecondaryButton label="Media" icon="play-box-outline" onPress={() => Linking.openURL(mediaUrl)} /> : null}
-          <SecondaryButton label="Journal" icon="notebook-outline" onPress={() => setStatusText('Journal notes save with workout status in this MVP.')} />
+          {mediaUrl ? <SecondaryButton label="Open media" icon="play-box-outline" onPress={() => Linking.openURL(mediaUrl)} /> : null}
           <SecondaryButton label="Opt out" icon="close-circle-outline" onPress={() => complete('missed')} />
         </View>
+      </Card>
+
+      <Card style={styles.journalCard}>
+        <Text style={styles.exerciseTitle}>Journal</Text>
+        <Text style={styles.note}>Add quick context for your coach. These notes save when you complete or opt out.</Text>
+        <TextInput
+          multiline
+          onChangeText={setJournalNotes}
+          placeholder="Energy, soreness, pain, substitution, or anything your coach should know."
+          style={styles.journalInput}
+          value={journalNotes}
+        />
       </Card>
 
       <Card style={styles.setCard}>
@@ -249,22 +284,85 @@ export default function WorkoutExecutionScreen() {
 
       {statusText ? <Text style={styles.status}>{statusText}</Text> : null}
 
-      <View style={styles.navActions}>
-        <SecondaryButton
-          label="Previous"
-          icon="chevron-left"
-          onPress={() => setCurrentExercise(Math.max(0, currentExercise - 1))}
-        />
-        <SecondaryButton
-          label="Next"
-          icon="chevron-right"
-          onPress={() => setCurrentExercise(Math.min(workout.exercises.length - 1, currentExercise + 1))}
-        />
-      </View>
-      <PrimaryButton label="Save partial" onPress={saveSets} />
-      <PrimaryButton label="Complete workout" onPress={() => complete('completed')} />
     </Screen>
   );
+}
+
+function MovementMedia({ title, url }: { title: string; url: string }) {
+  const embedUrl = getEmbedUrl(url);
+
+  if (isImageUrl(url)) {
+    return (
+      <View style={styles.mediaHero}>
+        <Image source={{ uri: url }} style={styles.mediaImage} />
+        <View style={styles.mediaOverlay}>
+          <MaterialCommunityIcons name="image-outline" size={34} color="#ffffff" />
+          <Text style={styles.mediaTitle} numberOfLines={2}>{title}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (embedUrl) {
+    return (
+      <View style={styles.mediaHero}>
+        <WebView
+          allowsFullscreenVideo
+          mediaPlaybackRequiresUserAction
+          source={{ uri: embedUrl }}
+          style={styles.mediaWebView}
+        />
+      </View>
+    );
+  }
+
+  if (isVideoUrl(url)) {
+    return (
+      <View style={styles.mediaHero}>
+        <WebView
+          allowsFullscreenVideo
+          mediaPlaybackRequiresUserAction
+          originWhitelist={['*']}
+          source={{
+            html: `<html><body style="margin:0;background:#102820;"><video controls playsinline style="width:100%;height:100%;object-fit:cover;"><source src="${url}"></video></body></html>`,
+          }}
+          style={styles.mediaWebView}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <Pressable onPress={() => Linking.openURL(url)} style={styles.mediaFallback}>
+      <MaterialCommunityIcons name="open-in-new" size={34} color="#ffffff" />
+      <Text style={styles.mediaTitle} numberOfLines={2}>{title}</Text>
+      <Text style={styles.mediaNote}>Open movement media</Text>
+    </Pressable>
+  );
+}
+
+function getEmbedUrl(url: string) {
+  const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/);
+
+  if (youtubeMatch?.[1]) {
+    return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+  }
+
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+
+  if (vimeoMatch?.[1]) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  }
+
+  return null;
+}
+
+function isImageUrl(url: string) {
+  return /\.(png|jpe?g|gif|webp|avif)(\?.*)?$/i.test(url);
+}
+
+function isVideoUrl(url: string) {
+  return /\.(mp4|mov|m4v|webm)(\?.*)?$/i.test(url);
 }
 
 const styles = StyleSheet.create({
@@ -327,11 +425,35 @@ const styles = StyleSheet.create({
   mediaHero: {
     minHeight: 168,
     borderRadius: radius.xl,
+    backgroundColor: colors.panel,
+    overflow: 'hidden',
+  },
+  mediaImage: {
+    minHeight: 212,
+    width: '100%',
+  },
+  mediaOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    justifyContent: 'flex-end',
+    gap: 8,
+    padding: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+  },
+  mediaWebView: {
+    height: 212,
+    backgroundColor: colors.panel,
+  },
+  mediaFallback: {
+    minHeight: 168,
+    borderRadius: radius.xl,
     padding: 20,
     justifyContent: 'flex-end',
     gap: 8,
     backgroundColor: colors.panel,
-    overflow: 'hidden',
   },
   mediaTitle: {
     color: '#ffffff',
@@ -346,6 +468,21 @@ const styles = StyleSheet.create({
   },
   exerciseCard: {
     gap: 16,
+  },
+  journalCard: {
+    gap: 12,
+  },
+  journalInput: {
+    minHeight: 104,
+    borderRadius: 18,
+    borderColor: colors.border,
+    borderWidth: 1,
+    backgroundColor: '#ffffff',
+    color: colors.ink,
+    fontSize: 16,
+    lineHeight: 22,
+    padding: 14,
+    textAlignVertical: 'top',
   },
   exerciseHeader: {
     gap: 12,
@@ -452,11 +589,35 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     textAlign: 'center',
   },
-  navActions: {
+  footerActions: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
     alignItems: 'center',
-    justifyContent: 'space-between',
+  },
+  footerCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    borderColor: colors.border,
+    borderWidth: 1,
+  },
+  footerCircleDisabled: {
+    opacity: 0.35,
+  },
+  footerPrimary: {
+    flex: 1,
+    minHeight: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.green,
+  },
+  footerPrimaryText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '900',
   },
 });

@@ -116,11 +116,13 @@ The app has the health sync abstraction in `mobile/src/health/health-sync.ts`.
 
 Expo Go cannot read HealthKit or Health Connect. Real device testing needs Expo development builds with native health modules wired behind that abstraction.
 
-Next native module work:
+Current status:
 
-- iOS: add HealthKit reader and permission flow
-- Android: add Health Connect reader and permission flow
-- call `syncMobileHealthRecords()` with normalized daily records
+- Android Health Connect is wired through `react-native-health-connect` and `expo-health-connect`.
+- Android sync requests read permissions for steps, active calories, sleep, heart rate, resting heart rate, HRV, and exercise sessions.
+- Android sync normalizes the last 14 days into one daily record per date and posts to `/api/v1/wearables/mobile-sync`.
+- Apple Health is still not wired. iOS shows a clear unsupported message until the HealthKit reader is added.
+- Expo Go still cannot run native health sync. Use a development build.
 
 ## Local Commands
 
@@ -131,6 +133,30 @@ npm --prefix mobile install
 ```
 
 Run mobile app:
+
+```bash
+npm --prefix mobile run start
+```
+
+Create a local mobile env file:
+
+```bash
+cp mobile/.env.example mobile/.env
+```
+
+For a real Android phone, do not use `localhost`. Use one of these:
+
+- Live backend: `EXPO_PUBLIC_API_BASE_URL=https://athlete.ahmaddalao.com`
+- Android emulator talking to desktop Laravel: `EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:8000`
+- Real Android phone talking to desktop Laravel: `EXPO_PUBLIC_API_BASE_URL=http://YOUR_MAC_LAN_IP:8000`
+
+If you use the LAN IP path, run Laravel so it listens on the network:
+
+```bash
+php artisan serve --host=0.0.0.0 --port=8000
+```
+
+Then start Expo with the dev client:
 
 ```bash
 npm --prefix mobile run start

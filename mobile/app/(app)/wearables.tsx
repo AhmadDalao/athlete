@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
@@ -31,6 +31,7 @@ export default function WearablesScreen() {
   const [payload, setPayload] = useState<WearablesPayload | null>(null);
   const [tab, setTab] = useState<'daily' | 'trends'>('daily');
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -54,21 +55,30 @@ export default function WearablesScreen() {
       return;
     }
 
-    const records = await collectNativeHealthRecords();
+    setIsSyncing(true);
+    setMessage(null);
 
-    if (!records.length) {
-      setMessage('Native health modules are ready to wire in development builds; no local records were returned yet.');
-      return;
+    try {
+      const records = await collectNativeHealthRecords();
+
+      if (!records.length) {
+        setMessage('Health Connect returned no readable records. Check Samsung Health and Health Connect permissions.');
+        return;
+      }
+
+      await syncMobileHealthRecords({
+        token,
+        provider: 'health_connect',
+        records,
+        deviceName: Platform.OS === 'android' ? 'Android Health Connect' : 'Mobile device',
+      });
+      setMessage(`${records.length} daily health record(s) synced.`);
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Health sync failed. Reopen permissions and try again.');
+    } finally {
+      setIsSyncing(false);
     }
-
-    await syncMobileHealthRecords({
-      token,
-      provider: 'health_connect',
-      records,
-      deviceName: 'Mobile device',
-    });
-    setMessage('Health records synced.');
-    await load();
   }
 
   if (isLoading || !payload) {
@@ -94,7 +104,11 @@ export default function WearablesScreen() {
             <SignalRing label="Strain" value={latest?.strainScore ?? '--'} tone="gold" />
           </Card>
 
-          <PrimaryButton label="Sync phone health data" onPress={syncNative} />
+          <PrimaryButton
+            label={isSyncing ? 'Syncing...' : Platform.OS === 'android' ? 'Sync Health Connect' : 'Apple Health coming next'}
+            onPress={syncNative}
+            disabled={isSyncing}
+          />
           {message ? <Text style={styles.message}>{message}</Text> : null}
 
           <SectionTitle eyebrow="Today" title="Health monitor" note="Latest available wearable snapshot." />

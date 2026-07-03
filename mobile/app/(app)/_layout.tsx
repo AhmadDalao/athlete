@@ -71,8 +71,8 @@ export default function AppTabs() {
         name="profile"
         options={{ title: 'Profile', tabBarIcon: ({ focused }) => <TabIcon name="account-circle-outline" focused={focused} /> }}
       />
-      <Tabs.Screen name="workout/[id]" options={{ href: null }} />
-      <Tabs.Screen name="programs/[id]" options={{ href: null }} />
+      <Tabs.Screen name="workout/[id]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="programs/[id]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
     </Tabs>
   );
 }

@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { PropsWithChildren } from 'react';
+import { PropsWithChildren, ReactNode } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -18,12 +18,26 @@ import type { TrainingSessionSummary } from '@/types/api';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
-export function Screen({ children, padded = true }: PropsWithChildren<{ padded?: boolean }>) {
+export function Screen({
+  children,
+  footer,
+  padded = true,
+}: PropsWithChildren<{ footer?: ReactNode; padded?: boolean }>) {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={[styles.screenContent, !padded && styles.flushScreen]} showsVerticalScrollIndicator={false}>
-        {children}
-      </ScrollView>
+      <View style={styles.screenFrame}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.screenContent,
+            footer ? styles.screenContentWithFooter : null,
+            !padded && styles.flushScreen,
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </ScrollView>
+        {footer ? <View style={styles.screenFooter}>{footer}</View> : null}
+      </View>
     </SafeAreaView>
   );
 }
@@ -249,10 +263,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  screenFrame: {
+    flex: 1,
+  },
   screenContent: {
     padding: 18,
     paddingBottom: 112,
     gap: 16,
+  },
+  screenContentWithFooter: {
+    paddingBottom: 154,
+  },
+  screenFooter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 18,
+    backgroundColor: 'rgba(250, 248, 243, 0.96)',
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
   },
   flushScreen: {
     paddingHorizontal: 0,
