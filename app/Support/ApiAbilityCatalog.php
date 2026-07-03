@@ -22,6 +22,9 @@ class ApiAbilityCatalog
             'progress:write' => 'Create or update athlete check-ins.',
             'membership:read' => 'Read visible memberships and recent payment history.',
             'wearable:read' => 'Read device connections, latest snapshots, and trend analytics.',
+            'wearable:write' => 'Sync authenticated mobile wearable records from HealthKit or Health Connect.',
+            'messages:read' => 'Read visible coach-athlete message threads.',
+            'messages:write' => 'Send messages inside visible coach-athlete threads.',
             'admin:read' => 'Read the admin control-center metrics and queues.',
         ];
     }
@@ -46,6 +49,19 @@ class ApiAbilityCatalog
             ]);
         }
 
+        if ($user->hasRole(RoleName::Owner)) {
+            $abilities = array_merge($abilities, [
+                'profile:read',
+                'dashboard:read',
+                'roster:read',
+                'training:read',
+                'progress:read',
+                'membership:read',
+                'wearable:read',
+                'admin:read',
+            ]);
+        }
+
         if ($user->hasRole(RoleName::Coach)) {
             $abilities = array_merge($abilities, [
                 'profile:read',
@@ -55,6 +71,8 @@ class ApiAbilityCatalog
                 'progress:read',
                 'membership:read',
                 'wearable:read',
+                'messages:read',
+                'messages:write',
             ]);
         }
 
@@ -68,6 +86,9 @@ class ApiAbilityCatalog
                 'progress:write',
                 'membership:read',
                 'wearable:read',
+                'wearable:write',
+                'messages:read',
+                'messages:write',
             ]);
         }
 

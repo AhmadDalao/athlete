@@ -64,8 +64,7 @@ class AthleteAppController extends Controller
                 $trainingSession->sort_order,
             ])
             ->values();
-        $selectedDaySessions = $allSessions
-            ->filter(fn (TrainingSession $trainingSession): bool => $trainingSession->scheduled_date?->toDateString() === $selectedDate->toDateString())
+        $scheduleSessions = $allSessions
             ->map(fn (TrainingSession $trainingSession): array => array_merge($presenter->session($trainingSession), [
                 'program' => [
                     'id' => $trainingSession->program->id,
@@ -79,6 +78,10 @@ class AthleteAppController extends Controller
                     'email' => $trainingSession->program->coach->email,
                 ],
             ]))
+            ->values()
+            ->all();
+        $selectedDaySessions = collect($scheduleSessions)
+            ->filter(fn (array $trainingSession): bool => $trainingSession['scheduledDate'] === $selectedDate->toDateString())
             ->values()
             ->all();
 
@@ -136,6 +139,7 @@ class AthleteAppController extends Controller
                 'previousMonth' => $month->subMonth()->format('Y-m'),
                 'nextMonth' => $month->addMonth()->format('Y-m'),
                 'days' => $this->calendarDays($month, $allSessions, $selectedDate),
+                'sessions' => $scheduleSessions,
             ],
             'selectedDaySessions' => $selectedDaySessions,
             'membership' => $membership ? [

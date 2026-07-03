@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
     WorkspaceActionCard,
     WorkspaceHero,
@@ -8,11 +9,13 @@ import {
     WorkspaceTable,
     WorkspaceTableEmpty,
     WorkspaceTableHeader,
+    WorkspaceTablePageSize,
 } from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { Activity, CreditCard, Dumbbell, Shield, TimerReset, Users, Watch, WifiOff } from 'lucide-react';
+import { Activity, CreditCard, Dumbbell, Search, Shield, TimerReset, Users, Watch, WifiOff } from 'lucide-react';
+import { useState } from 'react';
 
 const adminPrimaryButtonClass =
     'rounded-full border border-emerald-300/70 bg-[linear-gradient(135deg,rgba(16,185,129,0.96),rgba(13,148,136,0.92))] text-white shadow-[0_18px_34px_-24px_rgba(5,150,105,0.45)] hover:brightness-[1.03]';
@@ -179,7 +182,145 @@ function badgeVariantForStatus(status: string): 'default' | 'secondary' | 'destr
     return 'outline';
 }
 
+function rowMatchesSearch(query: string, values: Array<string | number | null | undefined>) {
+    const needle = query.trim().toLowerCase();
+
+    if (!needle) {
+        return true;
+    }
+
+    return values.some((value) =>
+        String(value ?? '')
+            .toLowerCase()
+            .includes(needle),
+    );
+}
+
+function visibleRows<T>(rows: T[], perPage: string) {
+    if (perPage === 'all') {
+        return rows;
+    }
+
+    return rows.slice(0, Number(perPage) || 10);
+}
+
+function QueueTableControls({
+    search,
+    onSearchChange,
+    perPage,
+    onPerPageChange,
+    shown,
+    total,
+    placeholder,
+}: {
+    search: string;
+    onSearchChange: (value: string) => void;
+    perPage: string;
+    onPerPageChange: (value: string) => void;
+    shown: number;
+    total: number;
+    placeholder: string;
+}) {
+    return (
+        <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/50 p-4 lg:flex-row lg:items-center lg:justify-between">
+            <WorkspaceTablePageSize value={perPage} onChange={onPerPageChange} />
+            <div className="flex min-w-0 flex-1 flex-col gap-3 lg:max-w-2xl lg:flex-row lg:items-center">
+                <div className="relative min-w-0 flex-1">
+                    <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone-400" />
+                    <Input
+                        className="h-11 rounded-xl border-stone-200 bg-white pl-9"
+                        value={search}
+                        onChange={(event) => onSearchChange(event.target.value)}
+                        placeholder={placeholder}
+                    />
+                </div>
+                <p className="shrink-0 text-sm text-stone-500">
+                    Showing {shown} of {total}
+                </p>
+            </div>
+        </div>
+    );
+}
+
 export default function ControlCenter({ summary, queues, signupMix, opsPlaybook }: ControlCenterProps) {
+    const [membershipSearch, setMembershipSearch] = useState('');
+    const [membershipPerPage, setMembershipPerPage] = useState('10');
+    const [paymentSearch, setPaymentSearch] = useState('');
+    const [paymentPerPage, setPaymentPerPage] = useState('10');
+    const [deviceSearch, setDeviceSearch] = useState('');
+    const [devicePerPage, setDevicePerPage] = useState('10');
+    const [coverageSearch, setCoverageSearch] = useState('');
+    const [coveragePerPage, setCoveragePerPage] = useState('10');
+    const [coachSearch, setCoachSearch] = useState('');
+    const [coachPerPage, setCoachPerPage] = useState('10');
+
+    const membershipRows = queues.membershipQueue.filter((entry) =>
+        rowMatchesSearch(membershipSearch, [
+            entry.userName,
+            entry.userRole,
+            entry.planName,
+            entry.status,
+            entry.daysRemaining,
+            entry.endsAt,
+            entry.autoRenew ? 'auto renew' : 'manual renewal',
+        ]),
+    );
+    const paymentRows = queues.paymentQueue.filter((entry) =>
+        rowMatchesSearch(paymentSearch, [
+            entry.userName,
+            entry.userRole,
+            entry.planName,
+            entry.status,
+            entry.amount,
+            entry.currency,
+            entry.provider,
+            entry.reference,
+            entry.eventAt,
+        ]),
+    );
+    const deviceRows = queues.deviceQueue.filter((entry) =>
+        rowMatchesSearch(deviceSearch, [
+            entry.userName,
+            entry.userRole,
+            entry.provider,
+            entry.status,
+            entry.readinessScore,
+            entry.lastSyncedAt,
+            entry.syncFailuresCount,
+            entry.issue,
+            entry.recommendation,
+            entry.lastErrorMessage,
+        ]),
+    );
+    const coverageRows = queues.athleteCoverageGaps.filter((entry) =>
+        rowMatchesSearch(coverageSearch, [
+            entry.name,
+            entry.email,
+            entry.membershipStatus,
+            entry.membershipPlan,
+            entry.daysRemaining,
+            entry.coachCount,
+            entry.connectedDevices,
+        ]),
+    );
+    const coachRows = queues.coachLoad.filter((entry) =>
+        rowMatchesSearch(coachSearch, [
+            entry.name,
+            entry.email,
+            entry.rosterCount,
+            entry.activePrograms,
+            entry.pendingLogs,
+            entry.athletesWithoutDevice,
+            entry.membershipsAtRisk,
+        ]),
+    );
+
+    const visibleMembershipRows = visibleRows(membershipRows, membershipPerPage);
+    const visiblePaymentRows = visibleRows(paymentRows, paymentPerPage);
+    const visibleDeviceRows = visibleRows(deviceRows, devicePerPage);
+    const visibleCoverageRows = visibleRows(coverageRows, coveragePerPage);
+    const visibleCoachRows = visibleRows(coachRows, coachPerPage);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Control Center" />
@@ -289,127 +430,161 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                         title="Renewal queue"
                         description="The next memberships likely to become support tickets if ignored."
                         className="xl:col-span-2"
+                        contentClassName="space-y-4"
                     >
-                            <WorkspaceTable minWidth="min-w-[760px]">
-                                <WorkspaceTableHeader labels={['User', 'Role', 'Plan', 'Status', 'Renewal', 'Ends']} />
-                                {queues.membershipQueue.length === 0 ? (
-                                    <WorkspaceTableEmpty message="No renewals need attention right now." colSpan={6} />
-                                ) : (
-                                    <tbody className="divide-y divide-stone-100">
-                                        {queues.membershipQueue.map((entry) => (
-                                            <tr key={`${entry.userName}-${entry.planName}`} className="align-top hover:bg-stone-50/80">
-                                                <td className="px-5 py-4 font-semibold text-stone-950">{entry.userName}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{humanizeStatus(entry.userRole)}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.planName}</td>
-                                                <td className="px-5 py-4">
-                                                    <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
-                                                </td>
-                                                <td className="px-5 py-4">
-                                                    <Badge variant="outline">{entry.autoRenew ? 'Auto renew on' : 'Manual renewal'}</Badge>
-                                                    <p className="mt-1 text-xs text-stone-500">{formatDays(entry.daysRemaining)}</p>
-                                                </td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.endsAt ?? 'No end date'}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                )}
-                            </WorkspaceTable>
-                    </WorkspacePanel>
-
-                    <WorkspacePanel title="Signup mix" description="Current account channels and what is staged for later.">
-                            <WorkspaceTable minWidth="min-w-[520px]">
-                                <WorkspaceTableHeader labels={['Channel', 'Status', 'Accounts']} />
+                        <QueueTableControls
+                            search={membershipSearch}
+                            onSearchChange={setMembershipSearch}
+                            perPage={membershipPerPage}
+                            onPerPageChange={setMembershipPerPage}
+                            shown={visibleMembershipRows.length}
+                            total={membershipRows.length}
+                            placeholder="Search user, role, plan, status, renewal type, or end date"
+                        />
+                        <WorkspaceTable minWidth="min-w-[760px]">
+                            <WorkspaceTableHeader labels={['User', 'Role', 'Plan', 'Status', 'Renewal', 'Ends']} />
+                            {membershipRows.length === 0 ? (
+                                <WorkspaceTableEmpty message="No renewals need attention right now." colSpan={6} />
+                            ) : (
                                 <tbody className="divide-y divide-stone-100">
-                                    {signupMix.map((entry) => (
-                                        <tr key={entry.method} className="align-top hover:bg-stone-50/80">
-                                            <td className="px-5 py-4 font-semibold text-stone-950">{entry.label}</td>
+                                    {visibleMembershipRows.map((entry) => (
+                                        <tr key={`${entry.userName}-${entry.planName}`} className="align-top hover:bg-stone-50/80">
+                                            <td className="px-5 py-4 font-semibold text-stone-950">{entry.userName}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{humanizeStatus(entry.userRole)}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.planName}</td>
                                             <td className="px-5 py-4">
-                                                <Badge variant={entry.enabled ? 'default' : 'secondary'}>
-                                                    {entry.enabled ? 'Live now' : 'Later stage'}
-                                                </Badge>
+                                                <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
                                             </td>
-                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.count}</td>
+                                            <td className="px-5 py-4">
+                                                <Badge variant="outline">{entry.autoRenew ? 'Auto renew on' : 'Manual renewal'}</Badge>
+                                                <p className="mt-1 text-xs text-stone-500">{formatDays(entry.daysRemaining)}</p>
+                                            </td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.endsAt ?? 'No end date'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
-                            </WorkspaceTable>
+                            )}
+                        </WorkspaceTable>
+                    </WorkspacePanel>
+
+                    <WorkspacePanel title="Signup mix" description="Current account channels and what is staged for later.">
+                        <WorkspaceTable minWidth="min-w-[520px]">
+                            <WorkspaceTableHeader labels={['Channel', 'Status', 'Accounts']} />
+                            <tbody className="divide-y divide-stone-100">
+                                {signupMix.map((entry) => (
+                                    <tr key={entry.method} className="align-top hover:bg-stone-50/80">
+                                        <td className="px-5 py-4 font-semibold text-stone-950">{entry.label}</td>
+                                        <td className="px-5 py-4">
+                                            <Badge variant={entry.enabled ? 'default' : 'secondary'}>
+                                                {entry.enabled ? 'Live now' : 'Later stage'}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-5 py-4 text-sm text-stone-700">{entry.count}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </WorkspaceTable>
                     </WorkspacePanel>
                 </section>
 
                 <section className="grid gap-4 xl:grid-cols-2">
-                    <WorkspacePanel title="Payment queue" description="Pending and failed money events still waiting for a human to care.">
-                            <WorkspaceTable minWidth="min-w-[760px]">
-                                <WorkspaceTableHeader labels={['User', 'Role', 'Plan', 'Status', 'Amount', 'Provider', 'Reference', 'Date']} />
-                                {queues.paymentQueue.length === 0 ? (
-                                    <WorkspaceTableEmpty message="No payment issues are queued right now." colSpan={8} />
-                                ) : (
-                                    <tbody className="divide-y divide-stone-100">
-                                        {queues.paymentQueue.map((entry) => (
-                                            <tr key={`${entry.userName}-${entry.reference ?? entry.eventAt}`} className="align-top hover:bg-stone-50/80">
-                                                <td className="px-5 py-4 font-semibold text-stone-950">{entry.userName}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{humanizeStatus(entry.userRole)}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.planName}</td>
-                                                <td className="px-5 py-4">
-                                                    <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
-                                                </td>
-                                                <td className="px-5 py-4 font-medium text-stone-950">
-                                                    {entry.amount === null ? 'No amount' : formatCurrency(entry.amount, entry.currency)}
-                                                </td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.provider ?? 'Manual'}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.reference ?? 'No reference'}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.eventAt ?? 'No date'}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                )}
-                            </WorkspaceTable>
+                    <WorkspacePanel
+                        title="Payment queue"
+                        description="Pending and failed money events still waiting for a human to care."
+                        contentClassName="space-y-4"
+                    >
+                        <QueueTableControls
+                            search={paymentSearch}
+                            onSearchChange={setPaymentSearch}
+                            perPage={paymentPerPage}
+                            onPerPageChange={setPaymentPerPage}
+                            shown={visiblePaymentRows.length}
+                            total={paymentRows.length}
+                            placeholder="Search user, role, plan, amount, provider, reference, or date"
+                        />
+                        <WorkspaceTable minWidth="min-w-[760px]">
+                            <WorkspaceTableHeader labels={['User', 'Role', 'Plan', 'Status', 'Amount', 'Provider', 'Reference', 'Date']} />
+                            {paymentRows.length === 0 ? (
+                                <WorkspaceTableEmpty message="No payment issues are queued right now." colSpan={8} />
+                            ) : (
+                                <tbody className="divide-y divide-stone-100">
+                                    {visiblePaymentRows.map((entry) => (
+                                        <tr key={`${entry.userName}-${entry.reference ?? entry.eventAt}`} className="align-top hover:bg-stone-50/80">
+                                            <td className="px-5 py-4 font-semibold text-stone-950">{entry.userName}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{humanizeStatus(entry.userRole)}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.planName}</td>
+                                            <td className="px-5 py-4">
+                                                <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
+                                            </td>
+                                            <td className="px-5 py-4 font-medium text-stone-950">
+                                                {entry.amount === null ? 'No amount' : formatCurrency(entry.amount, entry.currency)}
+                                            </td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.provider ?? 'Manual'}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.reference ?? 'No reference'}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.eventAt ?? 'No date'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            )}
+                        </WorkspaceTable>
                     </WorkspacePanel>
 
-                    <WorkspacePanel title="Device queue" description="Wearable relationships most likely to create blind spots.">
-                            <WorkspaceTable minWidth="min-w-[920px]">
-                                <WorkspaceTableHeader
-                                    labels={['User', 'Provider', 'Status', 'Readiness', 'Last sync', 'Failures', 'Issue', 'Recommendation']}
-                                />
-                                {queues.deviceQueue.length === 0 ? (
-                                    <WorkspaceTableEmpty message="No device issues are queued right now." colSpan={8} />
-                                ) : (
-                                    <tbody className="divide-y divide-stone-100">
-                                        {queues.deviceQueue.map((entry) => (
-                                            <tr key={`${entry.userName}-${entry.provider}`} className="align-top hover:bg-stone-50/80">
-                                                <td className="px-5 py-4">
-                                                    <p className="font-semibold text-stone-950">{entry.userName}</p>
-                                                    <p className="mt-1 text-xs text-stone-500">{humanizeStatus(entry.userRole)}</p>
-                                                </td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.provider}</td>
-                                                <td className="px-5 py-4">
-                                                    <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
-                                                </td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">
-                                                    {entry.readinessScore === null ? 'No readiness' : `${Math.round(entry.readinessScore)}/100`}
-                                                </td>
-                                                <td className="px-5 py-4">
-                                                    <p className="text-sm text-stone-700">{entry.lastSyncedAt ?? 'Never synced'}</p>
-                                                    <p className="mt-1 text-xs text-stone-500">
-                                                        {entry.staleHours !== null ? `${entry.staleHours}h stale` : 'No stale data'}
-                                                    </p>
-                                                </td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.syncFailuresCount}</td>
-                                                <td className="px-5 py-4">
-                                                    <p className="max-w-[16rem] text-sm leading-6 text-stone-700">{entry.issue}</p>
-                                                    {entry.lastErrorMessage && (
-                                                        <p className="mt-1 line-clamp-2 max-w-[16rem] text-xs text-stone-500">
-                                                            {entry.lastErrorMessage}
-                                                        </p>
-                                                    )}
-                                                </td>
-                                                <td className="px-5 py-4">
-                                                    <p className="max-w-[16rem] text-sm leading-6 text-stone-700">{entry.recommendation}</p>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                )}
-                            </WorkspaceTable>
+                    <WorkspacePanel
+                        title="Device queue"
+                        description="Wearable relationships most likely to create blind spots."
+                        contentClassName="space-y-4"
+                    >
+                        <QueueTableControls
+                            search={deviceSearch}
+                            onSearchChange={setDeviceSearch}
+                            perPage={devicePerPage}
+                            onPerPageChange={setDevicePerPage}
+                            shown={visibleDeviceRows.length}
+                            total={deviceRows.length}
+                            placeholder="Search user, provider, status, issue, recommendation, or error"
+                        />
+                        <WorkspaceTable minWidth="min-w-[920px]">
+                            <WorkspaceTableHeader
+                                labels={['User', 'Provider', 'Status', 'Readiness', 'Last sync', 'Failures', 'Issue', 'Recommendation']}
+                            />
+                            {deviceRows.length === 0 ? (
+                                <WorkspaceTableEmpty message="No device issues are queued right now." colSpan={8} />
+                            ) : (
+                                <tbody className="divide-y divide-stone-100">
+                                    {visibleDeviceRows.map((entry) => (
+                                        <tr key={`${entry.userName}-${entry.provider}`} className="align-top hover:bg-stone-50/80">
+                                            <td className="px-5 py-4">
+                                                <p className="font-semibold text-stone-950">{entry.userName}</p>
+                                                <p className="mt-1 text-xs text-stone-500">{humanizeStatus(entry.userRole)}</p>
+                                            </td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.provider}</td>
+                                            <td className="px-5 py-4">
+                                                <Badge variant={badgeVariantForStatus(entry.status)}>{humanizeStatus(entry.status)}</Badge>
+                                            </td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">
+                                                {entry.readinessScore === null ? 'No readiness' : `${Math.round(entry.readinessScore)}/100`}
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <p className="text-sm text-stone-700">{entry.lastSyncedAt ?? 'Never synced'}</p>
+                                                <p className="mt-1 text-xs text-stone-500">
+                                                    {entry.staleHours !== null ? `${entry.staleHours}h stale` : 'No stale data'}
+                                                </p>
+                                            </td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.syncFailuresCount}</td>
+                                            <td className="px-5 py-4">
+                                                <p className="max-w-[16rem] text-sm leading-6 text-stone-700">{entry.issue}</p>
+                                                {entry.lastErrorMessage && (
+                                                    <p className="mt-1 line-clamp-2 max-w-[16rem] text-xs text-stone-500">{entry.lastErrorMessage}</p>
+                                                )}
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <p className="max-w-[16rem] text-sm leading-6 text-stone-700">{entry.recommendation}</p>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            )}
+                        </WorkspaceTable>
                     </WorkspacePanel>
                 </section>
 
@@ -417,58 +592,79 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                     <WorkspacePanel
                         title="Athlete coverage gaps"
                         description="Athletes missing a coach, a clean membership state, or a usable device signal."
+                        contentClassName="space-y-4"
                     >
-                            <WorkspaceTable minWidth="min-w-[780px]">
-                                <WorkspaceTableHeader
-                                    labels={['Athlete', 'Email', 'Membership', 'Plan', 'Runway', 'Coach links', 'Devices']}
-                                />
-                                {queues.athleteCoverageGaps.length === 0 ? (
-                                    <WorkspaceTableEmpty message="Coverage looks clean right now." colSpan={7} />
-                                ) : (
-                                    <tbody className="divide-y divide-stone-100">
-                                        {queues.athleteCoverageGaps.map((entry) => (
-                                            <tr key={entry.email} className="align-top hover:bg-stone-50/80">
-                                                <td className="px-5 py-4 font-semibold text-stone-950">{entry.name}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.email}</td>
-                                                <td className="px-5 py-4">
-                                                    <Badge variant={badgeVariantForStatus(entry.membershipStatus)}>
-                                                        {humanizeStatus(entry.membershipStatus)}
-                                                    </Badge>
-                                                </td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.membershipPlan}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{formatDays(entry.daysRemaining)}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.coachCount}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.connectedDevices}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                )}
-                            </WorkspaceTable>
+                        <QueueTableControls
+                            search={coverageSearch}
+                            onSearchChange={setCoverageSearch}
+                            perPage={coveragePerPage}
+                            onPerPageChange={setCoveragePerPage}
+                            shown={visibleCoverageRows.length}
+                            total={coverageRows.length}
+                            placeholder="Search athlete, email, membership, plan, coach count, or devices"
+                        />
+                        <WorkspaceTable minWidth="min-w-[780px]">
+                            <WorkspaceTableHeader labels={['Athlete', 'Email', 'Membership', 'Plan', 'Runway', 'Coach links', 'Devices']} />
+                            {coverageRows.length === 0 ? (
+                                <WorkspaceTableEmpty message="Coverage looks clean right now." colSpan={7} />
+                            ) : (
+                                <tbody className="divide-y divide-stone-100">
+                                    {visibleCoverageRows.map((entry) => (
+                                        <tr key={entry.email} className="align-top hover:bg-stone-50/80">
+                                            <td className="px-5 py-4 font-semibold text-stone-950">{entry.name}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.email}</td>
+                                            <td className="px-5 py-4">
+                                                <Badge variant={badgeVariantForStatus(entry.membershipStatus)}>
+                                                    {humanizeStatus(entry.membershipStatus)}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.membershipPlan}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{formatDays(entry.daysRemaining)}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.coachCount}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.connectedDevices}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            )}
+                        </WorkspaceTable>
                     </WorkspacePanel>
 
-                    <WorkspacePanel title="Coach load" description="Which coaches are carrying real roster weight and where the cracks are forming.">
-                            <WorkspaceTable minWidth="min-w-[780px]">
-                                <WorkspaceTableHeader
-                                    labels={['Coach', 'Email', 'Roster', 'Live programs', 'Pending logs', 'No device', 'Membership risk']}
-                                />
-                                {queues.coachLoad.length === 0 ? (
-                                    <WorkspaceTableEmpty message="No coach records are available." colSpan={7} />
-                                ) : (
-                                    <tbody className="divide-y divide-stone-100">
-                                        {queues.coachLoad.map((entry) => (
-                                            <tr key={entry.email} className="align-top hover:bg-stone-50/80">
-                                                <td className="px-5 py-4 font-semibold text-stone-950">{entry.name}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.email}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.rosterCount}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.activePrograms}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.pendingLogs}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.athletesWithoutDevice}</td>
-                                                <td className="px-5 py-4 text-sm text-stone-700">{entry.membershipsAtRisk}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                )}
-                            </WorkspaceTable>
+                    <WorkspacePanel
+                        title="Coach load"
+                        description="Which coaches are carrying real roster weight and where the cracks are forming."
+                        contentClassName="space-y-4"
+                    >
+                        <QueueTableControls
+                            search={coachSearch}
+                            onSearchChange={setCoachSearch}
+                            perPage={coachPerPage}
+                            onPerPageChange={setCoachPerPage}
+                            shown={visibleCoachRows.length}
+                            total={coachRows.length}
+                            placeholder="Search coach, email, roster count, pending logs, devices, or membership risk"
+                        />
+                        <WorkspaceTable minWidth="min-w-[780px]">
+                            <WorkspaceTableHeader
+                                labels={['Coach', 'Email', 'Roster', 'Live programs', 'Pending logs', 'No device', 'Membership risk']}
+                            />
+                            {coachRows.length === 0 ? (
+                                <WorkspaceTableEmpty message="No coach records are available." colSpan={7} />
+                            ) : (
+                                <tbody className="divide-y divide-stone-100">
+                                    {visibleCoachRows.map((entry) => (
+                                        <tr key={entry.email} className="align-top hover:bg-stone-50/80">
+                                            <td className="px-5 py-4 font-semibold text-stone-950">{entry.name}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.email}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.rosterCount}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.activePrograms}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.pendingLogs}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.athletesWithoutDevice}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-700">{entry.membershipsAtRisk}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            )}
+                        </WorkspaceTable>
                     </WorkspacePanel>
                 </section>
 
@@ -477,29 +673,29 @@ export default function ControlCenter({ summary, queues, signupMix, opsPlaybook 
                     description="Commands and automations the dev team should keep alive once this leaves the sandbox."
                     contentClassName="grid gap-4 lg:grid-cols-3"
                 >
-                        {opsPlaybook.map((entry) => (
-                            <div key={entry.title} className="rounded-2xl border border-stone-200/75 bg-stone-50/80 p-5">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                        <p className="font-medium text-stone-950">{entry.title}</p>
-                                        <p className="mt-1 text-sm text-stone-500">{entry.cadence}</p>
-                                    </div>
-                                    <div className="rounded-full border border-stone-200 bg-white/70 p-2 text-stone-700">
-                                        {entry.title.includes('WHOOP') ? (
-                                            <Watch className="size-4" />
-                                        ) : entry.title.includes('Membership') ? (
-                                            <TimerReset className="size-4" />
-                                        ) : (
-                                            <WifiOff className="size-4" />
-                                        )}
-                                    </div>
+                    {opsPlaybook.map((entry) => (
+                        <div key={entry.title} className="rounded-2xl border border-stone-200/75 bg-stone-50/80 p-5">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="font-medium text-stone-950">{entry.title}</p>
+                                    <p className="mt-1 text-sm text-stone-500">{entry.cadence}</p>
                                 </div>
-                                <p className="mt-4 rounded-xl border border-stone-200/75 bg-white/80 px-3 py-2 font-mono text-xs text-stone-800">
-                                    {entry.command}
-                                </p>
-                                <p className="mt-4 text-sm leading-6 text-stone-600">{entry.reason}</p>
+                                <div className="rounded-full border border-stone-200 bg-white/70 p-2 text-stone-700">
+                                    {entry.title.includes('WHOOP') ? (
+                                        <Watch className="size-4" />
+                                    ) : entry.title.includes('Membership') ? (
+                                        <TimerReset className="size-4" />
+                                    ) : (
+                                        <WifiOff className="size-4" />
+                                    )}
+                                </div>
                             </div>
-                        ))}
+                            <p className="mt-4 rounded-xl border border-stone-200/75 bg-white/80 px-3 py-2 font-mono text-xs text-stone-800">
+                                {entry.command}
+                            </p>
+                            <p className="mt-4 text-sm leading-6 text-stone-600">{entry.reason}</p>
+                        </div>
+                    ))}
                 </WorkspacePanel>
             </div>
         </AppLayout>

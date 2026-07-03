@@ -1,6 +1,6 @@
 # Throughline API
 
-Date: 2026-06-28
+Date: 2026-07-03
 
 ## What is live
 
@@ -141,6 +141,9 @@ These are the abilities currently implemented:
 | `progress:write`  | Create or update athlete check-ins                      | athlete               |
 | `membership:read` | Read memberships and recent payment history             | admin, coach, athlete |
 | `wearable:read`   | Read device connections, snapshots, and trend analytics | admin, coach, athlete |
+| `wearable:write`  | Sync authenticated mobile wearable records              | athlete               |
+| `messages:read`   | Read coach-athlete message threads                      | coach, athlete        |
+| `messages:write`  | Send coach-athlete messages                             | coach, athlete        |
 | `admin:read`      | Read admin control-center metrics and queues            | admin                 |
 
 Role rules are enforced on top of abilities.
@@ -156,6 +159,131 @@ That matters:
 Production absolute base for every route in this section:
 
 `https://athlete.ahmaddalao.com`
+
+## Native mobile endpoints
+
+These endpoints exist for the React Native app in `mobile/`. Owners/admins are intentionally blocked from these app surfaces; they use the web backend.
+
+### `GET /api/v1/app/home`
+
+Ability: `training:read`
+
+Returns an athlete or coach mobile home payload.
+
+Athlete payload includes:
+
+- viewer
+- assigned coaches
+- assigned active/draft programs
+- today sessions
+- upcoming sessions
+- membership summary
+- latest wearable snapshot
+- latest check-in
+- unread message count
+
+Coach payload includes:
+
+- viewer
+- assigned athletes
+- coach-owned active/draft programs
+- upcoming schedule
+- pending workout logs
+- unread message count
+
+### `GET /api/v1/app/calendar`
+
+Ability: `training:read`
+
+Query params:
+
+- `month=YYYY-MM`
+- `date=YYYY-MM-DD`
+
+Returns:
+
+- selected month
+- selected date
+- calendar day cells
+- selected day sessions
+
+Athletes only receive sessions assigned to their own programs. Coaches only receive sessions from their own coach-owned programs.
+
+### `GET /api/v1/app/programs/{trainingProgram}`
+
+Ability: `training:read`
+
+Returns a full assigned-program payload with sessions, exercises, media references, logs, coach, and athlete summaries.
+
+Rules:
+
+- athlete can open only their own program
+- coach can open only a program they own
+- admin/owner mobile access is blocked
+
+### `GET /api/v1/messages`
+
+Ability: `messages:read`
+
+Returns visible active coach-athlete message threads and marks unread messages as read for the authenticated user.
+
+### `POST /api/v1/messages`
+
+Ability: `messages:write`
+
+Request:
+
+```json
+{
+    "assignment_id": 12,
+    "body": "I finished the sprint block."
+}
+```
+
+Rules:
+
+- assignment must be active
+- sender must be the coach or athlete on that assignment
+- random users cannot message by guessing assignment IDs
+
+### `POST /api/v1/wearables/mobile-sync`
+
+Ability: `wearable:write`
+
+Athlete only.
+
+This endpoint is for native mobile health sync. It uses bearer-token auth, not public ingest keys.
+
+Request:
+
+```json
+{
+    "provider": "health_connect",
+    "device_id": "galaxy-watch-123",
+    "device_name": "Galaxy Watch",
+    "platform": "android",
+    "scopes": ["steps", "sleep", "heart_rate"],
+    "records": [
+        {
+            "metric_date": "2026-07-03",
+            "metrics": {
+                "steps": 9021,
+                "calories_burned": 2410,
+                "sleep_minutes": 418,
+                "resting_heart_rate": 51,
+                "heart_rate_variability": 64.5
+            }
+        }
+    ]
+}
+```
+
+Supported providers:
+
+- `apple_health`
+- `health_connect`
+
+The endpoint upserts a mobile `DeviceConnection` and writes snapshots through the existing ingestion service.
 
 ## Internal web routes for coach-owned athlete onboarding
 

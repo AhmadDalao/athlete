@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\AdminControlCenterController;
+use App\Http\Controllers\Api\AppCalendarController;
+use App\Http\Controllers\Api\AppHomeController;
+use App\Http\Controllers\Api\AppProgramShowController;
 use App\Http\Controllers\Api\AthleteCheckInStoreController;
 use App\Http\Controllers\Api\AthleteCheckInUpdateController;
 use App\Http\Controllers\Api\AuthTokenDestroyController;
@@ -9,6 +12,9 @@ use App\Http\Controllers\Api\DashboardIndexController;
 use App\Http\Controllers\Api\DeviceMetricIngestController;
 use App\Http\Controllers\Api\MeController;
 use App\Http\Controllers\Api\MembershipIndexController;
+use App\Http\Controllers\Api\MessageIndexController;
+use App\Http\Controllers\Api\MessageStoreController;
+use App\Http\Controllers\Api\MobileWearableSyncController;
 use App\Http\Controllers\Api\ProgressIndexController;
 use App\Http\Controllers\Api\RosterIndexController;
 use App\Http\Controllers\Api\TrainingSessionCompleteController;
@@ -47,6 +53,18 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->middleware('abilities:training:read')
             ->name('training');
 
+        Route::get('app/home', AppHomeController::class)
+            ->middleware('abilities:training:read')
+            ->name('app.home');
+
+        Route::get('app/calendar', AppCalendarController::class)
+            ->middleware('abilities:training:read')
+            ->name('app.calendar');
+
+        Route::get('app/programs/{trainingProgram}', AppProgramShowController::class)
+            ->middleware('abilities:training:read')
+            ->name('app.programs.show');
+
         Route::post('training/sessions/{trainingSession}/workout-log', WorkoutLogStoreController::class)
             ->middleware('abilities:training:write')
             ->name('training.sessions.workout-log.store');
@@ -82,6 +100,18 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('wearables', WearableIndexController::class)
             ->middleware('abilities:wearable:read')
             ->name('wearables');
+
+        Route::post('wearables/mobile-sync', MobileWearableSyncController::class)
+            ->middleware('abilities:wearable:write')
+            ->name('wearables.mobile-sync');
+
+        Route::get('messages', MessageIndexController::class)
+            ->middleware('abilities:messages:read')
+            ->name('messages.index');
+
+        Route::post('messages', MessageStoreController::class)
+            ->middleware('abilities:messages:write')
+            ->name('messages.store');
 
         Route::get('admin/control-center', AdminControlCenterController::class)
             ->middleware('abilities:admin:read')

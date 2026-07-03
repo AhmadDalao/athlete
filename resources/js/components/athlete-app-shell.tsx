@@ -1,11 +1,11 @@
 import { UserAppShell } from '@/components/user-app-shell';
 import { type BreadcrumbItem } from '@/types';
-import { CalendarDays, HeartPulse, LayoutDashboard, MessageCircle, UserRound, Watch } from 'lucide-react';
+import { CalendarDays, Dumbbell, HeartPulse, LayoutDashboard, MessageCircle, UserRound, Watch } from 'lucide-react';
 import { type ReactNode } from 'react';
 
 interface AthleteAppShellProps {
     children: ReactNode;
-    active: 'app' | 'programs' | 'progress' | 'wearables' | 'messages' | 'profile';
+    active: 'app' | 'programs' | 'workout' | 'progress' | 'wearables' | 'messages' | 'profile';
     unreadMessages?: number;
     unreadNotifications?: number;
     breadcrumbs?: BreadcrumbItem[];
@@ -25,12 +25,13 @@ export function AthleteAppShell({
     breadcrumbs = defaultBreadcrumbs,
 }: AthleteAppShellProps) {
     const navItems = [
-        { key: 'app', label: 'App', href: '/app', icon: LayoutDashboard, count: 0 },
-        { key: 'programs', label: 'Programs', href: '/app#programs', icon: CalendarDays, count: 0 },
-        { key: 'progress', label: 'Progress', href: '/progress', icon: HeartPulse, count: 0 },
-        { key: 'wearables', label: 'Devices', href: '/wearables', icon: Watch, count: 0 },
+        { key: 'app', label: 'Home', href: '/app', icon: LayoutDashboard, count: 0 },
+        { key: 'programs', label: 'Calendar', href: '/app#schedule', icon: CalendarDays, count: 0 },
+        { key: 'workout', label: 'Workout', href: '/app#today', icon: Dumbbell, count: 0, primary: true },
         { key: 'messages', label: 'Messages', href: '/messages', icon: MessageCircle, count: unreadMessages },
         { key: 'profile', label: 'Profile', href: '/settings/profile', icon: UserRound, count: 0 },
+        { key: 'wearables', label: 'Wearables', href: '/wearables', icon: Watch, count: 0 },
+        { key: 'progress', label: 'Progress', href: '/progress', icon: HeartPulse, count: 0 },
     ] as const;
 
     return (

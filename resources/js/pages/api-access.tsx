@@ -121,6 +121,7 @@ function codeBlock(code: string) {
 
 export default function ApiAccess({ viewer, abilities, tokens, managedConnections, generatedToken, api }: ApiAccessProps) {
     const page = usePage<SharedData>();
+    const landingPath = page.props.auth.user?.landing_path ?? '/app';
     const selectedAbilityNames = abilities.map((ability) => ability.name);
     const { data, setData, post, processing, errors } = useForm<{ token_name: string; abilities: string[] }>({
         token_name: `${viewer.primaryRole ?? 'user'}-integration`,
@@ -162,7 +163,7 @@ export default function ApiAccess({ viewer, abilities, tokens, managedConnection
                                 <Link href="/memberships">Open billing</Link>
                             </Button>
                             <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
-                                <Link href="/dashboard">Back home</Link>
+                                <Link href={landingPath}>Back home</Link>
                             </Button>
                         </>
                     }
@@ -215,8 +216,8 @@ export default function ApiAccess({ viewer, abilities, tokens, managedConnection
 
                 <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <WorkspaceActionCard
-                        title="App summary API"
-                        href="/dashboard"
+                        title="App home"
+                        href={landingPath}
                         note="Use the role-aware app surface while you compare its JSON equivalent in API v1."
                         icon={Cable}
                     />
@@ -514,27 +515,40 @@ export default function ApiAccess({ viewer, abilities, tokens, managedConnection
                         title="What each integration path is for."
                         description="This is the shortest explanation of the moving parts, which is all most people should need."
                     />
-                    <WorkspacePanel title="Integration map" description="Use the right credential for the right job. Mixing these up is how APIs become a mess.">
+                    <WorkspacePanel
+                        title="Integration map"
+                        description="Use the right credential for the right job. Mixing these up is how APIs become a mess."
+                    >
                         <WorkspaceTable minWidth="min-w-[920px]">
                             <WorkspaceTableHeader labels={['Path', 'Use for', 'Credential', 'Notes']} />
                             <tbody className="divide-y divide-stone-100">
                                 <tr className="align-top hover:bg-stone-50/80">
                                     <td className="px-5 py-4 font-semibold text-stone-950">Bearer token</td>
-                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">Your app, admin scripts, and partner reads against API v1.</td>
+                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">
+                                        Your app, admin scripts, and partner reads against API v1.
+                                    </td>
                                     <td className="px-5 py-4 font-mono text-xs text-stone-700">Authorization: Bearer {'{YOUR_TOKEN}'}</td>
-                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">Controlled by token abilities such as training:read or progress:write.</td>
+                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">
+                                        Controlled by token abilities such as training:read or progress:write.
+                                    </td>
                                 </tr>
                                 <tr className="align-top hover:bg-stone-50/80">
                                     <td className="px-5 py-4 font-semibold text-stone-950">Ingest key</td>
-                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">Normalized device posting into one specific device connection.</td>
+                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">
+                                        Normalized device posting into one specific device connection.
+                                    </td>
                                     <td className="px-5 py-4 font-mono text-xs text-stone-700">X-Throughline-Key: {'{INGEST_KEY}'}</td>
-                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">This is not a user login token. Keep it scoped to ingestion.</td>
+                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">
+                                        This is not a user login token. Keep it scoped to ingestion.
+                                    </td>
                                 </tr>
                                 <tr className="align-top hover:bg-stone-50/80">
                                     <td className="px-5 py-4 font-semibold text-stone-950">Webhook</td>
                                     <td className="px-5 py-4 text-sm leading-6 text-stone-600">Stripe event delivery into billing state.</td>
                                     <td className="px-5 py-4 font-mono text-xs text-stone-700">Stripe signature</td>
-                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">Signature comes from Stripe, not from your app users.</td>
+                                    <td className="px-5 py-4 text-sm leading-6 text-stone-600">
+                                        Signature comes from Stripe, not from your app users.
+                                    </td>
                                 </tr>
                             </tbody>
                         </WorkspaceTable>

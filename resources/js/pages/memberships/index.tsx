@@ -667,6 +667,8 @@ export default function MembershipIndex({
     paymentEventTypes,
     paymentEventStatuses,
 }: MembershipPageProps) {
+    const page = usePage<SharedData>();
+    const landingPath = page.props.auth.user?.landing_path ?? '/app';
     const perPage = filters.per_page ?? String(memberships.per_page ?? '10');
     const updatePerPage = (value: string) => {
         router.get(
@@ -717,7 +719,7 @@ export default function MembershipIndex({
                     actions={
                         <>
                             <Button asChild size="lg" className="rounded-full bg-stone-950 text-white hover:bg-stone-800">
-                                <Link href="/dashboard">Back home</Link>
+                                <Link href={landingPath}>Back home</Link>
                             </Button>
                             {viewerRole === 'admin' ? (
                                 <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
@@ -897,7 +899,9 @@ export default function MembershipIndex({
                         </div>
                         <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
                             <WorkspaceTablePageSize value={perPage} onChange={updatePerPage} />
-                            <p className="text-sm text-stone-500">Showing {memberships.data.length} of {memberships.total} matching memberships.</p>
+                            <p className="text-sm text-stone-500">
+                                Showing {memberships.data.length} of {memberships.total} matching memberships.
+                            </p>
                         </div>
 
                         <WorkspaceTable minWidth="min-w-[1180px]">
@@ -925,9 +929,7 @@ export default function MembershipIndex({
                                                 </p>
                                             </td>
                                             <td className="px-5 py-4">
-                                                <Badge variant={badgeVariantForStatus(membership.status)}>
-                                                    {humanizeStatus(membership.status)}
-                                                </Badge>
+                                                <Badge variant={badgeVariantForStatus(membership.status)}>{humanizeStatus(membership.status)}</Badge>
                                                 <p className="mt-2 text-xs font-medium text-emerald-700">{formatDays(membership.daysRemaining)}</p>
                                             </td>
                                             <td className="px-5 py-4 text-sm text-stone-700">{membership.renewsAt ?? 'Not scheduled'}</td>
@@ -1004,10 +1006,14 @@ export default function MembershipIndex({
                                             </td>
                                             <td className="px-5 py-4">
                                                 <p className="text-sm text-stone-700">{event.provider ?? 'Manual'}</p>
-                                                <p className="mt-1 max-w-[14rem] break-words text-xs text-stone-500">{event.reference ?? 'No reference'}</p>
+                                                <p className="mt-1 max-w-[14rem] text-xs break-words text-stone-500">
+                                                    {event.reference ?? 'No reference'}
+                                                </p>
                                             </td>
                                             <td className="px-5 py-4">
-                                                <p className="max-w-[18rem] text-sm leading-6 text-stone-700">{event.notes ?? 'No notes attached.'}</p>
+                                                <p className="max-w-[18rem] text-sm leading-6 text-stone-700">
+                                                    {event.notes ?? 'No notes attached.'}
+                                                </p>
                                                 <p className="mt-1 text-xs text-stone-500">
                                                     {event.createdBy ? `Recorded by ${event.createdBy}` : 'System event'}
                                                 </p>

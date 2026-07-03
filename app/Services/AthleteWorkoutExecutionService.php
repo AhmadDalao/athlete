@@ -234,6 +234,10 @@ class AthleteWorkoutExecutionService
                 'restLabel' => $exercise['rest_label'] ?? null,
                 'target' => $exercise['target'] ?? null,
                 'note' => $exercise['note'] ?? null,
+                'section' => $exercise['section'] ?? null,
+                'supersetLabel' => $exercise['superset_label'] ?? null,
+                'mediaUrl' => $exercise['media_url'] ?? null,
+                'movementType' => $exercise['movement_type'] ?? null,
             ])
             ->values()
             ->all();

@@ -15,8 +15,8 @@ import {
     WorkspaceTablePageSize,
 } from '@/components/workspace-primitives';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight, CheckCheck, Send } from 'lucide-react';
 import { type FormEvent } from 'react';
 
@@ -261,10 +261,16 @@ function NotificationComposer({ roleOptions, userOptions }: { roleOptions: Optio
 }
 
 export default function NotificationsIndex({ notifications, canCreateNotifications, roleOptions, userOptions }: NotificationsProps) {
+    const { auth } = usePage<SharedData>().props;
+    const landingPath = auth.user?.landing_path ?? '/app';
     const unreadCount = notifications.data.filter((notification) => !notification.readAt).length;
     const perPage = String(notifications.per_page ?? '10');
     const updatePerPage = (value: string) => {
-        router.get(route('notifications.index'), { per_page: value }, { only: ['notifications'], preserveScroll: true, preserveState: true, replace: true });
+        router.get(
+            route('notifications.index'),
+            { per_page: value },
+            { only: ['notifications'], preserveScroll: true, preserveState: true, replace: true },
+        );
     };
 
     const markRead = (id: number) => {
@@ -297,7 +303,7 @@ export default function NotificationsIndex({ notifications, canCreateNotificatio
                                 Mark all read
                             </Button>
                             <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white text-stone-900">
-                                <Link href={route('dashboard')}>Back home</Link>
+                                <Link href={landingPath}>Back home</Link>
                             </Button>
                         </>
                     }
@@ -336,10 +342,14 @@ export default function NotificationsIndex({ notifications, canCreateNotificatio
                     >
                         <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
                             <WorkspaceTablePageSize value={perPage} onChange={updatePerPage} />
-                            <p className="text-sm text-stone-500">Showing {notifications.data.length} of {notifications.total} matching notifications.</p>
+                            <p className="text-sm text-stone-500">
+                                Showing {notifications.data.length} of {notifications.total} matching notifications.
+                            </p>
                         </div>
                         <WorkspaceTable minWidth="min-w-[980px]">
-                            <WorkspaceTableHeader labels={['Notification', 'Target', 'Published', 'Creator', 'Read state', 'Active window', 'Actions']} />
+                            <WorkspaceTableHeader
+                                labels={['Notification', 'Target', 'Published', 'Creator', 'Read state', 'Active window', 'Actions']}
+                            />
                             {notifications.data.length === 0 ? (
                                 <WorkspaceTableEmpty message="No notifications are visible right now." colSpan={7} />
                             ) : (

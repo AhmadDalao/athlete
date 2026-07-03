@@ -51,7 +51,7 @@ export default function MarketingLayout({ children, title, description }: Market
                             <div className="flex items-center gap-3">
                                 {auth.user ? (
                                     <Button asChild className="rounded-full bg-stone-950 px-5 text-stone-50 hover:bg-stone-800">
-                                        <Link href={route('dashboard')}>
+                                        <Link href={auth.user.landing_path ?? '/app'}>
                                             Open app
                                             <ArrowRight className="h-4 w-4" />
                                         </Link>
@@ -60,8 +60,8 @@ export default function MarketingLayout({ children, title, description }: Market
                                     <>
                                         <Button
                                             asChild
-                                            variant="ghost"
-                                            className="hidden rounded-full text-stone-700 hover:bg-stone-950/5 hover:text-stone-950 md:inline-flex"
+                                            variant="outline"
+                                            className="hidden rounded-full border-stone-900/10 bg-white/70 text-stone-800 hover:bg-white md:inline-flex"
                                         >
                                             <Link href={route('login')}>Log in</Link>
                                         </Button>
@@ -74,7 +74,12 @@ export default function MarketingLayout({ children, title, description }: Market
                         </div>
                     </header>
 
-                    <div className="mt-4 flex gap-2 md:hidden">
+                    <div className="mt-4 flex flex-wrap gap-2 md:hidden">
+                        {!auth.user && (
+                            <Button asChild className="rounded-full bg-stone-950 px-5 text-stone-50 hover:bg-stone-800">
+                                <Link href={route('login')}>Log in</Link>
+                            </Button>
+                        )}
                         <Button asChild variant="outline" className="rounded-full border-stone-900/10 bg-white/70 text-stone-700 hover:bg-white">
                             <Link href={route('coaches.index')}>Coaches</Link>
                         </Button>

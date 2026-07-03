@@ -218,22 +218,47 @@ This local slice adds database migrations and new route/controller/page assets. 
 - rebuild config, route, and view caches
 - smoke test `/roster/invites`, `/admin/invitations`, `/athletes/{id}`, `/admin/files`, and `/invites/{token}` with real authenticated roles
 
-New migrations:
+## 2026-07-03 native mobile API deploy note
 
-- `2026_06_28_090000_create_athlete_invitations_table`
-- `2026_06_28_091000_create_athlete_files_table`
+This slice adds a real Expo/React Native mobile app scaffold and mobile-focused Laravel API endpoints.
 
-New protected routes:
+Backend runtime changes:
 
-- `/roster/invites`
-- `/admin/invitations`
-- `/athletes/{user}`
-- `/admin/files`
-- `/athlete-files/{athleteFile}/download`
+- new mobile app endpoints under `/api/v1/app/*`
+- API messages endpoints under `/api/v1/messages`
+- authenticated mobile wearable sync at `/api/v1/wearables/mobile-sync`
+- new API abilities: `messages:read`, `messages:write`, `wearable:write`
+- new mobile wearable providers: `apple_health`, `health_connect`
 
-New public route:
+Mobile app changes:
 
-- `/invites/{token}`
+- new local Expo project at `mobile/`
+- SecureStore token persistence
+- athlete and coach mobile home flows
+- mobile calendar and assigned program detail screens
+- workout execution screen using existing set-log APIs
+- progress, wearables, messages, and profile screens
+
+No database migration is required for this slice because device providers are stored as strings and workout/message tables already exist.
+
+Production deploy result:
+
+- source backup: `/home/u867436826/db-backups/athlete-source-native-mobile-20260703114059.tgz`
+- migration result: not required for this slice
+- production manifest checksum: `d4ff9d7a6abaa8a3e9bfaede5ff72d1c45d95f1d3bb29293fa0cd527187c513a`
+- source synced to `/home/u867436826/domains/ahmaddalao.com/throughline-athlete-app`
+- compiled build synced to both app `public/build` and subdomain `public_html/athlete/build`
+- Composer optimized autoload refreshed
+- Laravel config, route, and view caches rebuilt successfully
+
+Live smoke passed:
+
+- `https://athlete.ahmaddalao.com` returns HTTP 200
+- `https://athlete.ahmaddalao.com/login` returns HTTP 200
+- guest `/api/v1/app/home`, `/api/v1/messages`, and `/api/v1/wearables/mobile-sync` return HTTP 401
+- production route list includes `/api/v1/app/home`, `/api/v1/app/calendar`, and `/api/v1/app/programs/{trainingProgram}`
+- temporary-token athlete smoke passed for `/api/v1/app/home`, `/api/v1/app/calendar`, and `/api/v1/messages`
+- temporary-token coach smoke passed for `/api/v1/app/home`, `/api/v1/app/calendar`, and `/api/v1/messages`
 
 ## 2026-06-28 backend table-first UI deploy note
 
@@ -265,6 +290,152 @@ This deployment simplified `/admin/users` after visual review.
     - `php artisan test`
     - `npm run build:athlete`
 - Production manifest checksum: `9638127eadbaf044a77a0b56be79072c7cf055c935ac6eb1074068fb68919c47`
+
+## 2026-07-02 athlete mobile UX parity deploy note
+
+This deployment shipped the Phase 5 athlete mobile UX parity slice.
+
+- Production target: `https://athlete.ahmaddalao.com`
+- UI changes:
+    - athlete app shell now uses a mobile drawer plus fixed bottom navigation with a centered workout action
+    - `/app` prioritizes today's workout, readiness, compact schedule, assigned programs, and health trends
+    - `/app/workouts/{trainingSession}` now follows a workout-first mobile flow with media hero, exercise rail, set inputs, journal/media actions, rest timer controls, and sticky previous/close/next controls
+    - athlete `/wearables` now has Daily and Trends tabs with compact metric cards and device prompts
+    - athlete profile settings now include Latest Session, Last 7 Days, Last 30 Days, and PR performance summaries
+- Backend changes:
+    - profile settings payload now computes workout performance from existing workout logs and set logs
+    - exercise presentation now supports optional `section`, `superset_label`, `media_url`, and `movement_type` JSON fields without a migration
+- Local checks passed:
+    - `npm run build:athlete`
+    - `npx eslint resources/js --max-warnings=0`
+    - `php artisan test`
+    - `git diff --check`
+- Production deploy result:
+    - server source backup: `/home/u867436826/db-backups/athlete-source-phase5-20260702191424.tgz`
+    - migration result: `Nothing to migrate`
+    - production manifest checksum: `3b8b8b72b8328cbd2a8f5330cd21564f7f06e13031fcddb408bf3a25ba1d1a3b`
+    - build synced to both app `public/build` and subdomain `public_html/athlete/build`
+    - Laravel config, route, and view caches rebuilt successfully
+- Live smoke passed:
+    - `https://athlete.ahmaddalao.com` returns HTTP 200
+    - `https://athlete.ahmaddalao.com/login` returns HTTP 200
+    - guest `/app` redirects to login
+    - production app routes list includes `/app`, `/app/programs/{trainingProgram}`, and workout execution routes
+
+## 2026-07-02 athlete calendar and wearable card follow-up
+
+This follow-up kept the Phase 5 app shell but restored the athlete calendar to a full month grid.
+
+- Production target: `https://athlete.ahmaddalao.com`
+- UI changes:
+    - `/app` calendar is back to a full 7-column month grid with weekday headers, blank leading days, selected-day state, workout indicators, and compact mobile sizing
+    - athlete `/wearables` keeps the light page shell but uses darker WHOOP-style signal cards for sleep, recovery, strain, and daily metric rows
+    - admin and coach table-first workspaces were not changed in this slice
+- Local checks passed:
+    - `npm run build:athlete`
+    - `npx eslint resources/js --max-warnings=0`
+    - `php artisan test`
+    - `git diff --check`
+- Production deploy result:
+    - server source backup: `/home/u867436826/db-backups/athlete-source-calendar-card-20260702194950.tgz`
+    - migration result: `Nothing to migrate`
+    - production manifest checksum: `f1d0e77c85eded9da79a8ed37d7df18ea3ff4f96383b3d9f7454fd6f73411f12`
+    - build synced to both app `public/build` and subdomain `public_html/athlete/build`
+    - Laravel config, route, and view caches rebuilt successfully
+- Live smoke passed:
+    - `https://athlete.ahmaddalao.com` returns HTTP 200
+    - `https://athlete.ahmaddalao.com/login` returns HTTP 200
+    - guest `/app` and `/wearables` redirect to login
+    - remote manifest checksum matches the local build checksum
+
+## 2026-07-02 homepage login follow-up
+
+This follow-up made access clearer from the public homepage.
+
+- Production target: `https://athlete.ahmaddalao.com`
+- UI changes:
+    - homepage hero now includes a compact email/password login panel above the product loop
+    - logged-in visitors see a direct `Open app` panel instead of another guest form
+    - public header login button is more visible on desktop and now appears in the mobile top link row
+    - standalone `/login` page copy and controls were tightened to match the same access flow
+- Routing behavior:
+    - the homepage form posts to the existing `POST /login` endpoint
+    - successful logins still use the existing role-aware landing path for admin, coach, and athlete accounts
+- Local checks passed:
+    - `npm run build:athlete`
+    - `npx eslint resources/js --max-warnings=0`
+    - `php artisan test`
+    - `git diff --check`
+- Production deploy result:
+    - migration result: `Nothing to migrate`
+    - production manifest checksum: `5e7778c3abf6e02768d28d217c21e4eb43a81d0e525ec187d940ecca563789d3`
+    - build synced to both app `public/build` and subdomain `public_html/athlete/build`
+    - Laravel config, route, and view caches rebuilt successfully
+- Live smoke passed:
+    - `https://athlete.ahmaddalao.com` returns HTTP 200
+    - `https://athlete.ahmaddalao.com/login` returns HTTP 200
+    - remote manifest checksum matches the local build checksum
+
+## 2026-07-02 athlete calendar no-reload follow-up
+
+This follow-up stopped the athlete calendar from hitting Laravel every time the user moves between months or selects a day.
+
+- Production target: `https://athlete.ahmaddalao.com`
+- Reason for the issue:
+    - month arrows and day cells were implemented as Inertia links back to `/app?month=...&date=...`
+    - every month/day click therefore triggered a server request and page refresh cycle
+- UI/data changes:
+    - `/app` now receives the assigned schedule sessions in the initial Inertia payload
+    - the calendar keeps `selectedDay` and `calendarMonth` in local React state
+    - previous/next month and day selection now update locally without a page reload
+    - opening a workout or changing to another real app route still uses normal routing
+- Local checks passed:
+    - `npm run build:athlete`
+    - `npx eslint resources/js --max-warnings=0`
+    - `php artisan test`
+    - `git diff --check`
+- Production deploy result:
+    - migration result: `Nothing to migrate`
+    - production manifest checksum: `edde5266d317c2f1e124d5416fc83ba697128c2e648fd674752990ae8b6df4c7`
+    - build synced to both app `public/build` and subdomain `public_html/athlete/build`
+    - Laravel config, route, and view caches rebuilt successfully
+- Live smoke passed:
+    - `https://athlete.ahmaddalao.com` returns HTTP 200
+    - `https://athlete.ahmaddalao.com/login` returns HTTP 200
+    - guest `/app` redirects to login
+    - remote manifest checksum matches the local build checksum
+
+## 2026-07-03 coach and admin table controls follow-up
+
+This follow-up applies the same table-first cleanup to coach and admin workspaces instead of leaving the polish only on the athlete app.
+
+- Production target: `https://athlete.ahmaddalao.com`
+- Coach app changes:
+    - assigned athletes, schedule, owned programs, and pending workout logs now have direct table search
+    - each coach table supports `Show 10`, `25`, `50`, `100`, and `All`
+    - mobile coach cards stay lightweight while desktop remains table-first
+- Admin control center changes:
+    - renewal queue, payment queue, device queue, athlete coverage gaps, and coach load now have direct table search
+    - each operations table supports `Show 10`, `25`, `50`, `100`, and `All`
+    - queue controls are local and instant, so admins do not need a page reload just to narrow visible rows
+- Role-navigation cleanup:
+    - shared `Back home` and `Open app` links now use `auth.user.landing_path`
+    - normal users are sent back to their app/coach landing page instead of generic `/dashboard`
+- Local checks passed:
+    - `npm run build:athlete`
+    - `npx eslint resources/js --max-warnings=0`
+    - `php artisan test`
+    - `git diff --check`
+- Production deploy result:
+    - migration result: `Nothing to migrate`
+    - production manifest checksum: `5466fe2275bbba47a90336257d2f3f1df3b8751e701baf1617980fbc3ae64654`
+    - build synced to both app `public/build` and subdomain `public_html/athlete/build`
+    - Laravel config, route, and view caches rebuilt successfully
+- Live smoke passed:
+    - `https://athlete.ahmaddalao.com` returns HTTP 200
+    - `https://athlete.ahmaddalao.com/login` returns HTTP 200
+    - guest `/app`, `/coach`, and `/admin/control-center` redirect to login
+    - remote manifest checksum matches the local build checksum
 
 ## Cron jobs
 

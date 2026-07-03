@@ -26,7 +26,7 @@ import {
     Video,
     Watch,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 interface WorkoutSetLogRow {
     exerciseIndex: number;
@@ -52,6 +52,10 @@ interface ExerciseRow {
     restLabel: string | null;
     target: string | null;
     note: string | null;
+    section?: string | null;
+    supersetLabel?: string | null;
+    mediaUrl?: string | null;
+    movementType?: string | null;
 }
 
 interface TodaySession {
@@ -210,6 +214,7 @@ interface AthleteAppHomeProps {
         previousMonth: string;
         nextMonth: string;
         days: ScheduleDay[];
+        sessions: SelectedDaySession[];
     };
     selectedDaySessions: SelectedDaySession[];
     membership: {
@@ -266,14 +271,79 @@ interface AthleteAppHomeProps {
     charts: AthleteCharts;
 }
 
-const calendarWeekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
 function formatDate(value: string | null) {
     if (!value) {
         return 'Not set';
     }
 
     return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(`${value}T00:00:00`));
+}
+
+function dateKey(value: Date) {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+}
+
+function todayKey() {
+    return dateKey(new Date());
+}
+
+function monthDate(month: string) {
+    const [year, monthNumber] = month.split('-').map((value) => Number.parseInt(value, 10));
+
+    if (!year || !monthNumber || monthNumber < 1 || monthNumber > 12) {
+        return new Date();
+    }
+
+    return new Date(year, monthNumber - 1, 1);
+}
+
+function monthKey(value: Date) {
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function shiftMonth(month: string, direction: -1 | 1) {
+    const value = monthDate(month);
+    value.setMonth(value.getMonth() + direction);
+
+    return monthKey(value);
+}
+
+function formatMonthLabel(month: string) {
+    return new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(monthDate(month));
+}
+
+function dayDate(month: string, day: number) {
+    const value = monthDate(month);
+    value.setDate(day);
+
+    return value;
+}
+
+function buildCalendarDays(month: string, sessions: SelectedDaySession[], selectedDate: string): ScheduleDay[] {
+    const monthStart = monthDate(month);
+    const totalDays = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
+    const currentDate = todayKey();
+
+    return Array.from({ length: totalDays }, (_, index) => {
+        const date = dayDate(month, index + 1);
+        const dateString = dateKey(date);
+        const daySessions = sessions.filter((session) => session.scheduledDate === dateString);
+
+        return {
+            date: dateString,
+            dayNumber: index + 1,
+            weekday: new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(date),
+            isToday: dateString === currentDate,
+            isSelected: dateString === selectedDate,
+            sessionCount: daySessions.length,
+            completedCount: daySessions.filter((session) => session.completionStatus === 'completed').length,
+            hasMedia: daySessions.some((session) => Boolean(session.videoUrl) || session.mediaCount > 0),
+        };
+    });
 }
 
 function metricValue(value: number | null | undefined, suffix = '') {
@@ -294,19 +364,14 @@ function statusLabel(status: string) {
     return status.replace(/_/g, ' ');
 }
 
-function leadingCalendarBlanks(month: string) {
-    const firstDay = new Date(`${month}-01T00:00:00`);
-
-    return Number.isNaN(firstDay.getTime()) ? 0 : firstDay.getDay();
-}
-
 function TopHeader({ props }: { props: AthleteAppHomeProps }) {
     return (
-        <section className="overflow-hidden rounded-b-[1.75rem] bg-emerald-800 px-4 pt-5 pb-5 text-white shadow-[0_28px_70px_-46px_rgba(6,78,59,0.9)] md:mx-6 md:mt-6 md:rounded-[2.2rem] md:px-8 md:pt-8 md:pb-7">
+        <section className="overflow-hidden rounded-b-[2rem] bg-emerald-800 px-5 pt-8 pb-10 text-white shadow-[0_28px_70px_-46px_rgba(6,78,59,0.9)] md:mx-6 md:mt-6 md:rounded-[2.2rem] md:px-8 md:pt-8 md:pb-7">
             <div className="flex items-start justify-between gap-4">
                 <div className="space-y-2">
                     <Badge className="rounded-full bg-white/15 text-white hover:bg-white/15">Athlete app</Badge>
-                    <h1 className="font-['Space_Grotesk'] text-2xl leading-tight font-bold tracking-[-0.04em] sm:text-5xl">{props.viewer.name}</h1>
+                    <p className="text-sm text-emerald-50">Welcome, {props.viewer.name}</p>
+                    <h1 className="font-['Space_Grotesk'] text-4xl leading-none font-bold tracking-[-0.06em] sm:text-5xl">Dashboard</h1>
                     <p className="max-w-2xl text-sm leading-6 text-emerald-50">
                         Coach: {props.coach?.name ?? props.coaches[0]?.name ?? 'Not assigned yet'} · Programs:{' '}
                         {props.programs.length || 'No active blocks'}
@@ -472,17 +537,29 @@ function DailyWorkoutCard({ session }: { session: SelectedDaySession }) {
 
 function CalendarPanel({
     schedule,
-    sessions,
-    rangeDays,
 }: {
     schedule: AthleteAppHomeProps['schedule'];
-    sessions: SelectedDaySession[];
-    rangeDays: number;
 }) {
-    const selectedDate = formatDate(schedule.selectedDate);
-    const monthHref = (month: string) => `/app?month=${month}&date=${month}-01&range=${rangeDays}`;
-    const dayHref = (day: ScheduleDay) => `/app?month=${schedule.month}&date=${day.date}&range=${rangeDays}`;
-    const blankDays = Array.from({ length: leadingCalendarBlanks(schedule.month) });
+    const [calendarMonth, setCalendarMonth] = useState(schedule.month);
+    const [selectedDay, setSelectedDay] = useState(schedule.selectedDate);
+    const selectedDate = formatDate(selectedDay);
+    const monthStart = monthDate(calendarMonth);
+    const leadingCalendarBlanks = Array.from({ length: Number.isNaN(monthStart.getTime()) ? 0 : monthStart.getDay() });
+    const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const previousMonth = shiftMonth(calendarMonth, -1);
+    const nextMonth = shiftMonth(calendarMonth, 1);
+    const visibleDays = buildCalendarDays(calendarMonth, schedule.sessions, selectedDay);
+    const selectedSessions = schedule.sessions.filter((session) => session.scheduledDate === selectedDay);
+
+    const moveMonth = (month: string) => {
+        setCalendarMonth(month);
+        setSelectedDay(`${month}-01`);
+    };
+
+    const selectDay = (day: ScheduleDay) => {
+        setCalendarMonth(day.date.slice(0, 7));
+        setSelectedDay(day.date);
+    };
 
     return (
         <AthletePanel title="Calendar and daily schedule" description="Pick a day to see assigned workouts for that date." className="scroll-mt-8">
@@ -494,39 +571,45 @@ function CalendarPanel({
                         <p className="mt-1 text-xl font-semibold tracking-[-0.03em] text-stone-950">{selectedDate}</p>
                     </div>
                     <div className="hidden grid-cols-[1fr_auto_1fr] items-center gap-2 sm:flex sm:items-center">
-                        <Button asChild variant="outline" size="sm" className="justify-center">
-                            <Link href={monthHref(schedule.previousMonth)}>
-                                <ChevronLeft className="size-4" />
-                                <span className="hidden min-[380px]:inline">Previous</span>
-                            </Link>
+                        <Button type="button" variant="outline" size="sm" className="justify-center" onClick={() => moveMonth(previousMonth)}>
+                            <ChevronLeft className="size-4" />
+                            <span className="hidden min-[380px]:inline">Previous</span>
                         </Button>
                         <Badge variant="outline" className="justify-center rounded-full px-3 py-1.5 text-center text-stone-700">
-                            {schedule.monthLabel}
+                            {formatMonthLabel(calendarMonth)}
                         </Badge>
-                        <Button asChild variant="outline" size="sm" className="justify-center">
-                            <Link href={monthHref(schedule.nextMonth)}>
-                                <span className="hidden min-[380px]:inline">Next</span>
-                                <ChevronRight className="size-4" />
-                            </Link>
+                        <Button type="button" variant="outline" size="sm" className="justify-center" onClick={() => moveMonth(nextMonth)}>
+                            <span className="hidden min-[380px]:inline">Next</span>
+                            <ChevronRight className="size-4" />
                         </Button>
                     </div>
                 </div>
 
                 <div className="rounded-[1.35rem] border border-stone-200 bg-white p-3 shadow-[0_18px_45px_-42px_rgba(15,23,42,0.45)] md:hidden">
                     <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_2.25rem] items-center gap-2">
-                        <Button asChild variant="outline" size="icon" className="size-9 rounded-full bg-white">
-                            <Link href={monthHref(schedule.previousMonth)} preserveScroll preserveState aria-label="Previous month">
-                                <ChevronLeft className="size-4" />
-                            </Link>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="size-9 rounded-full bg-white"
+                            onClick={() => moveMonth(previousMonth)}
+                            aria-label="Previous month"
+                        >
+                            <ChevronLeft className="size-4" />
                         </Button>
                         <div className="min-w-0 text-center">
-                            <p className="truncate text-sm font-semibold tracking-[-0.03em] text-stone-950">{schedule.monthLabel}</p>
+                            <p className="truncate text-sm font-semibold tracking-[-0.03em] text-stone-950">{formatMonthLabel(calendarMonth)}</p>
                             <p className="mt-0.5 truncate text-[0.68rem] font-medium text-stone-500">{selectedDate}</p>
                         </div>
-                        <Button asChild variant="outline" size="icon" className="size-9 rounded-full bg-white">
-                            <Link href={monthHref(schedule.nextMonth)} preserveScroll preserveState aria-label="Next month">
-                                <ChevronRight className="size-4" />
-                            </Link>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="size-9 rounded-full bg-white"
+                            onClick={() => moveMonth(nextMonth)}
+                            aria-label="Next month"
+                        >
+                            <ChevronRight className="size-4" />
                         </Button>
                     </div>
 
@@ -545,56 +628,61 @@ function CalendarPanel({
                         </span>
                     </div>
 
-                    <div
-                        className="mt-3 grid gap-1 text-center text-[0.58rem] font-bold text-stone-500 uppercase"
-                        style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}
-                    >
-                        {calendarWeekdays.map((weekday) => (
-                            <span key={weekday}>{weekday}</span>
+                    <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[0.56rem] font-bold tracking-[0.12em] text-stone-400 uppercase">
+                        {weekdayLabels.map((label) => (
+                            <span key={label}>{label}</span>
                         ))}
                     </div>
-                    <div className="mt-1.5 grid gap-1" style={{ gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
-                        {blankDays.map((_, index) => (
-                            <span key={`blank-${index}`} className="block h-10 min-w-0" aria-hidden="true" />
+
+                    <div className="mt-2 grid grid-cols-7 gap-1.5">
+                        {leadingCalendarBlanks.map((_, index) => (
+                            <span key={`mobile-blank-${index}`} className="aspect-square rounded-2xl" aria-hidden="true" />
                         ))}
-                        {schedule.days.map((day) => (
-                            <Link
+                        {visibleDays.map((day) => (
+                            <button
+                                type="button"
                                 key={day.date}
-                                href={dayHref(day)}
-                                preserveScroll
-                                preserveState
+                                onClick={() => selectDay(day)}
                                 aria-label={`${day.weekday} ${day.dayNumber}, ${day.sessionCount} workout${day.sessionCount === 1 ? '' : 's'}`}
                                 className={[
-                                    'relative flex h-10 w-full min-w-0 flex-col items-center justify-center rounded-xl border text-center text-xs font-bold transition',
+                                    'relative flex aspect-square min-h-10 flex-col items-center justify-center rounded-2xl border text-center text-xs font-bold transition',
                                     day.isSelected
                                         ? 'border-emerald-700 bg-emerald-700 text-white shadow-[0_10px_22px_-16px_rgba(4,120,87,0.85)]'
                                         : day.sessionCount > 0
                                           ? 'border-emerald-200 bg-emerald-50 text-emerald-950'
-                                          : 'border-stone-200 bg-stone-50 text-stone-700',
+                                          : 'border-stone-100 bg-stone-50 text-stone-500',
                                     day.isToday && !day.isSelected ? 'ring-1 ring-emerald-300' : '',
                                 ].join(' ')}
                             >
                                 <span className="leading-none">{day.dayNumber}</span>
                                 {day.sessionCount > 0 && (
                                     <span
-                                        className={['absolute bottom-1.5 h-1 w-4 rounded-full', day.isSelected ? 'bg-white' : 'bg-emerald-500'].join(
+                                        className={['absolute bottom-1.5 h-1 w-5 rounded-full', day.isSelected ? 'bg-white' : 'bg-emerald-500'].join(
                                             ' ',
                                         )}
                                     />
                                 )}
-                                {day.hasMedia && <Video className="absolute top-1 right-1 size-2.5 opacity-80" />}
-                            </Link>
+                                {day.hasMedia && <Video className="absolute top-1 right-1 size-2.5 opacity-70" />}
+                            </button>
                         ))}
                     </div>
                 </div>
 
+                <div className="hidden grid-cols-7 gap-2 text-center text-[0.68rem] font-semibold tracking-[0.18em] text-stone-400 uppercase md:grid">
+                    {weekdayLabels.map((label) => (
+                        <span key={label}>{label}</span>
+                    ))}
+                </div>
+
                 <div className="hidden grid-cols-7 gap-2 md:grid">
-                    {schedule.days.map((day) => (
-                        <Link
+                    {leadingCalendarBlanks.map((_, index) => (
+                        <span key={`desktop-blank-${index}`} className="min-h-20 rounded-2xl" aria-hidden="true" />
+                    ))}
+                    {visibleDays.map((day) => (
+                        <button
+                            type="button"
                             key={day.date}
-                            href={dayHref(day)}
-                            preserveScroll
-                            preserveState
+                            onClick={() => selectDay(day)}
                             className={[
                                 'min-h-20 rounded-2xl border p-2 text-left transition',
                                 day.isSelected
@@ -611,7 +699,7 @@ function CalendarPanel({
                                 {day.hasMedia && <Video className="size-3" />}
                             </span>
                             {day.isToday && <span className="mt-1 block text-[0.68rem] font-semibold">Today</span>}
-                        </Link>
+                        </button>
                     ))}
                 </div>
 
@@ -619,12 +707,12 @@ function CalendarPanel({
                     <div className="border-b border-stone-100 bg-stone-50 px-4 py-3">
                         <p className="font-semibold text-stone-950">Workouts on {selectedDate}</p>
                     </div>
-                    {sessions.length === 0 ? (
+                    {selectedSessions.length === 0 ? (
                         <div className="p-5 text-sm leading-6 text-stone-600">No scheduled workout for this day.</div>
                     ) : (
                         <>
                             <div className="space-y-3 p-3 md:hidden">
-                                {sessions.map((session) => (
+                                {selectedSessions.map((session) => (
                                     <DailyWorkoutCard key={session.id} session={session} />
                                 ))}
                             </div>
@@ -642,7 +730,7 @@ function CalendarPanel({
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-stone-100">
-                                        {sessions.map((session) => (
+                                        {selectedSessions.map((session) => (
                                             <tr key={session.id} className="align-top">
                                                 <td className="px-4 py-4">
                                                     <p className="font-semibold text-stone-950">{session.title}</p>
@@ -701,11 +789,15 @@ function CalendarPanel({
 function TodayWorkoutCard({ session }: { session: TodaySession | null }) {
     if (!session) {
         return (
-            <AthletePanel title="Today workout" description="No assigned session is ready for today.">
-                <div className="rounded-[1.5rem] border border-dashed border-stone-300 bg-stone-50 p-5">
-                    <p className="font-medium text-stone-950">No workout scheduled.</p>
-                    <p className="mt-2 text-sm leading-6 text-stone-600">
-                        When your coach assigns a session, it will appear here with sets, reps, load, rest, and video.
+            <AthletePanel title="Today workout" description="No assigned session is ready for today." className="scroll-mt-8">
+                <div id="today" className="-mt-20 pt-20" />
+                <div className="rounded-[1.7rem] border border-stone-200 bg-white p-6 text-center shadow-[0_24px_60px_-46px_rgba(15,23,42,0.55)]">
+                    <div className="mx-auto grid size-20 place-items-center rounded-[1.5rem] bg-stone-100 text-stone-500">
+                        <Dumbbell className="size-9" />
+                    </div>
+                    <p className="mt-5 text-2xl font-semibold tracking-[-0.04em] text-stone-950">No workout today</p>
+                    <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-stone-600">
+                        When your coach assigns a session, this becomes your one-tap start card with sets, reps, rest, and media.
                     </p>
                 </div>
             </AthletePanel>
@@ -716,7 +808,9 @@ function TodayWorkoutCard({ session }: { session: TodaySession | null }) {
         <AthletePanel
             title="Today workout"
             description={`${session.session.focus ?? 'Training session'} · ${formatDate(session.session.scheduledDate)}`}
+            className="scroll-mt-8"
         >
+            <div id="today" className="-mt-20 pt-20" />
             <div className="space-y-5">
                 <div className="rounded-[1.7rem] bg-emerald-700 p-5 text-white">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1154,10 +1248,6 @@ export default function AthleteAppHome(props: AthleteAppHomeProps) {
 
                 <main className="grid min-w-0 gap-6 px-4 md:px-6 lg:grid-cols-[1.1fr_0.9fr]">
                     <div className="min-w-0 space-y-6">
-                        <CalendarPanel schedule={props.schedule} sessions={props.selectedDaySessions} rangeDays={props.charts.rangeDays} />
-
-                        <ProgramsPanel programs={props.programs} />
-
                         <TodayWorkoutCard session={props.training.todaySession} />
 
                         <AthletePanel
@@ -1195,6 +1285,10 @@ export default function AthleteAppHome(props: AthleteAppHomeProps) {
                                 </div>
                             )}
                         </AthletePanel>
+
+                        <CalendarPanel schedule={props.schedule} />
+
+                        <ProgramsPanel programs={props.programs} />
 
                         <HealthTrendsPanel charts={props.charts} schedule={props.schedule} />
 

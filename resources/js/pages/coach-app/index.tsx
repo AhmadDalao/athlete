@@ -1,10 +1,11 @@
+import { CoachAppShell } from '@/components/coach-app-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CoachAppShell } from '@/components/coach-app-shell';
-import { WorkspacePanel, WorkspaceTable, WorkspaceTableEmpty, WorkspaceTableHeader } from '@/components/workspace-primitives';
+import { Input } from '@/components/ui/input';
+import { WorkspacePanel, WorkspaceTable, WorkspaceTableEmpty, WorkspaceTableHeader, WorkspaceTablePageSize } from '@/components/workspace-primitives';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowRight, CalendarDays, CheckCircle2, Dumbbell, MailPlus, MessageCircle, type LucideIcon, Users } from 'lucide-react';
-import { type ReactNode } from 'react';
+import { ArrowRight, CalendarDays, CheckCircle2, Dumbbell, type LucideIcon, MailPlus, MessageCircle, Search, Users } from 'lucide-react';
+import { type ReactNode, useState } from 'react';
 
 interface CoachAppProps {
     viewer: {
@@ -140,7 +141,117 @@ function EmptyMobileState({ message }: { message: string }) {
     return <div className="rounded-[1.25rem] border border-dashed border-stone-300 bg-white p-4 text-sm leading-6 text-stone-600">{message}</div>;
 }
 
+function rowMatchesSearch(query: string, values: Array<string | number | null | undefined>) {
+    const needle = query.trim().toLowerCase();
+
+    if (!needle) {
+        return true;
+    }
+
+    return values.some((value) =>
+        String(value ?? '')
+            .toLowerCase()
+            .includes(needle),
+    );
+}
+
+function visibleRows<T>(rows: T[], perPage: string) {
+    if (perPage === 'all') {
+        return rows;
+    }
+
+    return rows.slice(0, Number(perPage) || 10);
+}
+
+function TableControls({
+    search,
+    onSearchChange,
+    perPage,
+    onPerPageChange,
+    shown,
+    total,
+    placeholder,
+}: {
+    search: string;
+    onSearchChange: (value: string) => void;
+    perPage: string;
+    onPerPageChange: (value: string) => void;
+    shown: number;
+    total: number;
+    placeholder: string;
+}) {
+    return (
+        <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/50 p-4 lg:flex-row lg:items-center lg:justify-between">
+            <WorkspaceTablePageSize value={perPage} onChange={onPerPageChange} />
+            <div className="flex min-w-0 flex-1 flex-col gap-3 lg:max-w-2xl lg:flex-row lg:items-center">
+                <div className="relative min-w-0 flex-1">
+                    <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone-400" />
+                    <Input
+                        className="h-11 rounded-xl border-stone-200 bg-white pl-9"
+                        value={search}
+                        onChange={(event) => onSearchChange(event.target.value)}
+                        placeholder={placeholder}
+                    />
+                </div>
+                <p className="shrink-0 text-sm text-stone-500">
+                    Showing {shown} of {total}
+                </p>
+            </div>
+        </div>
+    );
+}
+
 export default function CoachAppIndex({ viewer, summary, athletes, programs, schedule, pendingLogs }: CoachAppProps) {
+    const [athleteSearch, setAthleteSearch] = useState('');
+    const [athletePerPage, setAthletePerPage] = useState('10');
+    const [scheduleSearch, setScheduleSearch] = useState('');
+    const [schedulePerPage, setSchedulePerPage] = useState('10');
+    const [programSearch, setProgramSearch] = useState('');
+    const [programPerPage, setProgramPerPage] = useState('10');
+    const [pendingSearch, setPendingSearch] = useState('');
+    const [pendingPerPage, setPendingPerPage] = useState('10');
+
+    const athleteRows = athletes.filter((athlete) =>
+        rowMatchesSearch(athleteSearch, [
+            athlete.name,
+            athlete.email,
+            athlete.goal,
+            athlete.membershipStatus,
+            athlete.currentProgram?.title,
+            athlete.currentProgram?.status,
+        ]),
+    );
+    const scheduleRows = schedule.filter((session) =>
+        rowMatchesSearch(scheduleSearch, [
+            session.title,
+            session.focus,
+            session.scheduledDate,
+            session.program.title,
+            session.athlete.name,
+            session.athlete.email,
+            session.completionStatus,
+            session.exercisePreview.join(' '),
+        ]),
+    );
+    const programRows = programs.filter((program) =>
+        rowMatchesSearch(programSearch, [
+            program.title,
+            program.goal,
+            program.status,
+            program.athlete.name,
+            program.athlete.email,
+            program.nextSessionDate,
+        ]),
+    );
+    const pendingRows = pendingLogs.filter((log) =>
+        rowMatchesSearch(pendingSearch, [log.title, log.focus, log.scheduledDate, log.programTitle, log.athleteName]),
+    );
+
+    const visibleAthletes = visibleRows(athleteRows, athletePerPage);
+    const visibleSchedule = visibleRows(scheduleRows, schedulePerPage);
+    const visiblePrograms = visibleRows(programRows, programPerPage);
+    const visiblePendingLogs = visibleRows(pendingRows, pendingPerPage);
+
     return (
         <CoachAppShell active="home" unreadMessages={summary.unreadMessages}>
             <Head title="Coach app" />
@@ -152,7 +263,8 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                         Today’s coaching board
                     </h1>
                     <p className="mt-3 max-w-2xl text-sm leading-7 text-stone-700">
-                        {viewer.name}, this is your app home: athletes, schedule, programs, messages, and missing logs. Admin controls stay in the backend.
+                        {viewer.name}, this is your app home: athletes, schedule, programs, messages, and missing logs. Admin controls stay in the
+                        backend.
                     </p>
                     <div className="mt-5 grid gap-2 sm:flex sm:flex-wrap">
                         <Button asChild className="h-12 rounded-2xl bg-amber-500 text-stone-950 hover:bg-amber-400">
@@ -190,18 +302,28 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                     ) : (
                         <div className="space-y-3" id="schedule">
                             {schedule.slice(0, 8).map((session) => (
-                                <article key={session.id} className="rounded-[1.35rem] border border-stone-200 bg-white p-4 shadow-[0_18px_38px_-34px_rgba(15,23,42,0.35)]">
+                                <article
+                                    key={session.id}
+                                    className="rounded-[1.35rem] border border-stone-200 bg-white p-4 shadow-[0_18px_38px_-34px_rgba(15,23,42,0.35)]"
+                                >
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
-                                            <p className="text-xs font-semibold tracking-[0.16em] text-stone-400 uppercase">{formatDate(session.scheduledDate)}</p>
+                                            <p className="text-xs font-semibold tracking-[0.16em] text-stone-400 uppercase">
+                                                {formatDate(session.scheduledDate)}
+                                            </p>
                                             <p className="mt-1 font-semibold text-stone-950">{session.title}</p>
-                                            <Link href={route('athletes.show', session.athlete.id)} className="mt-1 inline-flex text-sm font-semibold text-amber-800">
+                                            <Link
+                                                href={route('athletes.show', session.athlete.id)}
+                                                className="mt-1 inline-flex text-sm font-semibold text-amber-800"
+                                            >
                                                 {session.athlete.name}
                                             </Link>
                                         </div>
                                         <Badge variant={badgeVariant(session.completionStatus)}>{humanize(session.completionStatus)}</Badge>
                                     </div>
-                                    <p className="mt-3 text-sm leading-6 text-stone-600">{session.exercisePreview.join(', ') || session.focus || 'No exercises entered.'}</p>
+                                    <p className="mt-3 text-sm leading-6 text-stone-600">
+                                        {session.exercisePreview.join(', ') || session.focus || 'No exercises entered.'}
+                                    </p>
                                     <div className="mt-3 flex items-center justify-between text-sm text-stone-500">
                                         <span>{session.program.title}</span>
                                         <span>{session.mediaCount} media</span>
@@ -218,7 +340,10 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                     ) : (
                         <div className="space-y-3">
                             {athletes.map((athlete) => (
-                                <article key={athlete.id} className="rounded-[1.35rem] border border-stone-200 bg-white p-4 shadow-[0_18px_38px_-34px_rgba(15,23,42,0.35)]">
+                                <article
+                                    key={athlete.id}
+                                    className="rounded-[1.35rem] border border-stone-200 bg-white p-4 shadow-[0_18px_38px_-34px_rgba(15,23,42,0.35)]"
+                                >
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
                                             <Link href={route('athletes.show', athlete.id)} className="font-semibold text-stone-950">
@@ -226,7 +351,9 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                                             </Link>
                                             <p className="mt-1 text-sm text-stone-500">{athlete.email}</p>
                                         </div>
-                                        <Badge variant={athlete.membershipNeedsAttention ? 'destructive' : 'outline'}>{humanize(athlete.membershipStatus)}</Badge>
+                                        <Badge variant={athlete.membershipNeedsAttention ? 'destructive' : 'outline'}>
+                                            {humanize(athlete.membershipStatus)}
+                                        </Badge>
                                     </div>
                                     <p className="mt-3 text-sm leading-6 text-stone-600">{athlete.goal ?? 'No goal set.'}</p>
                                     <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
@@ -251,24 +378,43 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                     )}
                 </MobileSection>
 
-                <WorkspacePanel title="Assigned athletes" description="Only athletes actively assigned to you are shown here." contentClassName="p-0" className="hidden md:block">
+                <WorkspacePanel
+                    title="Assigned athletes"
+                    description="Only athletes actively assigned to you are shown here."
+                    contentClassName="space-y-4"
+                    className="hidden md:block"
+                >
+                    <TableControls
+                        search={athleteSearch}
+                        onSearchChange={setAthleteSearch}
+                        perPage={athletePerPage}
+                        onPerPageChange={setAthletePerPage}
+                        shown={visibleAthletes.length}
+                        total={athleteRows.length}
+                        placeholder="Search athlete, email, goal, membership, or program"
+                    />
                     <WorkspaceTable minWidth="min-w-[960px]">
                         <WorkspaceTableHeader labels={['Athlete', 'Goal', 'Membership', 'Devices', 'Check-in', 'Program', 'Actions']} />
-                        {athletes.length === 0 ? (
+                        {athleteRows.length === 0 ? (
                             <WorkspaceTableEmpty message="No athletes are assigned yet." colSpan={7} />
                         ) : (
                             <tbody>
-                                {athletes.map((athlete) => (
+                                {visibleAthletes.map((athlete) => (
                                     <tr key={athlete.id} className="border-t border-stone-100 align-top">
                                         <td className="px-5 py-4">
-                                            <Link href={route('athletes.show', athlete.id)} className="font-black text-stone-950 hover:text-amber-700">
+                                            <Link
+                                                href={route('athletes.show', athlete.id)}
+                                                className="font-black text-stone-950 hover:text-amber-700"
+                                            >
                                                 {athlete.name}
                                             </Link>
                                             <p className="mt-1 text-sm text-stone-500">{athlete.email}</p>
                                         </td>
                                         <td className="px-5 py-4 text-sm text-stone-600">{athlete.goal ?? 'No goal set'}</td>
                                         <td className="px-5 py-4">
-                                            <Badge variant={athlete.membershipNeedsAttention ? 'destructive' : 'outline'}>{humanize(athlete.membershipStatus)}</Badge>
+                                            <Badge variant={athlete.membershipNeedsAttention ? 'destructive' : 'outline'}>
+                                                {humanize(athlete.membershipStatus)}
+                                            </Badge>
                                         </td>
                                         <td className="px-5 py-4 text-sm text-stone-600">{athlete.connectedDevices}</td>
                                         <td className="px-5 py-4 text-sm text-stone-600">{formatDate(athlete.latestCheckInAt)}</td>
@@ -276,7 +422,9 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                                             {athlete.currentProgram ? (
                                                 <>
                                                     <p className="font-medium text-stone-950">{athlete.currentProgram.title}</p>
-                                                    <Badge variant={badgeVariant(athlete.currentProgram.status)}>{humanize(athlete.currentProgram.status)}</Badge>
+                                                    <Badge variant={badgeVariant(athlete.currentProgram.status)}>
+                                                        {humanize(athlete.currentProgram.status)}
+                                                    </Badge>
                                                 </>
                                             ) : (
                                                 <span className="text-sm text-stone-500">No active program</span>
@@ -300,18 +448,30 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                 </WorkspacePanel>
 
                 <div id="schedule" className="hidden scroll-mt-8 md:block">
-                    <WorkspacePanel title="Schedule" description="Upcoming sessions from your own programs only." contentClassName="p-0">
+                    <WorkspacePanel title="Schedule" description="Upcoming sessions from your own programs only." contentClassName="space-y-4">
+                        <TableControls
+                            search={scheduleSearch}
+                            onSearchChange={setScheduleSearch}
+                            perPage={schedulePerPage}
+                            onPerPageChange={setSchedulePerPage}
+                            shown={visibleSchedule.length}
+                            total={scheduleRows.length}
+                            placeholder="Search workout, athlete, program, exercise, status, or date"
+                        />
                         <WorkspaceTable minWidth="min-w-[980px]">
                             <WorkspaceTableHeader labels={['Date', 'Athlete', 'Program', 'Workout', 'Exercises', 'Media', 'Status']} />
-                            {schedule.length === 0 ? (
+                            {scheduleRows.length === 0 ? (
                                 <WorkspaceTableEmpty message="No sessions scheduled over the next 14 days." colSpan={7} />
                             ) : (
                                 <tbody>
-                                    {schedule.map((session) => (
+                                    {visibleSchedule.map((session) => (
                                         <tr key={session.id} className="border-t border-stone-100 align-top">
                                             <td className="px-5 py-4 text-sm text-stone-600">{formatDate(session.scheduledDate)}</td>
                                             <td className="px-5 py-4">
-                                                <Link href={route('athletes.show', session.athlete.id)} className="font-medium text-stone-950 hover:text-amber-700">
+                                                <Link
+                                                    href={route('athletes.show', session.athlete.id)}
+                                                    className="font-medium text-stone-950 hover:text-amber-700"
+                                                >
                                                     {session.athlete.name}
                                                 </Link>
                                                 <p className="text-xs text-stone-500">{session.athlete.email}</p>
@@ -321,7 +481,9 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                                                 <p className="font-medium text-stone-950">{session.title}</p>
                                                 <p className="text-sm text-stone-500">{session.focus ?? 'No focus'}</p>
                                             </td>
-                                            <td className="px-5 py-4 text-sm text-stone-600">{session.exercisePreview.join(', ') || 'No exercises'}</td>
+                                            <td className="px-5 py-4 text-sm text-stone-600">
+                                                {session.exercisePreview.join(', ') || 'No exercises'}
+                                            </td>
                                             <td className="px-5 py-4 text-sm text-stone-600">{session.mediaCount}</td>
                                             <td className="px-5 py-4">
                                                 <Badge variant={badgeVariant(session.completionStatus)}>{humanize(session.completionStatus)}</Badge>
@@ -348,7 +510,9 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                                         </div>
                                         <Badge variant={badgeVariant(program.status)}>{humanize(program.status)}</Badge>
                                     </div>
-                                    <p className="mt-3 text-sm text-stone-600">{program.completedSessionCount}/{program.sessionCount} sessions complete</p>
+                                    <p className="mt-3 text-sm text-stone-600">
+                                        {program.completedSessionCount}/{program.sessionCount} sessions complete
+                                    </p>
                                     <p className="mt-1 text-sm text-stone-500">Next: {formatDate(program.nextSessionDate)}</p>
                                 </article>
                             ))}
@@ -363,9 +527,14 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                         <div className="space-y-3">
                             {pendingLogs.map((log) => (
                                 <article key={log.id} className="rounded-[1.35rem] border border-stone-200 bg-white p-4">
-                                    <p className="text-xs font-semibold tracking-[0.16em] text-stone-400 uppercase">{formatDate(log.scheduledDate)}</p>
+                                    <p className="text-xs font-semibold tracking-[0.16em] text-stone-400 uppercase">
+                                        {formatDate(log.scheduledDate)}
+                                    </p>
                                     <p className="mt-1 font-semibold text-stone-950">{log.title}</p>
-                                    <Link href={route('athletes.show', log.athleteId)} className="mt-2 inline-flex text-sm font-semibold text-amber-800">
+                                    <Link
+                                        href={route('athletes.show', log.athleteId)}
+                                        className="mt-2 inline-flex text-sm font-semibold text-amber-800"
+                                    >
                                         {log.athleteName}
                                     </Link>
                                     <p className="mt-2 text-sm text-stone-600">{log.programTitle}</p>
@@ -376,14 +545,27 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                 </MobileSection>
 
                 <section className="hidden gap-6 md:grid xl:grid-cols-2">
-                    <WorkspacePanel title="Owned programs" description="Active and draft blocks currently assigned by you." contentClassName="p-0">
+                    <WorkspacePanel
+                        title="Owned programs"
+                        description="Active and draft blocks currently assigned by you."
+                        contentClassName="space-y-4"
+                    >
+                        <TableControls
+                            search={programSearch}
+                            onSearchChange={setProgramSearch}
+                            perPage={programPerPage}
+                            onPerPageChange={setProgramPerPage}
+                            shown={visiblePrograms.length}
+                            total={programRows.length}
+                            placeholder="Search program, athlete, goal, status, or next date"
+                        />
                         <WorkspaceTable minWidth="min-w-[780px]">
                             <WorkspaceTableHeader labels={['Program', 'Athlete', 'Sessions', 'Next', 'Status']} />
-                            {programs.length === 0 ? (
+                            {programRows.length === 0 ? (
                                 <WorkspaceTableEmpty message="No programs found." colSpan={5} />
                             ) : (
                                 <tbody>
-                                    {programs.map((program) => (
+                                    {visiblePrograms.map((program) => (
                                         <tr key={program.id} className="border-t border-stone-100 align-top">
                                             <td className="px-5 py-4">
                                                 <p className="font-medium text-stone-950">{program.title}</p>
@@ -404,18 +586,34 @@ export default function CoachAppIndex({ viewer, summary, athletes, programs, sch
                         </WorkspaceTable>
                     </WorkspacePanel>
 
-                    <WorkspacePanel title="Pending logs" description="Past sessions that still need athlete execution data." contentClassName="p-0">
+                    <WorkspacePanel
+                        title="Pending logs"
+                        description="Past sessions that still need athlete execution data."
+                        contentClassName="space-y-4"
+                    >
+                        <TableControls
+                            search={pendingSearch}
+                            onSearchChange={setPendingSearch}
+                            perPage={pendingPerPage}
+                            onPerPageChange={setPendingPerPage}
+                            shown={visiblePendingLogs.length}
+                            total={pendingRows.length}
+                            placeholder="Search athlete, session, program, focus, or date"
+                        />
                         <WorkspaceTable minWidth="min-w-[720px]">
                             <WorkspaceTableHeader labels={['Date', 'Athlete', 'Program', 'Session']} />
-                            {pendingLogs.length === 0 ? (
+                            {pendingRows.length === 0 ? (
                                 <WorkspaceTableEmpty message="No pending logs. Clean." colSpan={4} />
                             ) : (
                                 <tbody>
-                                    {pendingLogs.map((log) => (
+                                    {visiblePendingLogs.map((log) => (
                                         <tr key={log.id} className="border-t border-stone-100">
                                             <td className="px-5 py-4 text-sm text-stone-600">{formatDate(log.scheduledDate)}</td>
                                             <td className="px-5 py-4">
-                                                <Link href={route('athletes.show', log.athleteId)} className="font-medium text-stone-950 hover:text-amber-700">
+                                                <Link
+                                                    href={route('athletes.show', log.athleteId)}
+                                                    className="font-medium text-stone-950 hover:text-amber-700"
+                                                >
                                                     {log.athleteName}
                                                 </Link>
                                             </td>

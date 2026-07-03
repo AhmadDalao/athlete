@@ -8,19 +8,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     ArrowLeft,
+    Ban,
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
     Clock3,
+    Dumbbell,
     ExternalLink,
     FileText,
     Film,
+    Info,
     Images,
     ListChecks,
     Pause,
     Play,
     SkipForward,
     TimerReset,
+    X,
 } from 'lucide-react';
 import { type FormEvent, useEffect, useState } from 'react';
 
@@ -34,6 +38,10 @@ interface ExerciseRow {
     restLabel: string | null;
     target: string | null;
     note: string | null;
+    section?: string | null;
+    supersetLabel?: string | null;
+    mediaUrl?: string | null;
+    movementType?: string | null;
 }
 
 interface WorkoutSetLogRow {
@@ -153,6 +161,22 @@ function restLabel(exercise: ExerciseRow | null) {
     }
 
     return formatTimer(exercise.restSeconds);
+}
+
+function exerciseMediaUrl(exercise: ExerciseRow | null, sessionVideoUrl: string | null) {
+    return exercise?.mediaUrl ?? sessionVideoUrl;
+}
+
+function exerciseLabel(exercise: ExerciseRow | null, index: number) {
+    if (!exercise) {
+        return String(index + 1);
+    }
+
+    return exercise.supersetLabel ?? exercise.target?.charAt(0)?.toUpperCase() ?? String(index + 1);
+}
+
+function sectionName(exercise: ExerciseRow | null) {
+    return exercise?.section ?? exercise?.target ?? 'Workout';
 }
 
 function videoEmbedUrl(value: string | null) {
@@ -336,6 +360,8 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
     const currentExercise = execution.exercises[currentExerciseIndex] ?? null;
     const mediaItems = execution.session.mediaItems ?? [];
     const imageMediaItems = mediaItems.filter((item) => item.type === 'image');
+    const currentMediaUrl = exerciseMediaUrl(currentExercise, execution.session.videoUrl);
+    const currentSection = sectionName(currentExercise);
 
     const { data, setData, post, processing, errors } = useForm<SetFormData>({
         sets: execution.setLogs.map((row) => ({
@@ -411,25 +437,38 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
     };
 
     return (
-        <AthleteAppShell active="programs">
+        <AthleteAppShell active="workout">
             <Head title={execution.session.title} />
 
-            <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 md:px-6">
-                <header className="rounded-[2rem] bg-emerald-800 p-5 text-white md:p-8">
-                    <Button asChild variant="ghost" className="mb-5 bg-white/10 text-white hover:bg-white/15 hover:text-white">
-                        <Link href="/app">
-                            <ArrowLeft className="size-4" />
-                            Back to app
-                        </Link>
-                    </Button>
-                    <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
+            <div className="mx-auto max-w-6xl space-y-5 px-4 py-5 pb-28 md:space-y-6 md:px-6 md:pb-5">
+                <header className="-mx-4 -mt-5 overflow-hidden rounded-b-[2rem] bg-stone-100 md:mx-0 md:mt-0 md:rounded-[2rem]">
+                    {currentMediaUrl ? (
+                        <div className="relative bg-stone-950">
+                            <VideoPlayer url={currentMediaUrl} />
+                        </div>
+                    ) : (
+                        <div className="grid min-h-[14rem] place-items-center bg-gradient-to-b from-stone-100 to-stone-200 px-6 text-center">
+                            <div>
+                                <Dumbbell className="mx-auto size-12 text-stone-400" />
+                                <p className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-stone-700">{currentExercise?.name ?? execution.session.title}</p>
+                            </div>
+                        </div>
+                    )}
+                    <div className="bg-emerald-800 p-5 text-white md:p-8">
+                        <Button asChild variant="ghost" className="mb-5 bg-white/10 text-white hover:bg-white/15 hover:text-white">
+                            <Link href="/app">
+                                <ArrowLeft className="size-4" />
+                                Back to app
+                            </Link>
+                        </Button>
+                        <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
                         <div>
                             <Badge className="bg-white/15 text-white hover:bg-white/15">{execution.program.title}</Badge>
                             <h1 className="mt-3 font-['Space_Grotesk'] text-3xl font-bold tracking-[-0.05em] md:text-5xl">
-                                {execution.session.title}
+                                {currentExercise?.name ?? execution.session.title}
                             </h1>
                             <p className="mt-3 max-w-2xl text-sm leading-6 text-emerald-50">
-                                {execution.session.focus ?? 'Workout'} · Coach {execution.coach.name} · {formatDate(execution.session.scheduledDate)}
+                                {currentSection} · Coach {execution.coach.name} · {formatDate(execution.session.scheduledDate)}
                             </p>
                         </div>
                         <div className="rounded-3xl border border-white/15 bg-white/10 p-4">
@@ -438,10 +477,48 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                                 {completedCount}/{data.sets.length}
                             </p>
                         </div>
+                        </div>
                     </div>
                 </header>
 
-                <div className="sticky top-3 z-30 grid grid-cols-3 gap-1 rounded-full border border-stone-200 bg-stone-100/90 p-1 shadow-sm backdrop-blur md:static">
+                <div className="-mx-4 flex items-center gap-2 overflow-x-auto border-y border-stone-200 bg-white px-4 py-3 md:mx-0 md:rounded-[1.5rem] md:border md:shadow-sm">
+                    {execution.exercises.map((exercise, index) => {
+                        const active = currentExerciseIndex === index;
+                        const done = data.sets.filter((set) => set.exercise_index === index).every((set) => set.completed);
+
+                        return (
+                            <button
+                                key={`${exercise.name}-${index}`}
+                                type="button"
+                                onClick={() => setCurrentExerciseIndex(index)}
+                                className={[
+                                    'relative grid size-12 shrink-0 place-items-center rounded-full border text-sm font-bold transition',
+                                    active ? 'border-cyan-400 bg-cyan-50 text-cyan-800' : done ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-stone-300 bg-white text-stone-600',
+                                ].join(' ')}
+                                aria-label={`Open exercise ${index + 1}: ${exercise.name}`}
+                            >
+                                {done ? <CheckCircle2 className="size-6" /> : exerciseLabel(exercise, index)}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 md:max-w-lg">
+                    <Button type="button" variant="outline" className="h-12 rounded-2xl bg-white font-bold" onClick={() => completeWorkout('missed')}>
+                        <Ban className="size-4 text-red-500" />
+                        Opt out
+                    </Button>
+                    <Button type="button" variant="outline" className="h-12 rounded-2xl bg-white font-bold" onClick={() => setTab('journal')}>
+                        <FileText className="size-4 text-amber-500" />
+                        Journal
+                    </Button>
+                    <Button type="button" variant="outline" className="h-12 rounded-2xl bg-white font-bold" onClick={() => setTab('media')}>
+                        <Film className="size-4 text-cyan-500" />
+                        Media
+                    </Button>
+                </div>
+
+                <div className="sticky top-3 z-30 hidden grid-cols-3 gap-1 rounded-full border border-stone-200 bg-stone-100/90 p-1 shadow-sm backdrop-blur md:static md:grid">
                     <button
                         type="button"
                         onClick={() => setTab('workout')}
@@ -470,7 +547,11 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
 
                 {tab === 'workout' && (
                     <form className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]" onSubmit={savePartial}>
-                        <AthletePanel title="Exercise list" description="Move through the coach prescription one exercise at a time.">
+                        <AthletePanel
+                            title="Exercise list"
+                            description="Move through the coach prescription one exercise at a time."
+                            className="hidden lg:block"
+                        >
                             <div className="space-y-3">
                                 {execution.exercises.length === 0 ? (
                                     <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-5 text-sm text-stone-600">
@@ -536,100 +617,101 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                                     </div>
                                 </div>
 
-                                <div className="space-y-3 md:hidden">
+                                <div className="space-y-5 md:hidden">
                                     {currentSetRows.length === 0 ? (
                                         <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-5 text-sm text-stone-600">
                                             No set rows for this exercise.
                                         </div>
                                     ) : (
-                                        currentSetRows.map((set) => {
+                                        currentSetRows.map((set, index) => {
                                             const target = execution.setLogs.find(
                                                 (row) => row.exerciseIndex === set.exercise_index && row.setNumber === set.set_number,
                                             );
 
                                             return (
-                                                <div
-                                                    key={`${set.exercise_index}-${set.set_number}`}
-                                                    className="rounded-2xl border border-stone-200 bg-white p-4"
-                                                >
-                                                    <div className="flex items-start justify-between gap-3">
+                                                <div key={`${set.exercise_index}-${set.set_number}`} className="space-y-3">
+                                                    <div
+                                                        className={[
+                                                            'grid grid-cols-[4rem_1fr_1fr] items-center gap-3 rounded-[1.35rem] border p-3',
+                                                            set.completed ? 'border-emerald-200 bg-emerald-50' : 'border-stone-200 bg-white',
+                                                        ].join(' ')}
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => updateSet(set.exercise_index, set.set_number, { completed: !set.completed })}
+                                                            className={[
+                                                                'grid size-14 place-items-center rounded-2xl border text-xl font-bold',
+                                                                set.completed ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-stone-200 bg-stone-50 text-stone-800',
+                                                            ].join(' ')}
+                                                            aria-label={`Mark set ${set.set_number} ${set.completed ? 'incomplete' : 'complete'}`}
+                                                        >
+                                                            {set.completed ? <CheckCircle2 className="size-7" /> : set.set_number}
+                                                        </button>
+
                                                         <div>
-                                                            <p className="text-xs font-semibold tracking-[0.18em] text-stone-400 uppercase">
-                                                                Set {set.set_number}
-                                                            </p>
-                                                            <p className="mt-1 text-sm text-stone-600">
-                                                                Target: {target?.targetReps ?? 'N/A'} · {target?.targetLoad ?? 'N/A'}
-                                                            </p>
-                                                        </div>
-                                                        <label className="flex items-center gap-2 rounded-full border border-stone-200 px-3 py-2 text-xs font-semibold text-stone-700">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={set.completed}
-                                                                onChange={(event) =>
-                                                                    updateSet(set.exercise_index, set.set_number, { completed: event.target.checked })
-                                                                }
-                                                                className="size-4 rounded border-stone-300 text-emerald-700"
-                                                            />
-                                                            Done
-                                                        </label>
-                                                    </div>
-                                                    <div className="mt-3 grid grid-cols-2 gap-3">
-                                                        <div>
-                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">
-                                                                Actual reps/time
-                                                            </label>
-                                                            <Input
-                                                                value={set.actual_reps}
-                                                                onChange={(event) =>
-                                                                    updateSet(set.exercise_index, set.set_number, { actual_reps: event.target.value })
-                                                                }
-                                                                placeholder="8 or 40s"
-                                                                className="mt-1 h-11"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">
-                                                                Actual load
+                                                            <label className="block text-center text-[0.68rem] font-bold tracking-[0.18em] text-stone-500 uppercase">
+                                                                Weight
                                                             </label>
                                                             <Input
                                                                 value={set.actual_load}
                                                                 onChange={(event) =>
                                                                     updateSet(set.exercise_index, set.set_number, { actual_load: event.target.value })
                                                                 }
-                                                                placeholder="120 kg"
-                                                                className="mt-1 h-11"
+                                                                placeholder={target?.targetLoad ?? 'Load'}
+                                                                className="mt-2 h-14 rounded-2xl text-center text-xl font-bold"
                                                             />
                                                         </div>
+
                                                         <div>
-                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">
-                                                                RPE
+                                                            <label className="block text-center text-[0.68rem] font-bold tracking-[0.18em] text-stone-500 uppercase">
+                                                                Reps
                                                             </label>
                                                             <Input
-                                                                type="number"
-                                                                min="1"
-                                                                max="10"
-                                                                value={set.actual_rpe}
+                                                                value={set.actual_reps}
                                                                 onChange={(event) =>
-                                                                    updateSet(set.exercise_index, set.set_number, { actual_rpe: event.target.value })
+                                                                    updateSet(set.exercise_index, set.set_number, { actual_reps: event.target.value })
                                                                 }
-                                                                placeholder="8"
-                                                                className="mt-1 h-11"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <label className="text-xs font-semibold tracking-[0.14em] text-stone-400 uppercase">
-                                                                Notes
-                                                            </label>
-                                                            <Input
-                                                                value={set.notes}
-                                                                onChange={(event) =>
-                                                                    updateSet(set.exercise_index, set.set_number, { notes: event.target.value })
-                                                                }
-                                                                placeholder="Optional"
-                                                                className="mt-1 h-11"
+                                                                placeholder={target?.targetReps ?? 'Reps'}
+                                                                className="mt-2 h-14 rounded-2xl text-center text-xl font-bold"
                                                             />
                                                         </div>
                                                     </div>
+
+                                                    <div className="grid grid-cols-[5rem_1fr] gap-3">
+                                                        <Input
+                                                            type="number"
+                                                            min="1"
+                                                            max="10"
+                                                            value={set.actual_rpe}
+                                                            onChange={(event) =>
+                                                                updateSet(set.exercise_index, set.set_number, { actual_rpe: event.target.value })
+                                                            }
+                                                            placeholder="RPE"
+                                                            className="h-11 rounded-2xl text-center"
+                                                        />
+                                                        <Input
+                                                            value={set.notes}
+                                                            onChange={(event) =>
+                                                                updateSet(set.exercise_index, set.set_number, { notes: event.target.value })
+                                                            }
+                                                            placeholder="Optional note"
+                                                            className="h-11 rounded-2xl"
+                                                        />
+                                                    </div>
+
+                                                    {index < currentSetRows.length - 1 && (currentExercise?.restSeconds ?? 0) > 0 && (
+                                                        <Button
+                                                            type="button"
+                                                            className="h-12 w-full rounded-2xl bg-cyan-500 text-white hover:bg-cyan-600"
+                                                            onClick={() => {
+                                                                setTimerSeconds(currentExercise?.restSeconds ?? 0);
+                                                                setTimerRunning(true);
+                                                            }}
+                                                        >
+                                                            <Clock3 className="size-4" />
+                                                            Rest timer ({restLabel(currentExercise)})
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             );
                                         })
@@ -886,6 +968,61 @@ export default function WorkoutExecution({ execution }: WorkoutExecutionProps) {
                         </div>
                     </AthletePanel>
                 )}
+
+                <div className="fixed inset-x-5 bottom-[6.5rem] z-30 flex items-center justify-between gap-3 md:hidden">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="size-14 rounded-full bg-white shadow-[0_16px_36px_-28px_rgba(15,23,42,0.65)]"
+                        disabled={currentExerciseIndex === 0}
+                        onClick={() => setCurrentExerciseIndex((value) => Math.max(0, value - 1))}
+                        aria-label="Previous exercise"
+                    >
+                        <ChevronLeft className="size-7" />
+                    </Button>
+                    <div className="flex rounded-full bg-white p-2 shadow-[0_16px_36px_-28px_rgba(15,23,42,0.65)]">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-12 rounded-full"
+                            onClick={() => setTab(tab === 'workout' ? 'journal' : 'workout')}
+                            aria-label="Workout info"
+                        >
+                            <Info className="size-6" />
+                        </Button>
+                        <Button asChild variant="ghost" size="icon" className="size-12 rounded-full" aria-label="Close workout">
+                            <Link href="/app">
+                                <X className="size-7" />
+                            </Link>
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-12 rounded-full"
+                            disabled={currentExerciseIndex >= execution.exercises.length - 1}
+                            onClick={() => setCurrentExerciseIndex((value) => Math.min(execution.exercises.length - 1, value + 1))}
+                            aria-label="Next exercise"
+                        >
+                            <ChevronRight className="size-7" />
+                        </Button>
+                    </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="size-14 rounded-full bg-white shadow-[0_16px_36px_-28px_rgba(15,23,42,0.65)]"
+                        onClick={() => {
+                            setTimerSeconds(currentExercise?.restSeconds ?? 0);
+                            setTimerRunning((value) => !value);
+                        }}
+                        aria-label="Toggle rest timer"
+                    >
+                        {timerRunning ? <Pause className="size-6" /> : <TimerReset className="size-6" />}
+                    </Button>
+                </div>
             </div>
         </AthleteAppShell>
     );

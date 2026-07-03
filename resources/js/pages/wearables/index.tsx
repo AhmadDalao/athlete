@@ -1,5 +1,5 @@
 import { AthleteAppShell } from '@/components/athlete-app-shell';
-import { AthleteHero, AthleteMetricCard, AthletePanel, AthleteSectionHeading, ReadinessDial, TrendBars } from '@/components/athlete-page-primitives';
+import { AthletePanel, TrendBars } from '@/components/athlete-page-primitives';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,7 +16,7 @@ import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Activity, AlertTriangle, HeartPulse, MoonStar, ShieldCheck, Watch } from 'lucide-react';
+import { Activity, AlertTriangle, ChevronLeft, ChevronRight, HeartPulse, MoonStar, ShieldCheck, Watch } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -232,26 +232,6 @@ function formatSleepHours(value: number | null) {
     return `${value.toFixed(1)}h`;
 }
 
-function formatPercentage(value: number | null) {
-    if (value === null) {
-        return 'N/A';
-    }
-
-    return `${Math.round(value)}%`;
-}
-
-function formatSleepDebt(value: number | null) {
-    if (value === null) {
-        return 'No sleep-need data';
-    }
-
-    if (value <= 0) {
-        return `${Math.abs(value).toFixed(1)}h banked`;
-    }
-
-    return `${value.toFixed(1)}h behind`;
-}
-
 function shortDayLabel(value: string | null) {
     if (!value) {
         return 'No date';
@@ -267,6 +247,36 @@ function shortDayLabel(value: string | null) {
         month: 'short',
         day: 'numeric',
     });
+}
+
+function MiniSignalRing({
+    label,
+    value,
+    max = 100,
+    accent = '#22c55e',
+    unit = '',
+}: {
+    label: string;
+    value: number | null;
+    max?: number;
+    accent?: string;
+    unit?: string;
+}) {
+    const normalized = value === null ? 0 : Math.max(0, Math.min(100, Math.round((value / max) * 100)));
+
+    return (
+        <div className="min-w-0 text-center">
+            <div
+                className="mx-auto grid size-20 place-items-center rounded-full p-1.5"
+                style={{ background: `conic-gradient(${accent} ${normalized}%, rgba(148,163,184,0.22) ${normalized}% 100%)` }}
+            >
+                <div className="grid size-full place-items-center rounded-full bg-[#111a20] text-white">
+                    <span className="text-lg font-black tracking-[-0.05em]">{value === null ? '--' : `${value}${unit}`}</span>
+                </div>
+            </div>
+            <p className="mt-2 truncate text-[0.68rem] font-bold tracking-[0.2em] text-slate-300 uppercase">{label}</p>
+        </div>
+    );
 }
 
 function AthleteWearablesExperience({
@@ -289,129 +299,201 @@ function AthleteWearablesExperience({
             note: entry.strainScore === null ? undefined : `strain ${Math.round(entry.strainScore)}`,
         })) ?? [];
 
+    const page = usePage<SharedData>();
+    const query = new URLSearchParams(page.url.split('?')[1] ?? '');
+    const activeTab = query.get('tab') === 'trends' ? 'trends' : 'daily';
+    const tabHref = (tab: 'daily' | 'trends') => `/wearables?tab=${tab}`;
+    const metricCards = [
+        {
+            label: 'Heart rate',
+            value:
+                latestSnapshot?.restingHeartRate === null || latestSnapshot?.restingHeartRate === undefined
+                    ? '--'
+                    : `${latestSnapshot.restingHeartRate}`,
+            unit: 'bpm',
+            icon: HeartPulse,
+        },
+        {
+            label: 'HRV',
+            value:
+                latestSnapshot?.heartRateVariability === null || latestSnapshot?.heartRateVariability === undefined
+                    ? '--'
+                    : `${Math.round(latestSnapshot.heartRateVariability)}`,
+            unit: 'ms',
+            icon: Activity,
+        },
+        {
+            label: 'Steps',
+            value: latestSnapshot?.steps === null || latestSnapshot?.steps === undefined ? '--' : latestSnapshot.steps.toLocaleString(),
+            unit: 'steps',
+            icon: Watch,
+        },
+        {
+            label: 'Hours slept',
+            value: latestSnapshot?.sleepHours === null || latestSnapshot?.sleepHours === undefined ? '--' : latestSnapshot.sleepHours.toFixed(1),
+            unit: 'hours',
+            icon: MoonStar,
+        },
+        {
+            label: 'Strain',
+            value: latestSnapshot?.strainScore === null || latestSnapshot?.strainScore === undefined ? '--' : String(latestSnapshot.strainScore),
+            unit: 'score',
+            icon: Activity,
+        },
+        {
+            label: 'Respiratory',
+            value:
+                latestSnapshot?.respiratoryRate === null || latestSnapshot?.respiratoryRate === undefined
+                    ? '--'
+                    : latestSnapshot.respiratoryRate.toFixed(1),
+            unit: 'rpm',
+            icon: ShieldCheck,
+        },
+    ];
+
     return (
         <AthleteAppShell active="wearables" breadcrumbs={breadcrumbs}>
             <Head title="Wearables" />
 
-            <div className="mx-auto max-w-6xl space-y-6 px-4 pt-5 pb-32 md:space-y-8 md:px-6 md:pt-6 md:pb-6">
-                <AthleteHero
-                    eyebrow="Recovery signal board"
-                    title={
-                        primaryConnection
-                            ? `${primaryConnection.providerLabel} is feeding the board.`
-                            : 'Connect a device and start tracking recovery for real.'
-                    }
-                    description={
-                        primaryConnection
-                            ? 'Readiness, sleep quality, strain, and daily physiology now live where the athlete and coach can actually use them.'
-                            : 'Without a device connection the recovery side of the platform is blind. MVP or not, that part is non-negotiable.'
-                    }
-                    badges={
-                        primaryConnection
-                            ? [
-                                  humanizeStatus(primaryConnection.status),
-                                  `${primaryConnection.analytics.overview.daysTracked} tracked days`,
-                                  humanizeStatus(primaryConnection.authType),
-                              ]
-                            : ['No live connection']
-                    }
-                    actions={
-                        <>
-                            <Button asChild size="lg" className="rounded-full bg-stone-950 text-white hover:bg-stone-800">
-                                <Link href="/app">Back to app</Link>
-                            </Button>
-                            {whoopIntegration.oauthReady && (
-                                <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">
-                                    <Link href={whoopIntegration.connectUrl}>Connect WHOOP</Link>
-                                </Button>
-                            )}
-                        </>
-                    }
-                >
-                    <div className="space-y-4">
-                        <ReadinessDial
-                            score={latestSnapshot?.readinessScore ?? summary.averageReadiness}
-                            label={latestSnapshot?.metricDate ? `Latest sync · ${shortDayLabel(latestSnapshot.metricDate)}` : 'Latest sync'}
-                            note={formatReadiness(latestSnapshot?.readinessScore ?? summary.averageReadiness)}
-                            detail={
-                                latestSnapshot
-                                    ? `Sleep ${formatSleepHours(latestSnapshot.sleepHours)} · strain ${latestSnapshot.strainScore ?? 'N/A'} · debt ${formatSleepDebt(latestSnapshot.sleepDebtHours)}`
-                                    : 'No normalized snapshot has landed yet.'
-                            }
-                        />
-                        <div className="grid gap-3 sm:grid-cols-3">
-                            <div className="rounded-[1.35rem] border border-white/70 bg-white/80 p-4">
-                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Sleep need</p>
-                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">
-                                    {latestSnapshot?.sleepNeedHours === null || latestSnapshot?.sleepNeedHours === undefined
-                                        ? 'N/A'
-                                        : `${latestSnapshot.sleepNeedHours.toFixed(1)}h`}
-                                </p>
-                                <p className="mt-2 text-sm text-stone-600">How much sleep the current cycle says you actually needed.</p>
-                            </div>
-                            <div className="rounded-[1.35rem] border border-white/70 bg-white/80 p-4">
-                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Training load</p>
-                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">
-                                    {latestSnapshot?.trainingLoad === null || latestSnapshot?.trainingLoad === undefined
-                                        ? 'N/A'
-                                        : Math.round(latestSnapshot.trainingLoad)}
-                                </p>
-                                <p className="mt-2 text-sm text-stone-600">A quick signal on what your body thinks yesterday cost.</p>
-                            </div>
-                            <div className="rounded-[1.35rem] border border-white/70 bg-white/80 p-4">
-                                <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-500 uppercase">Connection status</p>
-                                <p className="mt-3 text-2xl font-semibold tracking-tight text-stone-950">
-                                    {primaryConnection ? humanizeStatus(primaryConnection.status) : 'Disconnected'}
-                                </p>
-                                <p className="mt-2 text-sm text-stone-600">{primaryConnection?.lastSyncedAt ?? 'No sync timestamp yet.'}</p>
-                            </div>
-                        </div>
+            <div className="mx-auto max-w-3xl space-y-5 px-4 pt-5 pb-32 md:max-w-6xl md:px-6 md:pb-8">
+                <header className="space-y-5">
+                    <div className="flex items-center justify-between gap-3">
+                        <Button asChild variant="ghost" size="icon" className="size-11 rounded-full">
+                            <Link href="/app" aria-label="Back to app">
+                                <ChevronLeft className="size-6" />
+                            </Link>
+                        </Button>
+                        <Watch className="size-6 text-stone-600" />
                     </div>
-                </AthleteHero>
-
-                <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <AthleteMetricCard
-                        title="Tracked connections"
-                        value={summary.totalConnections.toString()}
-                        note={`${summary.syncedToday} synced today.`}
-                        icon={Watch}
-                    />
-                    <AthleteMetricCard
-                        title="Healthy connections"
-                        value={summary.healthyConnections.toString()}
-                        note="Connections currently delivering signal."
-                        icon={ShieldCheck}
-                    />
-                    <AthleteMetricCard
-                        title="Average readiness"
-                        value={formatReadiness(summary.averageReadiness)}
-                        note="Across the currently visible connection set."
-                        icon={HeartPulse}
-                        tone="amber"
-                    />
-                    <AthleteMetricCard
-                        title="Sleep debt"
-                        value={formatSleepDebt(latestSnapshot?.sleepDebtHours ?? null)}
-                        note="Banked sleep beats fake toughness."
-                        icon={MoonStar}
-                        tone="stone"
-                    />
-                </section>
-
-                <section className="space-y-4">
-                    <AthleteSectionHeading
-                        eyebrow="Trend view"
-                        title="Watch the last week, not just the last number."
-                        description="Single-day metrics lie when taken alone. Trend shape matters more than cherry-picked hero stats."
-                    />
-                    <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-                        <AthletePanel
-                            title="Recovery trend"
-                            description="Readiness and sleep plotted against the last visible week."
-                            contentClassName="space-y-4"
+                    <div>
+                        <p className="text-xs font-semibold tracking-[0.22em] text-stone-400 uppercase">Device health</p>
+                        <h1 className="mt-3 font-['Space_Grotesk'] text-5xl font-bold tracking-[-0.07em] text-stone-800">Wearable Data</h1>
+                    </div>
+                    <div className="grid grid-cols-2 border-b border-stone-200 text-center text-base font-semibold">
+                        <Link
+                            href={tabHref('daily')}
+                            preserveScroll
+                            preserveState
+                            className={cn(
+                                'border-b-2 px-4 py-4',
+                                activeTab === 'daily' ? 'border-stone-800 text-stone-900' : 'border-transparent text-stone-400',
+                            )}
                         >
+                            Daily
+                        </Link>
+                        <Link
+                            href={tabHref('trends')}
+                            preserveScroll
+                            preserveState
+                            className={cn(
+                                'border-b-2 px-4 py-4',
+                                activeTab === 'trends' ? 'border-stone-800 text-stone-900' : 'border-transparent text-stone-400',
+                            )}
+                        >
+                            Trends
+                        </Link>
+                    </div>
+                </header>
+
+                {activeTab === 'daily' ? (
+                    <div className="space-y-5">
+                        <section className="overflow-hidden rounded-[1.85rem] bg-[#101820] p-5 text-white shadow-[0_28px_70px_-42px_rgba(15,23,42,0.85)]">
+                            <div className="grid grid-cols-3 gap-3">
+                                <MiniSignalRing label="Sleep" value={latestSnapshot?.sleepPerformancePercentage ?? null} accent="#7dd3fc" unit="%" />
+                                <MiniSignalRing
+                                    label="Recovery"
+                                    value={latestSnapshot?.readinessScore ?? summary.averageReadiness}
+                                    accent="#22c55e"
+                                    unit="%"
+                                />
+                                <MiniSignalRing label="Strain" value={latestSnapshot?.strainScore ?? null} max={21} accent="#38bdf8" />
+                            </div>
+
+                            <div className="mt-5 rounded-[1.35rem] bg-white/8 p-4 ring-1 ring-white/8">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p className="text-lg font-bold tracking-[-0.04em]">
+                                            {primaryConnection ? 'Recovery signal is live.' : 'Connect your wearable.'}
+                                        </p>
+                                        <p className="mt-2 text-sm leading-6 text-slate-300">
+                                            {latestSnapshot
+                                                ? `Latest sync ${shortDayLabel(latestSnapshot.metricDate)} · readiness ${formatReadiness(latestSnapshot.readinessScore)} · sleep ${formatSleepHours(latestSnapshot.sleepHours)}.`
+                                                : 'Once connected, sleep, recovery, strain, and physiology will show here without turning the app into a data dump.'}
+                                        </p>
+                                    </div>
+                                    <Badge className="rounded-full bg-white/10 text-white hover:bg-white/10">
+                                        {primaryConnection ? humanizeStatus(primaryConnection.status) : 'Not connected'}
+                                    </Badge>
+                                </div>
+                            </div>
+                        </section>
+
+                        {!primaryConnection && (
+                            <div className="rounded-[1.4rem] bg-linear-to-r from-cyan-400 to-purple-500 p-5 text-white shadow-[0_18px_40px_-30px_rgba(67,56,202,0.8)]">
+                                <p className="text-lg font-semibold">Your device is not connected.</p>
+                                <p className="mt-2 text-sm leading-6 text-white/90">
+                                    Connect WHOOP to start viewing exertion score and wearable data.
+                                </p>
+                                {whoopIntegration.oauthReady && (
+                                    <Button asChild className="mt-4 h-12 w-full rounded-2xl bg-emerald-500 text-white hover:bg-emerald-600">
+                                        <Link href={whoopIntegration.connectUrl}>Connect WHOOP</Link>
+                                    </Button>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-[3rem_1fr_3rem] items-center gap-3 rounded-[1.3rem] bg-white p-3 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.45)]">
+                            <Button variant="ghost" size="icon" className="size-10 rounded-full text-stone-500" disabled>
+                                <ChevronLeft className="size-6" />
+                            </Button>
+                            <p className="text-center text-lg font-semibold text-stone-800">Today</p>
+                            <Button variant="ghost" size="icon" className="size-10 rounded-full text-stone-300" disabled>
+                                <ChevronRight className="size-6" />
+                            </Button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            {metricCards.map(({ label, value, unit, icon: Icon }) => (
+                                <div
+                                    key={label}
+                                    className="min-h-32 rounded-[1.45rem] bg-[#222a30] p-4 text-white shadow-[0_20px_42px_-34px_rgba(15,23,42,0.8)]"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="text-[0.68rem] font-bold tracking-[0.18em] text-slate-300 uppercase">{label}</p>
+                                            <p className="mt-1 text-xs text-slate-400">
+                                                {latestSnapshot?.metricDate ? shortDayLabel(latestSnapshot.metricDate) : 'No sync'}
+                                            </p>
+                                        </div>
+                                        <Icon className="size-5 text-slate-400" />
+                                    </div>
+                                    <p className="mt-7 text-3xl font-black tracking-[-0.07em]">{value}</p>
+                                    <p className="mt-1 text-sm text-slate-400">{unit}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        {primaryConnection && (
+                            <AthletePanel
+                                title="Connection details"
+                                description={`${humanizeStatus(primaryConnection.status)} · ${primaryConnection.lastSyncedAt ?? 'Never synced'}`}
+                                contentClassName="space-y-3"
+                            >
+                                <div className="flex flex-wrap gap-2">
+                                    <Badge variant={badgeVariantForStatus(primaryConnection.status)}>
+                                        {humanizeStatus(primaryConnection.status)}
+                                    </Badge>
+                                    <Badge variant="outline">{humanizeStatus(primaryConnection.authType)}</Badge>
+                                    <Badge variant="outline">{primaryConnection.analytics.overview.daysTracked} tracked days</Badge>
+                                </div>
+                            </AthletePanel>
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-5">
+                        <AthletePanel title="Exertion score trend" description="Last visible wearable window, using normalized WHOOP snapshots.">
                             {primaryConnection ? (
-                                <div className="grid gap-4 lg:grid-cols-2">
+                                <div className="grid gap-4 md:grid-cols-2">
                                     <TrendBars
                                         title="Readiness"
                                         description="Preparedness across the recent window."
@@ -428,162 +510,27 @@ function AthleteWearablesExperience({
                                     />
                                 </div>
                             ) : (
-                                <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/70 p-5 text-sm leading-6 text-stone-500">
-                                    No connection data yet, so no trend. Pretty obvious.
+                                <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-5 text-sm leading-6 text-stone-500">
+                                    No exertion scores found for the selected window.
                                 </div>
                             )}
-                            {primaryConnection?.analytics.alerts.length ? (
-                                <div className="flex flex-wrap gap-2">
-                                    {primaryConnection.analytics.alerts.map((alert) => (
-                                        <Badge key={alert} variant="secondary">
-                                            {alert}
-                                        </Badge>
-                                    ))}
-                                </div>
-                            ) : null}
                         </AthletePanel>
 
-                        <AthletePanel
-                            title="Latest physiology"
-                            description="The freshest normalized metrics pulled into the athlete board."
-                            contentClassName="grid gap-3 sm:grid-cols-2"
-                        >
-                            <div className="rounded-2xl border border-stone-200/75 bg-stone-50/80 p-4">
-                                <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">Sleep performance</p>
-                                <p className="mt-2 text-lg font-semibold text-stone-950">
-                                    {formatPercentage(latestSnapshot?.sleepPerformancePercentage ?? null)}
-                                </p>
-                            </div>
-                            <div className="rounded-2xl border border-stone-200/75 bg-stone-50/80 p-4">
-                                <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">Sleep consistency</p>
-                                <p className="mt-2 text-lg font-semibold text-stone-950">
-                                    {formatPercentage(latestSnapshot?.sleepConsistencyPercentage ?? null)}
-                                </p>
-                            </div>
-                            <div className="rounded-2xl border border-stone-200/75 bg-stone-50/80 p-4">
-                                <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">HRV</p>
-                                <p className="mt-2 text-lg font-semibold text-stone-950">
-                                    {latestSnapshot?.heartRateVariability === null || latestSnapshot?.heartRateVariability === undefined
-                                        ? 'N/A'
-                                        : `${Math.round(latestSnapshot.heartRateVariability)} ms`}
-                                </p>
-                            </div>
-                            <div className="rounded-2xl border border-stone-200/75 bg-stone-50/80 p-4">
-                                <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">Resting HR</p>
-                                <p className="mt-2 text-lg font-semibold text-stone-950">
-                                    {latestSnapshot?.restingHeartRate === null || latestSnapshot?.restingHeartRate === undefined
-                                        ? 'N/A'
-                                        : `${latestSnapshot.restingHeartRate} bpm`}
-                                </p>
-                            </div>
-                            <div className="rounded-2xl border border-stone-200/75 bg-stone-50/80 p-4">
-                                <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">Respiratory</p>
-                                <p className="mt-2 text-lg font-semibold text-stone-950">
-                                    {latestSnapshot?.respiratoryRate === null || latestSnapshot?.respiratoryRate === undefined
-                                        ? 'N/A'
-                                        : `${latestSnapshot.respiratoryRate.toFixed(1)} rpm`}
-                                </p>
-                            </div>
-                            <div className="rounded-2xl border border-stone-200/75 bg-stone-50/80 p-4">
-                                <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">Blood oxygen</p>
-                                <p className="mt-2 text-lg font-semibold text-stone-950">
-                                    {latestSnapshot?.bloodOxygenPercent === null || latestSnapshot?.bloodOxygenPercent === undefined
-                                        ? 'N/A'
-                                        : `${latestSnapshot.bloodOxygenPercent}%`}
-                                </p>
-                            </div>
-                        </AthletePanel>
-                    </div>
-                </section>
-
-                <section className="space-y-4">
-                    <AthleteSectionHeading
-                        eyebrow="Connections"
-                        title="Every linked device and what it last reported."
-                        description="This is the athlete-facing version of device truth: status, sync timing, and the last meaningful recovery snapshot."
-                    />
-                    <div className="grid gap-4 xl:grid-cols-2">
-                        {connections.data.length === 0 ? (
-                            <AthletePanel
-                                title="No device connections yet"
-                                description="OAuth or ingest can both work. What does not work is zero data."
-                                contentClassName="p-0"
-                            >
-                                <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/70 p-6 text-sm leading-6 text-stone-500">
-                                    {whoopIntegration.oauthReady
-                                        ? 'WHOOP OAuth is ready if you want to connect it now.'
-                                        : 'Fallback ingest still works until OAuth credentials are configured.'}
-                                </div>
-                            </AthletePanel>
-                        ) : (
-                            connections.data.map((connection) => (
-                                <AthletePanel
-                                    key={connection.id}
-                                    title={connection.providerLabel}
-                                    description={`${humanizeStatus(connection.status)} · ${connection.lastSyncedAt ?? 'Never synced'}`}
-                                    contentClassName="space-y-4"
-                                >
-                                    <div className="flex flex-wrap gap-2">
+                        <div className="space-y-3">
+                            {connections.data.map((connection) => (
+                                <div key={connection.id} className="rounded-[1.3rem] bg-white p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.45)]">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="font-semibold text-stone-900">{connection.providerLabel}</p>
+                                            <p className="mt-1 text-sm text-stone-500">{connection.lastSyncedAt ?? 'Never synced'}</p>
+                                        </div>
                                         <Badge variant={badgeVariantForStatus(connection.status)}>{humanizeStatus(connection.status)}</Badge>
-                                        <Badge variant="outline">{humanizeStatus(connection.authType)}</Badge>
-                                        {connection.grantedScopes.map((scope) => (
-                                            <Badge key={scope} variant="outline">
-                                                {scope}
-                                            </Badge>
-                                        ))}
                                     </div>
-                                    {connection.latestSnapshot ? (
-                                        <>
-                                            <div className="grid gap-3 sm:grid-cols-2">
-                                                <div className="rounded-xl border border-stone-200/75 bg-stone-50/80 p-3">
-                                                    <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
-                                                        Readiness
-                                                    </p>
-                                                    <p className="mt-2 text-sm font-medium text-stone-950">
-                                                        {formatReadiness(connection.latestSnapshot.readinessScore)}
-                                                    </p>
-                                                </div>
-                                                <div className="rounded-xl border border-stone-200/75 bg-stone-50/80 p-3">
-                                                    <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
-                                                        Sleep debt
-                                                    </p>
-                                                    <p className="mt-2 text-sm font-medium text-stone-950">
-                                                        {formatSleepDebt(connection.latestSnapshot.sleepDebtHours)}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="grid gap-2">
-                                                {connection.analytics.timeline.map((entry) => (
-                                                    <div
-                                                        key={entry.metricDate ?? 'unknown'}
-                                                        className="grid gap-2 rounded-xl border border-stone-200/75 bg-stone-50/80 p-3 text-sm text-stone-600 md:grid-cols-4"
-                                                    >
-                                                        <p className="font-medium text-stone-950">{shortDayLabel(entry.metricDate)}</p>
-                                                        <p>Readiness {formatReadiness(entry.readinessScore)}</p>
-                                                        <p>Sleep {formatSleepHours(entry.sleepHours)}</p>
-                                                        <p>Load {entry.trainingLoad ?? 'N/A'}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/70 p-5 text-sm leading-6 text-stone-500">
-                                            No normalized snapshot has landed for this connection yet.
-                                        </div>
-                                    )}
-                                    {connection.ingest && (
-                                        <div className="min-w-0 rounded-xl border border-stone-200/75 bg-stone-50/80 p-4">
-                                            <p className="text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
-                                                Fallback ingest endpoint
-                                            </p>
-                                            <code className="mt-2 block text-xs leading-6 break-all text-stone-700">{connection.ingest.path}</code>
-                                        </div>
-                                    )}
-                                </AthletePanel>
-                            ))
-                        )}
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </section>
+                )}
             </div>
         </AthleteAppShell>
     );
@@ -600,6 +547,7 @@ export default function WearablesIndex({
     sampleCurl,
 }: WearablesPageProps) {
     const page = usePage<SharedData>();
+    const landingPath = page.props.auth.user?.landing_path ?? '/app';
     const perPage = filters.per_page ?? String(connections.per_page ?? '10');
     const updatePerPage = (value: string) => {
         router.get(
@@ -641,7 +589,7 @@ export default function WearablesIndex({
                     actions={
                         <>
                             <Button asChild size="lg" className="rounded-full bg-stone-950 text-white hover:bg-stone-800">
-                                <Link href="/dashboard">Back home</Link>
+                                <Link href={landingPath}>Back home</Link>
                             </Button>
                             {whoopIntegration.oauthReady && (
                                 <Button asChild size="lg" variant="outline" className="rounded-full border-stone-300 bg-white/80">

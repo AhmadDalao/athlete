@@ -22,6 +22,10 @@ interface ExerciseRow {
     restLabel: string | null;
     target: string | null;
     note: string | null;
+    section?: string | null;
+    supersetLabel?: string | null;
+    mediaUrl?: string | null;
+    movementType?: string | null;
 }
 
 interface ProgramSession {
