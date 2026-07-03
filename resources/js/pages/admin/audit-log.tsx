@@ -1,7 +1,15 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { WorkspaceMetricCard, WorkspacePanel, WorkspaceSectionHeading, WorkspaceTablePageSize } from '@/components/workspace-primitives';
+import {
+    WorkspaceMetricCard,
+    WorkspacePanel,
+    WorkspaceSectionHeading,
+    WorkspaceTable,
+    WorkspaceTableEmpty,
+    WorkspaceTableHeader,
+    WorkspaceTablePageSize,
+} from '@/components/workspace-primitives';
 import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -239,48 +247,33 @@ export default function AuditLog({ filters, summary, actions, entities, logs }: 
                         <p className="text-sm text-stone-500">Showing {logs.data.length} of {logs.total} matching events.</p>
                     </div>
 
-                    <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
-                        <table className="w-full min-w-[980px] text-left text-sm">
-                            <thead className="bg-stone-50 text-xs font-semibold tracking-[0.16em] text-stone-500 uppercase">
-                                <tr>
-                                    <th className="px-5 py-4">Time</th>
-                                    <th className="px-5 py-4">User</th>
-                                    <th className="px-5 py-4">Action</th>
-                                    <th className="px-5 py-4">Entity</th>
-                                    <th className="px-5 py-4">Summary</th>
-                                    <th className="px-5 py-4">IP</th>
-                                </tr>
-                            </thead>
+                    <WorkspaceTable minWidth="min-w-[980px]">
+                        <WorkspaceTableHeader labels={['Time', 'User', 'Action', 'Entity', 'Summary', 'IP']} />
+                        {logs.data.length === 0 ? (
+                            <WorkspaceTableEmpty message="No audit activity found." colSpan={6} />
+                        ) : (
                             <tbody className="divide-y divide-stone-100">
-                                {logs.data.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="px-4 py-8 text-center text-stone-500">
-                                            No audit activity found.
+                                {logs.data.map((log) => (
+                                    <tr key={log.id} className="align-top transition-colors hover:bg-stone-50/80">
+                                        <td className="px-5 py-4 text-stone-600">{log.time ?? 'N/A'}</td>
+                                        <td className="px-5 py-4">
+                                            <p className="font-semibold text-stone-950">{log.actorName}</p>
+                                            {log.actorEmail && <p className="text-xs text-stone-500">{log.actorEmail}</p>}
                                         </td>
+                                        <td className="px-5 py-4">
+                                            <Badge variant="outline">{humanize(log.action)}</Badge>
+                                        </td>
+                                        <td className="px-5 py-4 text-stone-600">
+                                            {log.entityType ?? 'System'}
+                                            {log.entityId ? ` #${log.entityId}` : ''}
+                                        </td>
+                                        <td className="max-w-md px-4 py-4 leading-6 text-stone-700">{log.summary}</td>
+                                        <td className="px-5 py-4 text-stone-500">{log.ipAddress ?? 'N/A'}</td>
                                     </tr>
-                                ) : (
-                                    logs.data.map((log) => (
-                                        <tr key={log.id} className="align-top">
-                                            <td className="px-5 py-4 text-stone-600">{log.time ?? 'N/A'}</td>
-                                            <td className="px-5 py-4">
-                                                <p className="font-semibold text-stone-950">{log.actorName}</p>
-                                                {log.actorEmail && <p className="text-xs text-stone-500">{log.actorEmail}</p>}
-                                            </td>
-                                            <td className="px-5 py-4">
-                                                <Badge variant="outline">{humanize(log.action)}</Badge>
-                                            </td>
-                                            <td className="px-5 py-4 text-stone-600">
-                                                {log.entityType ?? 'System'}
-                                                {log.entityId ? ` #${log.entityId}` : ''}
-                                            </td>
-                                            <td className="max-w-md px-4 py-4 leading-6 text-stone-700">{log.summary}</td>
-                                            <td className="px-5 py-4 text-stone-500">{log.ipAddress ?? 'N/A'}</td>
-                                        </tr>
-                                    ))
-                                )}
+                                ))}
                             </tbody>
-                        </table>
-                    </div>
+                        )}
+                    </WorkspaceTable>
 
                     <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-stone-500">
                         <span>

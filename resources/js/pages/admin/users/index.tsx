@@ -6,7 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { WorkspaceHero, WorkspacePanel, WorkspaceTablePageSize } from '@/components/workspace-primitives';
+import {
+    WorkspaceHero,
+    WorkspacePanel,
+    WorkspaceTable,
+    WorkspaceTableEmpty,
+    WorkspaceTableHeader,
+    WorkspaceTablePageSize,
+} from '@/components/workspace-primitives';
 import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -751,41 +758,27 @@ export default function AdminUsersIndex({
 
                 <section className="space-y-4">
                     <WorkspacePanel
-                        title={`All users (${users.total})`}
-                        description="Click a name for the full profile. Keep this list direct."
+                        title={`User table (${users.total})`}
+                        description="Click a name for the full profile. Filters and page size update this table automatically."
                         contentClassName="space-y-4"
                     >
-                        {users.data.length === 0 ? (
-                            <div className="rounded-xl border border-dashed border-stone-200/80 p-8 text-center">
-                                <p className="font-medium text-stone-950">No users match this filter.</p>
-                                <p className="mt-2 text-sm text-stone-500">
-                                    Either the filters are tight or the platform is still tiny. Both are fine.
-                                </p>
-                            </div>
-                        ) : (
-                            <>
-                            <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
-                                <WorkspaceTablePageSize value={perPage} onChange={setPerPage} />
-                                <p className="text-sm text-stone-500">Showing {users.data.length} of {users.total} matching users.</p>
-                            </div>
-                            <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
-                                <table className="w-full min-w-[1080px] text-left text-sm">
-                                    <thead className="bg-stone-50 text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
-                                        <tr>
-                                            <th className="px-5 py-4">User</th>
-                                            <th className="px-5 py-4">Role</th>
-                                            <th className="px-5 py-4">Contact</th>
-                                            <th className="px-5 py-4">Subscription</th>
-                                            <th className="px-5 py-4">Tracking</th>
-                                            <th className="px-5 py-4">Created</th>
-                                            <th className="px-5 py-4 text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-stone-100">
-                                        {users.data.map((user) => {
-                                            const ownerLocked = user.roles.includes('owner') && !canManageOwner;
+                        <div className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/40 p-4 lg:flex-row lg:items-center lg:justify-between">
+                            <WorkspaceTablePageSize value={perPage} onChange={setPerPage} />
+                            <p className="text-sm text-stone-500">
+                                Showing {users.data.length} of {users.total} matching users.
+                            </p>
+                        </div>
 
-                                            return (
+                        <WorkspaceTable minWidth="min-w-[1080px]">
+                            <WorkspaceTableHeader labels={['User', 'Role', 'Contact', 'Subscription', 'Tracking', 'Created', 'Actions']} />
+                            {users.data.length === 0 ? (
+                                <WorkspaceTableEmpty message="No users match this filter." colSpan={7} />
+                            ) : (
+                                <tbody className="divide-y divide-stone-100">
+                                    {users.data.map((user) => {
+                                        const ownerLocked = user.roles.includes('owner') && !canManageOwner;
+
+                                        return (
                                             <tr key={user.id} className="align-top transition-colors hover:bg-stone-50/80">
                                                 <td className="px-5 py-3">
                                                     <Link
@@ -831,9 +824,15 @@ export default function AdminUsersIndex({
                                                     )}
                                                 </td>
                                                 <td className="px-5 py-3 text-xs text-stone-600">
-                                                    <p>Memberships: <span className="font-semibold text-stone-950">{user.membershipsCount}</span></p>
-                                                    <p className="mt-1">Devices: <span className="font-semibold text-stone-950">{user.deviceConnectionsCount}</span></p>
-                                                    <p className="mt-1">Athletes: <span className="font-semibold text-stone-950">{user.activeAthleteCount}</span></p>
+                                                    <p>
+                                                        Memberships: <span className="font-semibold text-stone-950">{user.membershipsCount}</span>
+                                                    </p>
+                                                    <p className="mt-1">
+                                                        Devices: <span className="font-semibold text-stone-950">{user.deviceConnectionsCount}</span>
+                                                    </p>
+                                                    <p className="mt-1">
+                                                        Athletes: <span className="font-semibold text-stone-950">{user.activeAthleteCount}</span>
+                                                    </p>
                                                 </td>
                                                 <td className="px-5 py-3 text-sm text-stone-700">{formatDate(user.createdAt)}</td>
                                                 <td className="px-5 py-3">
@@ -854,13 +853,11 @@ export default function AdminUsersIndex({
                                                     </div>
                                                 </td>
                                             </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                            </>
-                        )}
+                                        );
+                                    })}
+                                </tbody>
+                            )}
+                        </WorkspaceTable>
                     </WorkspacePanel>
 
                     <div className="flex items-center justify-between">

@@ -1,7 +1,15 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { WorkspaceMetricCard, WorkspacePanel, WorkspaceSectionHeading, WorkspaceTablePageSize } from '@/components/workspace-primitives';
+import {
+    WorkspaceMetricCard,
+    WorkspacePanel,
+    WorkspaceSectionHeading,
+    WorkspaceTable,
+    WorkspaceTableEmpty,
+    WorkspaceTableHeader,
+    WorkspaceTablePageSize,
+} from '@/components/workspace-primitives';
 import { useAutoFilter } from '@/hooks/use-auto-filter';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -253,44 +261,28 @@ export default function EmailLogs({ filters, summary, statuses, types, logs }: E
                         <p className="text-sm text-stone-500">Showing {logs.data.length} of {logs.total} matching emails.</p>
                     </div>
 
-                    <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
-                        <table className="w-full min-w-[980px] text-left text-sm">
-                            <thead className="bg-stone-50 text-xs font-semibold tracking-[0.16em] text-stone-500 uppercase">
-                                <tr>
-                                    <th className="px-5 py-4">Time</th>
-                                    <th className="px-5 py-4">Status</th>
-                                    <th className="px-5 py-4">Type</th>
-                                    <th className="px-5 py-4">Recipient</th>
-                                    <th className="px-5 py-4">Subject</th>
-                                    <th className="px-5 py-4">Source</th>
-                                    <th className="px-5 py-4">Error</th>
-                                </tr>
-                            </thead>
+                    <WorkspaceTable minWidth="min-w-[980px]">
+                        <WorkspaceTableHeader labels={['Time', 'Status', 'Type', 'Recipient', 'Subject', 'Source', 'Error']} />
+                        {logs.data.length === 0 ? (
+                            <WorkspaceTableEmpty message="No email delivery logs found." colSpan={7} />
+                        ) : (
                             <tbody className="divide-y divide-stone-100">
-                                {logs.data.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={7} className="px-4 py-8 text-center text-stone-500">
-                                            No email delivery logs found.
+                                {logs.data.map((log) => (
+                                    <tr key={log.id} className="align-top transition-colors hover:bg-stone-50/80">
+                                        <td className="px-5 py-4 text-stone-600">{log.time ?? 'N/A'}</td>
+                                        <td className="px-5 py-4">
+                                            <Badge variant={badgeVariant(log.status)}>{humanize(log.status)}</Badge>
                                         </td>
+                                        <td className="px-5 py-4 text-stone-700">{log.type}</td>
+                                        <td className="px-5 py-4 text-stone-600">{log.recipient ?? 'N/A'}</td>
+                                        <td className="max-w-xs px-4 py-4 leading-6 text-stone-700">{log.subject ?? 'No subject'}</td>
+                                        <td className="px-5 py-4 text-stone-500">{log.source ?? log.mailer ?? 'N/A'}</td>
+                                        <td className="max-w-xs px-4 py-4 leading-6 text-red-700">{log.error ?? '-'}</td>
                                     </tr>
-                                ) : (
-                                    logs.data.map((log) => (
-                                        <tr key={log.id} className="align-top">
-                                            <td className="px-5 py-4 text-stone-600">{log.time ?? 'N/A'}</td>
-                                            <td className="px-5 py-4">
-                                                <Badge variant={badgeVariant(log.status)}>{humanize(log.status)}</Badge>
-                                            </td>
-                                            <td className="px-5 py-4 text-stone-700">{log.type}</td>
-                                            <td className="px-5 py-4 text-stone-600">{log.recipient ?? 'N/A'}</td>
-                                            <td className="max-w-xs px-4 py-4 leading-6 text-stone-700">{log.subject ?? 'No subject'}</td>
-                                            <td className="px-5 py-4 text-stone-500">{log.source ?? log.mailer ?? 'N/A'}</td>
-                                            <td className="max-w-xs px-4 py-4 leading-6 text-red-700">{log.error ?? '-'}</td>
-                                        </tr>
-                                    ))
-                                )}
+                                ))}
                             </tbody>
-                        </table>
-                    </div>
+                        )}
+                    </WorkspaceTable>
 
                     <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-stone-500">
                         <span>
