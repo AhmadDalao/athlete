@@ -64,6 +64,10 @@ interface ExerciseRow {
     rest_label: string | null;
     target: string | null;
     note: string | null;
+    section: string | null;
+    superset_label: string | null;
+    media_url: string | null;
+    movement_type: string | null;
 }
 
 interface WorkoutLogRow {
@@ -174,6 +178,10 @@ interface ExerciseBuilderRow {
     rest: string;
     target: string;
     note: string;
+    section: string;
+    movementType: string;
+    mediaUrl: string;
+    supersetLabel: string;
 }
 
 const emptyExerciseBuilderRow = (): ExerciseBuilderRow => ({
@@ -184,12 +192,32 @@ const emptyExerciseBuilderRow = (): ExerciseBuilderRow => ({
     rest: '',
     target: '',
     note: '',
+    section: '',
+    movementType: '',
+    mediaUrl: '',
+    supersetLabel: '',
 });
 
 function serializeExerciseBuilderRows(rows: ExerciseBuilderRow[]) {
     return rows
         .filter((row) => Object.values(row).some((value) => value.trim() !== ''))
-        .map((row) => [row.name, row.sets, row.reps, row.load, row.rest, row.target, row.note].map((value) => value.trim()).join(' | '))
+        .map((row) =>
+            [
+                row.name,
+                row.sets,
+                row.reps,
+                row.load,
+                row.rest,
+                row.target,
+                row.note,
+                row.section,
+                row.movementType,
+                row.mediaUrl,
+                row.supersetLabel,
+            ]
+                .map((value) => value.trim())
+                .join(' | '),
+        )
         .join('\n');
 }
 
@@ -214,6 +242,10 @@ function parseExerciseBuilderRows(value: string) {
                     rest: parts[4] ?? '',
                     target: parts[5] ?? '',
                     note: parts[6] ?? '',
+                    section: parts[7] ?? '',
+                    movementType: parts[8] ?? '',
+                    mediaUrl: parts[9] ?? '',
+                    supersetLabel: parts[10] ?? '',
                 };
             }
 
@@ -225,6 +257,10 @@ function parseExerciseBuilderRows(value: string) {
                 rest: '',
                 target: '',
                 note: parts[2] ?? '',
+                section: '',
+                movementType: '',
+                mediaUrl: '',
+                supersetLabel: '',
             };
         });
 }
@@ -450,9 +486,19 @@ function ExerciseCard({ exercise }: { exercise: ExerciseRow }) {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
+                    {exercise.section && <Badge variant="secondary">{exercise.section}</Badge>}
+                    {exercise.movement_type && <Badge variant="outline">{exercise.movement_type}</Badge>}
+                    {exercise.superset_label && <Badge variant="outline">Superset {exercise.superset_label}</Badge>}
                     {exercise.load && <Badge variant="outline">Load {exercise.load}</Badge>}
                     {restLabel && <Badge variant="outline">Rest {restLabel}</Badge>}
                     {exercise.target && <Badge variant="outline">{exercise.target}</Badge>}
+                    {exercise.media_url && (
+                        <Button asChild variant="outline" size="sm">
+                            <a href={exercise.media_url} target="_blank" rel="noreferrer">
+                                Media
+                            </a>
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -494,7 +540,7 @@ function ExerciseBuilder({
     return (
         <div className="space-y-3">
             <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
-                <table className="w-full min-w-[860px] text-left text-sm">
+                <table className="w-full min-w-[1420px] text-left text-sm">
                     <thead className="bg-stone-50 text-[0.68rem] font-semibold tracking-[0.18em] text-stone-500 uppercase">
                         <tr>
                             <th className="px-3 py-3">Exercise</th>
@@ -504,6 +550,10 @@ function ExerciseBuilder({
                             <th className="px-3 py-3">Rest</th>
                             <th className="px-3 py-3">Target</th>
                             <th className="px-3 py-3">Note</th>
+                            <th className="px-3 py-3">Section</th>
+                            <th className="px-3 py-3">Type</th>
+                            <th className="px-3 py-3">Media URL</th>
+                            <th className="px-3 py-3">Superset</th>
                             <th className="px-3 py-3">Action</th>
                         </tr>
                     </thead>
@@ -576,6 +626,42 @@ function ExerciseBuilder({
                                     />
                                 </td>
                                 <td className="px-3 py-3">
+                                    <Input
+                                        value={row.section}
+                                        onChange={(event) => updateRow(index, { section: event.target.value })}
+                                        placeholder="Warm-up"
+                                        disabled={disabled}
+                                        className="h-10 min-w-36"
+                                    />
+                                </td>
+                                <td className="px-3 py-3">
+                                    <Input
+                                        value={row.movementType}
+                                        onChange={(event) => updateRow(index, { movementType: event.target.value })}
+                                        placeholder="Strength"
+                                        disabled={disabled}
+                                        className="h-10 min-w-36"
+                                    />
+                                </td>
+                                <td className="px-3 py-3">
+                                    <Input
+                                        value={row.mediaUrl}
+                                        onChange={(event) => updateRow(index, { mediaUrl: event.target.value })}
+                                        placeholder="https://..."
+                                        disabled={disabled}
+                                        className="h-10 min-w-56"
+                                    />
+                                </td>
+                                <td className="px-3 py-3">
+                                    <Input
+                                        value={row.supersetLabel}
+                                        onChange={(event) => updateRow(index, { supersetLabel: event.target.value })}
+                                        placeholder="A"
+                                        disabled={disabled}
+                                        className="h-10 min-w-28"
+                                    />
+                                </td>
+                                <td className="px-3 py-3">
                                     <Button
                                         type="button"
                                         variant="outline"
@@ -612,7 +698,7 @@ function ExerciseBuilder({
                     value={value}
                     onChange={(event) => onChange(event.target.value)}
                     disabled={disabled}
-                    placeholder={`Back squat | 4 | 6 | 120 kg | 150s | RPE 8 | Full depth every rep\nRun intervals | 6 | 800m | Threshold pace | 90s | Hold form | Walk back easy`}
+                    placeholder={`Back squat | 4 | 6 | 120 kg | 150s | RPE 8 | Full depth | Strength | strength | https://video.example/squat | A\nRun intervals | 6 | 800m | Threshold pace | 90s | Hold form | Walk back easy | Conditioning | run |  |`}
                     className="mt-3"
                 />
             </details>
@@ -1568,21 +1654,23 @@ export default function TrainingIndex({
                                                                                 )}
                                                                             </td>
                                                                             <td className="px-5 py-4">
-                                                                                <WorkspaceTable minWidth="min-w-[720px]">
+                                                                                <WorkspaceTable minWidth="min-w-[940px]">
                                                                                     <WorkspaceTableHeader
                                                                                         labels={[
                                                                                             'Exercise',
+                                                                                            'Section',
                                                                                             'Sets',
                                                                                             'Reps/time',
                                                                                             'Load',
                                                                                             'Rest',
                                                                                             'Target',
+                                                                                            'Media',
                                                                                         ]}
                                                                                     />
                                                                                     {session.exercises.length === 0 ? (
                                                                                         <WorkspaceTableEmpty
                                                                                             message="No exercises listed."
-                                                                                            colSpan={6}
+                                                                                            colSpan={8}
                                                                                         />
                                                                                     ) : (
                                                                                         <tbody className="divide-y divide-stone-100">
@@ -1599,6 +1687,21 @@ export default function TrainingIndex({
                                                                                                         </p>
                                                                                                     </td>
                                                                                                     <td className="px-5 py-4 text-sm text-stone-700">
+                                                                                                        <div className="space-y-1">
+                                                                                                            <p>{exercise.section ?? '-'}</p>
+                                                                                                            {exercise.movement_type && (
+                                                                                                                <Badge variant="outline">
+                                                                                                                    {exercise.movement_type}
+                                                                                                                </Badge>
+                                                                                                            )}
+                                                                                                            {exercise.superset_label && (
+                                                                                                                <p className="text-xs font-semibold text-stone-500">
+                                                                                                                    Superset {exercise.superset_label}
+                                                                                                                </p>
+                                                                                                            )}
+                                                                                                        </div>
+                                                                                                    </td>
+                                                                                                    <td className="px-5 py-4 text-sm text-stone-700">
                                                                                                         {exercise.sets ?? '-'}
                                                                                                     </td>
                                                                                                     <td className="px-5 py-4 text-sm text-stone-700">
@@ -1612,6 +1715,20 @@ export default function TrainingIndex({
                                                                                                     </td>
                                                                                                     <td className="px-5 py-4 text-sm text-stone-700">
                                                                                                         {exercise.target ?? '-'}
+                                                                                                    </td>
+                                                                                                    <td className="px-5 py-4 text-sm text-stone-700">
+                                                                                                        {exercise.media_url ? (
+                                                                                                            <a
+                                                                                                                href={exercise.media_url}
+                                                                                                                target="_blank"
+                                                                                                                rel="noreferrer"
+                                                                                                                className="font-semibold text-emerald-700"
+                                                                                                            >
+                                                                                                                Open
+                                                                                                            </a>
+                                                                                                        ) : (
+                                                                                                            '-'
+                                                                                                        )}
                                                                                                     </td>
                                                                                                 </tr>
                                                                                             ))}

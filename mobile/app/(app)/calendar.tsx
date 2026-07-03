@@ -1,10 +1,11 @@
-import { router, useFocusEffect } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
-import { EmptyState, LoadingState, Pill, Screen, SectionTitle, SessionCard } from '@/components/mobile-ui';
+import { AppHeader, EmptyState, LoadingState, Pill, Screen, SectionTitle, SessionCard } from '@/components/mobile-ui';
 import { colors, radius } from '@/theme';
 import type { CalendarPayload } from '@/types/api';
 
@@ -44,6 +45,12 @@ export default function CalendarScreen() {
     setIsLoading(false);
   }, [month, selectedDate, token]);
 
+  function moveMonth(offset: number) {
+    const nextMonth = addMonths(month, offset);
+    setMonth(nextMonth);
+    setSelectedDate(`${nextMonth}-01`);
+  }
+
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -66,6 +73,8 @@ export default function CalendarScreen() {
 
   return (
     <Screen>
+      <AppHeader title="Schedule" eyebrow="Workout calendar" rightLabel={user?.name?.slice(0, 2).toUpperCase() ?? 'TL'} />
+
       <SectionTitle
         eyebrow="Calendar"
         title="Daily schedule"
@@ -73,12 +82,12 @@ export default function CalendarScreen() {
       />
 
       <View style={styles.monthControls}>
-        <Pressable onPress={() => setMonth(addMonths(month, -1))} style={styles.monthButton}>
-          <Text style={styles.monthButtonText}>Prev</Text>
+        <Pressable onPress={() => moveMonth(-1)} style={styles.monthButton}>
+          <MaterialCommunityIcons name="chevron-left" size={24} color={colors.ink} />
         </Pressable>
         <Text style={styles.monthLabel}>{calendar.monthLabel}</Text>
-        <Pressable onPress={() => setMonth(addMonths(month, 1))} style={styles.monthButton}>
-          <Text style={styles.monthButtonText}>Next</Text>
+        <Pressable onPress={() => moveMonth(1)} style={styles.monthButton}>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.ink} />
         </Pressable>
       </View>
 
@@ -106,9 +115,11 @@ export default function CalendarScreen() {
             ]}
           >
             <Text style={[styles.dayNumber, day.isSelected && styles.daySelectedText]}>{day.dayNumber}</Text>
-            <Text style={[styles.dayMeta, day.isSelected && styles.daySelectedText]}>
-              {day.sessionCount ? `${day.sessionCount} session` : 'Rest'}
-            </Text>
+            {day.sessionCount ? (
+              <View style={[styles.dayDot, day.isSelected && styles.dayDotSelected]}>
+                <Text style={[styles.dayDotText, day.isSelected && styles.daySelectedDotText]}>{day.sessionCount}</Text>
+              </View>
+            ) : null}
           </Pressable>
         ))}
       </View>
@@ -121,10 +132,6 @@ export default function CalendarScreen() {
       ) : (
         <EmptyState title="No assigned training" body="This day is clear. Move to another day or wait for your coach to assign work." />
       )}
-
-      <Pressable onPress={() => router.push('/home')} style={styles.backButton}>
-        <Text style={styles.backButtonText}>Back to home</Text>
-      </Pressable>
     </Screen>
   );
 }
@@ -137,16 +144,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   monthButton: {
-    borderRadius: 16,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: '#ffffff',
     borderColor: colors.border,
     borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  monthButtonText: {
-    color: colors.ink,
-    fontWeight: '900',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   monthLabel: {
     flex: 1,
@@ -164,13 +169,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderColor: colors.border,
     borderWidth: 1,
-    padding: 12,
+    padding: 10,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
   },
   weekday: {
-    width: '13.4%',
+    width: '14.2857%',
     color: colors.muted,
     fontSize: 11,
     fontWeight: '900',
@@ -178,13 +182,13 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   dayCell: {
-    width: '13.4%',
-    minHeight: 58,
-    borderRadius: 16,
+    width: '14.2857%',
+    minHeight: 50,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    borderColor: colors.border,
+    gap: 3,
+    borderColor: 'transparent',
     borderWidth: 1,
   },
   dayCellMuted: {
@@ -200,24 +204,30 @@ const styles = StyleSheet.create({
   },
   dayNumber: {
     color: colors.ink,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '900',
   },
-  dayMeta: {
-    color: colors.muted,
-    fontSize: 9,
-    fontWeight: '800',
+  dayDot: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.greenSoft,
+  },
+  dayDotSelected: {
+    backgroundColor: '#ffffff',
+  },
+  dayDotText: {
+    color: colors.green,
+    fontSize: 10,
+    fontWeight: '900',
     textAlign: 'center',
+  },
+  daySelectedDotText: {
+    color: colors.green,
   },
   daySelectedText: {
     color: '#ffffff',
-  },
-  backButton: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  backButtonText: {
-    color: colors.green,
-    fontWeight: '900',
   },
 });

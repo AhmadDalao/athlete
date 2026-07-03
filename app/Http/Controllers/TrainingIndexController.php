@@ -116,7 +116,7 @@ class TrainingIndexController extends Controller
                 ])
                 ->values()
                 ->all(),
-            'exerciseFormatHint' => 'One line per exercise: Exercise | sets | reps or time | load | rest | target | note. Legacy "Exercise | prescription | note" still works.',
+            'exerciseFormatHint' => 'One line per exercise: Exercise | sets | reps/time | load | rest | target | note | section | type | media URL | superset. Legacy "Exercise | prescription | note" still works.',
         ]);
     }
 
@@ -233,6 +233,10 @@ class TrainingIndexController extends Controller
                 'rest_label' => $exercise['rest_label'] ?? null,
                 'target' => $exercise['target'] ?? null,
                 'note' => $exercise['note'] ?? null,
+                'section' => $exercise['section'] ?? null,
+                'superset_label' => $exercise['superset_label'] ?? null,
+                'media_url' => $exercise['media_url'] ?? null,
+                'movement_type' => $exercise['movement_type'] ?? null,
             ])
             ->values()
             ->all();

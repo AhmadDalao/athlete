@@ -1,10 +1,11 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
-import { Card, LoadingState, Pill, PrimaryButton, Screen, SecondaryButton, SectionTitle } from '@/components/mobile-ui';
+import { AppHeader, Card, LoadingState, Pill, PrimaryButton, Screen, SecondaryButton, SectionTitle } from '@/components/mobile-ui';
 import { colors, radius } from '@/theme';
 import type { WorkoutExecution, WorkoutSetRow } from '@/types/api';
 
@@ -143,9 +144,7 @@ export default function WorkoutExecutionScreen() {
 
   return (
     <Screen>
-      <Pressable onPress={() => router.back()}>
-        <Text style={styles.back}>Back</Text>
-      </Pressable>
+      <AppHeader title="Workout" eyebrow={workout.session.scheduledDate ?? 'Training'} onBack={() => router.back()} />
 
       <View style={styles.hero}>
         <Text style={styles.heroEyebrow}>{workout.program.title}</Text>
@@ -153,17 +152,30 @@ export default function WorkoutExecutionScreen() {
         <Text style={styles.heroNote}>Coach: {workout.coach.name} - {workout.session.scheduledDate}</Text>
       </View>
 
-      <View style={styles.exerciseRail}>
-        {workout.exercises.map((item, index) => (
-          <Pressable
-            key={`${item.name}-${index}`}
-            onPress={() => setCurrentExercise(index)}
-            style={[styles.railDot, index === currentExercise && styles.railDotActive]}
-          >
-            <Text style={[styles.railText, index === currentExercise && styles.railTextActive]}>{index + 1}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.exerciseRail}>
+        {workout.exercises.map((item, index) => {
+          const isActive = index === currentExercise;
+
+          return (
+            <Pressable
+              key={`${item.name}-${index}`}
+              onPress={() => setCurrentExercise(index)}
+              style={[styles.railItem, isActive && styles.railItemActive]}
+            >
+              <Text style={[styles.railNumber, isActive && styles.railTextActive]}>{index + 1}</Text>
+              <Text style={[styles.railLabel, isActive && styles.railTextActive]} numberOfLines={1}>{item.name}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {mediaUrl ? (
+        <Pressable onPress={() => Linking.openURL(mediaUrl)} style={styles.mediaHero}>
+          <MaterialCommunityIcons name="play-circle-outline" size={48} color="#ffffff" />
+          <Text style={styles.mediaTitle} numberOfLines={2}>{exercise.name}</Text>
+          <Text style={styles.mediaNote}>Tap to open movement media</Text>
+        </Pressable>
+      ) : null}
 
       <Card style={styles.exerciseCard}>
         <View style={styles.exerciseHeader}>
@@ -171,13 +183,16 @@ export default function WorkoutExecutionScreen() {
             <Text style={styles.exerciseTitle}>{exercise.name}</Text>
             <Text style={styles.note}>{exercise.note ?? exercise.prescription ?? exercise.target ?? 'Complete the prescribed work.'}</Text>
           </View>
-          <Pill tone="gold">{exercise.section ?? 'work'}</Pill>
+          <View style={styles.exerciseBadges}>
+            <Pill tone="gold">{exercise.section ?? 'work'}</Pill>
+            {exercise.supersetLabel ? <Pill>{exercise.supersetLabel}</Pill> : null}
+          </View>
         </View>
 
         <View style={styles.actionRow}>
-          {mediaUrl ? <SecondaryButton label="Media" onPress={() => Linking.openURL(mediaUrl)} /> : null}
-          <SecondaryButton label="Journal" onPress={() => setStatusText('Journal notes save with workout status in this MVP.')} />
-          <SecondaryButton label="Opt out" onPress={() => complete('missed')} />
+          {mediaUrl ? <SecondaryButton label="Media" icon="play-box-outline" onPress={() => Linking.openURL(mediaUrl)} /> : null}
+          <SecondaryButton label="Journal" icon="notebook-outline" onPress={() => setStatusText('Journal notes save with workout status in this MVP.')} />
+          <SecondaryButton label="Opt out" icon="close-circle-outline" onPress={() => complete('missed')} />
         </View>
       </Card>
 
@@ -234,29 +249,29 @@ export default function WorkoutExecutionScreen() {
 
       {statusText ? <Text style={styles.status}>{statusText}</Text> : null}
 
-      <View style={styles.footerActions}>
-        <SecondaryButton label="Previous" onPress={() => setCurrentExercise(Math.max(0, currentExercise - 1))} />
-        <PrimaryButton label="Save partial" onPress={saveSets} />
+      <View style={styles.navActions}>
+        <SecondaryButton
+          label="Previous"
+          icon="chevron-left"
+          onPress={() => setCurrentExercise(Math.max(0, currentExercise - 1))}
+        />
         <SecondaryButton
           label="Next"
+          icon="chevron-right"
           onPress={() => setCurrentExercise(Math.min(workout.exercises.length - 1, currentExercise + 1))}
         />
       </View>
+      <PrimaryButton label="Save partial" onPress={saveSets} />
       <PrimaryButton label="Complete workout" onPress={() => complete('completed')} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  back: {
-    color: colors.green,
-    fontSize: 16,
-    fontWeight: '900',
-  },
   hero: {
     backgroundColor: colors.greenDark,
     borderRadius: radius.xl,
-    padding: 24,
+    padding: 20,
     gap: 8,
   },
   heroEyebrow: {
@@ -268,7 +283,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: '#ffffff',
-    fontSize: 34,
+    fontSize: 30,
     fontWeight: '900',
     letterSpacing: -1.1,
   },
@@ -277,35 +292,62 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   exerciseRail: {
-    flexDirection: 'row',
     gap: 8,
+    paddingRight: 18,
   },
-  railDot: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+  railItem: {
+    minWidth: 86,
+    maxWidth: 136,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#ffffff',
     borderColor: colors.border,
     borderWidth: 1,
   },
-  railDotActive: {
+  railItemActive: {
     backgroundColor: colors.green,
     borderColor: colors.green,
   },
-  railText: {
+  railNumber: {
     color: colors.muted,
+    fontSize: 16,
     fontWeight: '900',
+  },
+  railLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '800',
   },
   railTextActive: {
     color: '#ffffff',
+  },
+  mediaHero: {
+    minHeight: 168,
+    borderRadius: radius.xl,
+    padding: 20,
+    justifyContent: 'flex-end',
+    gap: 8,
+    backgroundColor: colors.panel,
+    overflow: 'hidden',
+  },
+  mediaTitle: {
+    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: -0.7,
+  },
+  mediaNote: {
+    color: '#d6e5e5',
+    fontSize: 14,
+    fontWeight: '800',
   },
   exerciseCard: {
     gap: 16,
   },
   exerciseHeader: {
-    flexDirection: 'row',
     gap: 12,
     alignItems: 'flex-start',
   },
@@ -314,7 +356,7 @@ const styles = StyleSheet.create({
   },
   exerciseTitle: {
     color: colors.ink,
-    fontSize: 25,
+    fontSize: 24,
     fontWeight: '900',
     letterSpacing: -0.6,
   },
@@ -327,6 +369,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  exerciseBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   setCard: {
     gap: 10,
@@ -405,8 +452,9 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     textAlign: 'center',
   },
-  footerActions: {
+  navActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     alignItems: 'center',
     justifyContent: 'space-between',

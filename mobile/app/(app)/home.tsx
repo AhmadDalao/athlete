@@ -4,7 +4,18 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
-import { Card, EmptyState, LoadingState, MetricTile, Pill, Screen, SectionTitle, SessionCard } from '@/components/mobile-ui';
+import {
+  AppHeader,
+  Card,
+  EmptyState,
+  LoadingState,
+  MetricTile,
+  Pill,
+  Screen,
+  SectionTitle,
+  SessionCard,
+  SignalRing,
+} from '@/components/mobile-ui';
 import { colors, radius } from '@/theme';
 import type { AppHome, AthleteHome, CoachHome, TrainingProgramSummary } from '@/types/api';
 
@@ -53,26 +64,24 @@ export default function HomeScreen() {
 function AthleteHomeView({ home }: { home: AthleteHome }) {
   const latest = home.wearable.latestSnapshot;
   const readiness = latest?.readinessScore ? Math.round(latest.readinessScore) : '--';
+  const sleep = latest?.sleepHours ? `${Number(latest.sleepHours).toFixed(1)}h` : '--';
+  const strain = latest?.strainScore ? Number(latest.strainScore).toFixed(1) : '--';
   const coachLabel = home.coaches.length ? home.coaches.map((coach) => coach.name).join(', ') : 'No coach assigned';
 
   return (
     <Screen>
+      <AppHeader title="Throughline" eyebrow="Athlete app" rightLabel={initials(home.viewer.name)} />
+
       <View style={styles.hero}>
-        <Text style={styles.heroEyebrow}>Athlete app</Text>
+        <Text style={styles.heroEyebrow}>Today</Text>
         <Text style={styles.heroTitle}>Hello, {home.viewer.name.split(' ')[0]}</Text>
-        <Text style={styles.heroNote}>Coach: {coachLabel}</Text>
+        <Text style={styles.heroNote}>{coachLabel} · {home.programs.length} active program(s)</Text>
       </View>
 
-      <Card style={styles.readinessCard}>
-        <View style={styles.ring}>
-          <Text style={styles.ringValue}>{readiness}</Text>
-        </View>
-        <View style={styles.flexOne}>
-          <Text style={styles.cardTitle}>Readiness</Text>
-          <Text style={styles.note}>
-            {latest ? `${latest.sleepHours ?? '--'}h sleep - ${latest.strainScore ?? '--'} strain` : 'Connect WHOOP, Apple Health, or Health Connect.'}
-          </Text>
-        </View>
+      <Card style={styles.signalCard}>
+        <SignalRing label="Readiness" value={readiness} detail={latest?.readinessBand ?? 'Score'} />
+        <SignalRing label="Sleep" value={sleep} detail="Hours" tone="blue" />
+        <SignalRing label="Strain" value={strain} detail="Load" tone="gold" />
       </Card>
 
       <SectionTitle eyebrow="Today" title={home.todaySessions.length ? 'Workout assigned' : 'No workout today'} />
@@ -103,17 +112,19 @@ function AthleteHomeView({ home }: { home: AthleteHome }) {
 function CoachHomeView({ home }: { home: CoachHome }) {
   return (
     <Screen>
+      <AppHeader title="Coach" eyebrow="Coach app" rightLabel={initials(home.viewer.name)} />
+
       <View style={styles.coachHero}>
-        <Text style={styles.heroEyebrow}>Coach app</Text>
+        <Text style={styles.heroEyebrow}>Today</Text>
         <Text style={styles.heroTitle}>Coach board</Text>
         <Text style={styles.heroNote}>Your athletes, workouts, and message queues.</Text>
       </View>
 
       <View style={styles.metricGrid}>
-        <MetricTile label="Athletes" value={home.summary.assignedAthletes} />
-        <MetricTile label="Programs" value={home.summary.activePrograms} />
-        <MetricTile label="Upcoming" value={home.summary.upcomingSessions} />
-        <MetricTile label="Pending logs" value={home.summary.pendingLogs} />
+        <MetricTile label="Athletes" value={home.summary.assignedAthletes} icon="account-group-outline" />
+        <MetricTile label="Programs" value={home.summary.activePrograms} icon="clipboard-text-outline" />
+        <MetricTile label="Upcoming" value={home.summary.upcomingSessions} icon="calendar-clock" />
+        <MetricTile label="Pending logs" value={home.summary.pendingLogs} icon="alert-circle-outline" />
       </View>
 
       <SectionTitle eyebrow="Schedule" title="Next sessions" />
@@ -153,22 +164,34 @@ function ProgramRow({ program }: { program: TrainingProgramSummary }) {
         <Text style={styles.cardTitle}>{program.title}</Text>
         <Text style={styles.note}>{program.goal ?? `${program.sessionCount ?? 0} session(s)`}</Text>
       </View>
-      <Pill tone={program.status === 'active' ? 'green' : 'gold'}>{program.status}</Pill>
+      <View style={styles.programAction}>
+        <Pill tone={program.status === 'active' ? 'green' : 'gold'}>{program.status}</Pill>
+        <Text style={styles.openText}>Open</Text>
+      </View>
     </Pressable>
   );
+}
+
+function initials(name: string) {
+  return name
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 const styles = StyleSheet.create({
   hero: {
     backgroundColor: colors.green,
     borderRadius: radius.xl,
-    padding: 24,
+    padding: 20,
     gap: 8,
   },
   coachHero: {
     backgroundColor: colors.greenDark,
     borderRadius: radius.xl,
-    padding: 24,
+    padding: 20,
     gap: 8,
   },
   heroEyebrow: {
@@ -180,7 +203,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: '#ffffff',
-    fontSize: 38,
+    fontSize: 34,
     fontWeight: '900',
     letterSpacing: -1.2,
   },
@@ -189,24 +212,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
-  readinessCard: {
+  signalCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 18,
-  },
-  ring: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderColor: colors.green,
-    borderWidth: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringValue: {
-    color: colors.ink,
-    fontSize: 28,
-    fontWeight: '900',
+    justifyContent: 'space-between',
+    gap: 8,
   },
   flexOne: {
     flex: 1,
@@ -247,5 +257,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: '#ffffff',
     padding: 18,
+  },
+  programAction: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  openText: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
 });

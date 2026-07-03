@@ -14,7 +14,11 @@ class TrainingExerciseParser
      *     rest_seconds:?int,
      *     rest_label:?string,
      *     target:?string,
-     *     note:?string
+     *     note:?string,
+     *     section:?string,
+     *     superset_label:?string,
+     *     media_url:?string,
+     *     movement_type:?string
      * }>
      */
     public function parse(?string $input): array
@@ -41,7 +45,11 @@ class TrainingExerciseParser
      *     rest_seconds:?int,
      *     rest_label:?string,
      *     target:?string,
-     *     note:?string
+     *     note:?string,
+     *     section:?string,
+     *     superset_label:?string,
+     *     media_url:?string,
+     *     movement_type:?string
      * }
      */
     private function parseLine(string $line): array
@@ -56,6 +64,10 @@ class TrainingExerciseParser
             $restLabel = $this->cleanText($parts[4] ?? null);
             $target = $this->cleanText($parts[5] ?? null);
             $note = $this->cleanText($parts[6] ?? null);
+            $section = $this->cleanText($parts[7] ?? null);
+            $movementType = $this->cleanText($parts[8] ?? null);
+            $mediaUrl = $this->cleanUrl($parts[9] ?? null);
+            $supersetLabel = $this->cleanText($parts[10] ?? null);
 
             return [
                 'name' => $name,
@@ -67,6 +79,10 @@ class TrainingExerciseParser
                 'rest_label' => $restLabel,
                 'target' => $target,
                 'note' => $note,
+                'section' => $section,
+                'superset_label' => $supersetLabel,
+                'media_url' => $mediaUrl,
+                'movement_type' => $movementType,
             ];
         }
 
@@ -83,6 +99,10 @@ class TrainingExerciseParser
             'rest_label' => $parsedLegacy['rest_label'],
             'target' => $parsedLegacy['target'],
             'note' => $this->cleanText($parts[2] ?? null),
+            'section' => null,
+            'superset_label' => null,
+            'media_url' => null,
+            'movement_type' => null,
         ];
     }
 
@@ -214,6 +234,17 @@ class TrainingExerciseParser
         $normalized = trim($value);
 
         return $normalized !== '' ? $normalized : null;
+    }
+
+    private function cleanUrl(?string $value): ?string
+    {
+        $normalized = $this->cleanText($value);
+
+        if (! $normalized || filter_var($normalized, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        return $normalized;
     }
 
     private function looksLikeLoad(string $value): bool

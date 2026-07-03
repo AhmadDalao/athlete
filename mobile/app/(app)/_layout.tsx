@@ -1,15 +1,19 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
-import { Text } from 'react-native';
 
 import { useAuth } from '@/auth/auth-context';
 import { LoadingState } from '@/components/mobile-ui';
 import { colors } from '@/theme';
 
-function TabIcon({ label, focused }: { label: string; focused: boolean }) {
+type TabIconName = keyof typeof MaterialCommunityIcons.glyphMap;
+
+function TabIcon({ name, focused }: { name: TabIconName; focused: boolean }) {
   return (
-    <Text style={{ color: focused ? colors.green : colors.muted, fontSize: 18, fontWeight: '900' }}>
-      {label}
-    </Text>
+    <MaterialCommunityIcons
+      name={name}
+      size={focused ? 27 : 24}
+      color={focused ? colors.green : colors.muted}
+    />
   );
 }
 
@@ -31,9 +35,9 @@ export default function AppTabs() {
         tabBarActiveTintColor: colors.green,
         tabBarInactiveTintColor: colors.muted,
         tabBarStyle: {
-          height: 76,
+          height: 84,
           paddingTop: 8,
-          paddingBottom: 10,
+          paddingBottom: 12,
           borderTopColor: colors.border,
           backgroundColor: '#ffffff',
         },
@@ -43,12 +47,30 @@ export default function AppTabs() {
         },
       }}
     >
-      <Tabs.Screen name="home" options={{ title: 'Home', tabBarIcon: ({ focused }) => <TabIcon label="H" focused={focused} /> }} />
-      <Tabs.Screen name="calendar" options={{ title: 'Schedule', tabBarIcon: ({ focused }) => <TabIcon label="S" focused={focused} /> }} />
-      <Tabs.Screen name="progress" options={{ title: 'Health', tabBarIcon: ({ focused }) => <TabIcon label="P" focused={focused} /> }} />
-      <Tabs.Screen name="wearables" options={{ title: 'Devices', tabBarIcon: ({ focused }) => <TabIcon label="D" focused={focused} /> }} />
-      <Tabs.Screen name="messages" options={{ title: 'Messages', tabBarIcon: ({ focused }) => <TabIcon label="M" focused={focused} /> }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: ({ focused }) => <TabIcon label="A" focused={focused} /> }} />
+      <Tabs.Screen
+        name="home"
+        options={{ title: 'Home', tabBarIcon: ({ focused }) => <TabIcon name="home-variant-outline" focused={focused} /> }}
+      />
+      <Tabs.Screen
+        name="calendar"
+        options={{ title: 'Schedule', tabBarIcon: ({ focused }) => <TabIcon name="calendar-month-outline" focused={focused} /> }}
+      />
+      <Tabs.Screen
+        name="progress"
+        options={{ title: 'Health', tabBarIcon: ({ focused }) => <TabIcon name="heart-pulse" focused={focused} /> }}
+      />
+      <Tabs.Screen
+        name="wearables"
+        options={{ title: 'Devices', tabBarIcon: ({ focused }) => <TabIcon name="watch-variant" focused={focused} /> }}
+      />
+      <Tabs.Screen
+        name="messages"
+        options={{ title: 'Messages', tabBarIcon: ({ focused }) => <TabIcon name="message-text-outline" focused={focused} /> }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{ title: 'Profile', tabBarIcon: ({ focused }) => <TabIcon name="account-circle-outline" focused={focused} /> }}
+      />
       <Tabs.Screen name="workout/[id]" options={{ href: null }} />
       <Tabs.Screen name="programs/[id]" options={{ href: null }} />
     </Tabs>

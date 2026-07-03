@@ -1,6 +1,9 @@
 export const colors = {
   background: '#f7f5ef',
   card: '#ffffff',
+  panel: '#20292c',
+  panelDark: '#11191b',
+  panelMuted: '#8c9698',
   ink: '#111111',
   muted: '#74706b',
   border: '#e7e1d8',
