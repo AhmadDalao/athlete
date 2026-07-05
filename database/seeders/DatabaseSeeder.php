@@ -4,8 +4,6 @@ namespace Database\Seeders;
 
 use App\Enums\BillingInterval;
 use App\Enums\CoachAthleteStatus;
-use App\Enums\DeviceConnectionStatus;
-use App\Enums\DeviceProvider;
 use App\Enums\MembershipStatus;
 use App\Enums\PaymentEventStatus;
 use App\Enums\PaymentEventType;
@@ -14,10 +12,7 @@ use App\Enums\TrainingProgramStatus;
 use App\Enums\WorkoutCompletionStatus;
 use App\Models\AthleteCheckIn;
 use App\Models\CoachAthleteAssignment;
-use App\Models\DeviceConnection;
-use App\Models\DeviceMetricIngest;
 use App\Models\Membership;
-use App\Models\MetricSnapshot;
 use App\Models\PaymentEvent;
 use App\Models\Role;
 use App\Models\SubscriptionPlan;
@@ -401,270 +396,74 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        $garminConnection = DeviceConnection::query()->updateOrCreate(
-            ['user_id' => $athleteOne->id, 'provider' => DeviceProvider::Garmin],
-            [
-                'status' => DeviceConnectionStatus::Connected,
-                'external_user_id' => 'garmin-athlete-001',
-                'granted_scopes' => ['sleep', 'hrv', 'activity'],
-                'last_synced_at' => now()->subHours(2),
-            ],
-        );
+        if ((bool) env('THROUGHLINE_SEED_DEMO_CHECK_INS', false)) {
+            foreach (range(0, 6) as $offset) {
+                $date = now()->subDays(6 - $offset)->toDateString();
 
-        $whoopConnection = DeviceConnection::query()->updateOrCreate(
-            ['user_id' => $athleteTwo->id, 'provider' => DeviceProvider::Whoop],
-            [
-                'status' => DeviceConnectionStatus::Attention,
-                'auth_type' => 'oauth',
-                'external_user_id' => 'whoop-athlete-002',
-                'granted_scopes' => ['offline', 'read:profile', 'read:recovery', 'read:sleep', 'read:cycles', 'read:workout'],
-                'provider_account_payload' => [
-                    'profile' => [
-                        'user_id' => 'whoop-athlete-002',
-                        'first_name' => 'Noah',
-                        'last_name' => 'Patel',
-                    ],
-                ],
-                'last_synced_at' => now()->subDays(2),
-            ],
-        );
+                $this->upsertAthleteCheckIn($athleteOne->id, $date, [
+                    'weight_kg' => 68.4 - ($offset * 0.1),
+                    'body_fat_percentage' => 17.8 - ($offset * 0.05),
+                    'waist_cm' => 74.0 - ($offset * 0.08),
+                    'calories_consumed' => 2480 + ($offset % 3) * 90,
+                    'protein_grams' => 164 + ($offset % 4) * 4,
+                    'carbs_grams' => 286 + ($offset * 6),
+                    'fat_grams' => 72 + ($offset % 2) * 4,
+                    'water_liters' => 3.0 + (($offset % 3) * 0.2),
+                    'meals_logged_count' => 4,
+                    'energy_score' => 7 + ($offset % 2),
+                    'soreness_score' => 4 + ($offset % 3),
+                    'stress_score' => 3 + ($offset % 2),
+                    'sleep_quality_score' => 7 + ($offset % 2),
+                    'notes' => match ($offset) {
+                        2 => 'Legs were heavy but food stayed on target.',
+                        5 => 'Race-pace work felt cleaner once hydration was sorted.',
+                        default => 'Solid training support day with no major issues.',
+                    },
+                ]);
 
-        $stravaConnection = DeviceConnection::query()->updateOrCreate(
-            ['user_id' => $athleteThree->id, 'provider' => DeviceProvider::Strava],
-            [
-                'status' => DeviceConnectionStatus::Connected,
-                'external_user_id' => 'strava-athlete-003',
-                'granted_scopes' => ['activity'],
-                'last_synced_at' => now()->subHours(8),
-            ],
-        );
+                $this->upsertAthleteCheckIn($athleteTwo->id, $date, [
+                    'weight_kg' => 92.6 - ($offset * 0.12),
+                    'body_fat_percentage' => 20.2 - ($offset * 0.04),
+                    'waist_cm' => 86.0 - ($offset * 0.05),
+                    'calories_consumed' => 3190 + (($offset + 1) % 3) * 110,
+                    'protein_grams' => 196 + ($offset % 3) * 6,
+                    'carbs_grams' => 312 + ($offset * 8),
+                    'fat_grams' => 92 + ($offset % 2) * 6,
+                    'water_liters' => 2.4 + (($offset % 3) * 0.2),
+                    'meals_logged_count' => 4,
+                    'energy_score' => $offset >= 4 ? 4 : 5,
+                    'soreness_score' => 6 + ($offset % 3),
+                    'stress_score' => 5 + ($offset % 2),
+                    'sleep_quality_score' => 4 + ($offset % 3),
+                    'notes' => match ($offset) {
+                        1 => 'Lower back tightness showed up after the heavy pull session.',
+                        4 => 'Calories were fine, but energy still felt flat after short sleep.',
+                        default => 'Holding output, but recovery support is not exactly elegant.',
+                    },
+                ]);
 
-        DeviceMetricIngest::query()->updateOrCreate(
-            [
-                'device_connection_id' => $garminConnection->id,
-                'external_event_id' => 'garmin-ingest-2026-06-09',
-            ],
-            [
-                'metric_date' => now()->subDay()->toDateString(),
-                'payload' => [
-                    'metric_date' => now()->subDay()->toDateString(),
-                    'metrics' => [
-                        'readiness_score' => 84,
-                        'sleep_minutes' => 452,
-                        'strain_score' => 11.8,
-                        'resting_heart_rate' => 48,
-                        'heart_rate_variability' => 72.5,
-                        'steps' => 12840,
-                        'training_load' => 438.2,
-                    ],
-                ],
-                'processing_status' => 'processed',
-                'received_at' => now()->subHours(2),
-                'processed_at' => now()->subHours(2),
-            ],
-        );
-
-        $this->upsertMetricSnapshot($garminConnection->id, now()->subDay()->toDateString(), [
-            'user_id' => $athleteOne->id,
-            'provider' => DeviceProvider::Garmin,
-            'readiness_score' => 84,
-            'strain_score' => 11.8,
-            'sleep_minutes' => 452,
-            'steps' => 12840,
-            'distance_meters' => 9200,
-            'calories_burned' => 2180,
-            'active_minutes' => 76,
-            'resting_heart_rate' => 48,
-            'heart_rate_variability' => 72.5,
-            'training_load' => 438.2,
-        ]);
-
-        DeviceMetricIngest::query()->updateOrCreate(
-            [
-                'device_connection_id' => $whoopConnection->id,
-                'external_event_id' => 'whoop-ingest-2026-06-07',
-            ],
-            [
-                'metric_date' => now()->subDays(3)->toDateString(),
-                'payload' => [
-                    'metric_date' => now()->subDays(3)->toDateString(),
-                    'metrics' => [
-                        'readiness_score' => 61,
-                        'sleep_minutes' => 361,
-                        'sleep_need_minutes' => 470,
-                        'sleep_performance_percentage' => 77,
-                        'sleep_consistency_percentage' => 71,
-                        'sleep_efficiency_percentage' => 88,
-                        'rem_sleep_minutes' => 62,
-                        'slow_wave_sleep_minutes' => 54,
-                        'strain_score' => 16.4,
-                        'resting_heart_rate' => 56,
-                        'heart_rate_variability' => 44.9,
-                        'respiratory_rate' => 16.8,
-                        'blood_oxygen_percent' => 95.4,
-                        'skin_temperature_celsius' => 33.9,
-                        'training_load' => 519.5,
-                    ],
-                ],
-                'processing_status' => 'processed',
-                'received_at' => now()->subDays(2),
-                'processed_at' => now()->subDays(2),
-            ],
-        );
-
-        $this->upsertMetricSnapshot($whoopConnection->id, now()->subDays(3)->toDateString(), [
-            'user_id' => $athleteTwo->id,
-            'provider' => DeviceProvider::Whoop,
-            'readiness_score' => 61,
-            'strain_score' => 16.4,
-            'sleep_minutes' => 361,
-            'sleep_need_minutes' => 470,
-            'sleep_performance_percentage' => 77,
-            'sleep_consistency_percentage' => 71,
-            'sleep_efficiency_percentage' => 88,
-            'rem_sleep_minutes' => 62,
-            'slow_wave_sleep_minutes' => 54,
-            'steps' => 7340,
-            'distance_meters' => 5200,
-            'calories_burned' => 1840,
-            'active_minutes' => 49,
-            'resting_heart_rate' => 56,
-            'heart_rate_variability' => 44.9,
-            'respiratory_rate' => 16.8,
-            'blood_oxygen_percent' => 95.4,
-            'skin_temperature_celsius' => 33.9,
-            'training_load' => 519.5,
-        ]);
-
-        DeviceMetricIngest::query()->updateOrCreate(
-            [
-                'device_connection_id' => $stravaConnection->id,
-                'external_event_id' => 'strava-ingest-2026-06-09',
-            ],
-            [
-                'metric_date' => now()->subDay()->toDateString(),
-                'payload' => [
-                    'metric_date' => now()->subDay()->toDateString(),
-                    'metrics' => [
-                        'readiness_score' => 76,
-                        'sleep_minutes' => 415,
-                        'strain_score' => 13.1,
-                        'steps' => 16420,
-                        'distance_meters' => 12480,
-                        'training_load' => 472.7,
-                    ],
-                ],
-                'processing_status' => 'processed',
-                'received_at' => now()->subHours(8),
-                'processed_at' => now()->subHours(8),
-            ],
-        );
-
-        $this->upsertMetricSnapshot($stravaConnection->id, now()->subDay()->toDateString(), [
-            'user_id' => $athleteThree->id,
-            'provider' => DeviceProvider::Strava,
-            'readiness_score' => 76,
-            'strain_score' => 13.1,
-            'sleep_minutes' => 415,
-            'steps' => 16420,
-            'distance_meters' => 12480,
-            'calories_burned' => 2415,
-            'active_minutes' => 91,
-            'resting_heart_rate' => 51,
-            'heart_rate_variability' => 58.3,
-            'training_load' => 472.7,
-        ]);
-
-        foreach (range(0, 6) as $offset) {
-            $date = now()->subDays(6 - $offset)->toDateString();
-
-            $this->upsertAthleteCheckIn($athleteOne->id, $date, [
-                'weight_kg' => 68.4 - ($offset * 0.1),
-                'body_fat_percentage' => 17.8 - ($offset * 0.05),
-                'waist_cm' => 74.0 - ($offset * 0.08),
-                'calories_consumed' => 2480 + ($offset % 3) * 90,
-                'protein_grams' => 164 + ($offset % 4) * 4,
-                'carbs_grams' => 286 + ($offset * 6),
-                'fat_grams' => 72 + ($offset % 2) * 4,
-                'water_liters' => 3.0 + (($offset % 3) * 0.2),
-                'meals_logged_count' => 4,
-                'energy_score' => 7 + ($offset % 2),
-                'soreness_score' => 4 + ($offset % 3),
-                'stress_score' => 3 + ($offset % 2),
-                'sleep_quality_score' => 7 + ($offset % 2),
-                'notes' => match ($offset) {
-                    2 => 'Legs were heavy but food stayed on target.',
-                    5 => 'Race-pace work felt cleaner once hydration was sorted.',
-                    default => 'Solid training support day with no major issues.',
-                },
-            ]);
-
-            $this->upsertAthleteCheckIn($athleteTwo->id, $date, [
-                'weight_kg' => 92.6 - ($offset * 0.12),
-                'body_fat_percentage' => 20.2 - ($offset * 0.04),
-                'waist_cm' => 86.0 - ($offset * 0.05),
-                'calories_consumed' => 3190 + (($offset + 1) % 3) * 110,
-                'protein_grams' => 196 + ($offset % 3) * 6,
-                'carbs_grams' => 312 + ($offset * 8),
-                'fat_grams' => 92 + ($offset % 2) * 6,
-                'water_liters' => 2.4 + (($offset % 3) * 0.2),
-                'meals_logged_count' => 4,
-                'energy_score' => $offset >= 4 ? 4 : 5,
-                'soreness_score' => 6 + ($offset % 3),
-                'stress_score' => 5 + ($offset % 2),
-                'sleep_quality_score' => 4 + ($offset % 3),
-                'notes' => match ($offset) {
-                    1 => 'Lower back tightness showed up after the heavy pull session.',
-                    4 => 'Calories were fine, but energy still felt flat after short sleep.',
-                    default => 'Holding output, but recovery support is not exactly elegant.',
-                },
-            ]);
-
-            $this->upsertAthleteCheckIn($athleteThree->id, $date, [
-                'weight_kg' => 79.3 + ($offset * 0.14),
-                'body_fat_percentage' => 18.4 + ($offset * 0.02),
-                'waist_cm' => 81.2 + ($offset * 0.03),
-                'calories_consumed' => 2590 + (($offset + 2) % 3) * 120,
-                'protein_grams' => 158 + ($offset % 4) * 5,
-                'carbs_grams' => 274 + ($offset * 7),
-                'fat_grams' => 78 + ($offset % 2) * 5,
-                'water_liters' => 2.8 + (($offset % 2) * 0.3),
-                'meals_logged_count' => 4,
-                'energy_score' => 5 + ($offset % 3),
-                'soreness_score' => 3 + ($offset % 2),
-                'stress_score' => 4 + ($offset % 2),
-                'sleep_quality_score' => 6 + ($offset % 2),
-                'notes' => match ($offset) {
-                    0 => 'Appetite came back. Good sign after the slow restart.',
-                    6 => 'Bodyweight is climbing back the right way without feeling sloppy.',
-                    default => 'Rebuild week. Nothing heroic, just consistent.',
-                },
-            ]);
+                $this->upsertAthleteCheckIn($athleteThree->id, $date, [
+                    'weight_kg' => 79.3 + ($offset * 0.14),
+                    'body_fat_percentage' => 18.4 + ($offset * 0.02),
+                    'waist_cm' => 81.2 + ($offset * 0.03),
+                    'calories_consumed' => 2590 + (($offset + 2) % 3) * 120,
+                    'protein_grams' => 158 + ($offset % 4) * 5,
+                    'carbs_grams' => 274 + ($offset * 7),
+                    'fat_grams' => 78 + ($offset % 2) * 5,
+                    'water_liters' => 2.8 + (($offset % 2) * 0.3),
+                    'meals_logged_count' => 4,
+                    'energy_score' => 5 + ($offset % 3),
+                    'soreness_score' => 3 + ($offset % 2),
+                    'stress_score' => 4 + ($offset % 2),
+                    'sleep_quality_score' => 6 + ($offset % 2),
+                    'notes' => match ($offset) {
+                        0 => 'Appetite came back. Good sign after the slow restart.',
+                        6 => 'Bodyweight is climbing back the right way without feeling sloppy.',
+                        default => 'Rebuild week. Nothing heroic, just consistent.',
+                    },
+                ]);
+            }
         }
-    }
-
-    /**
-     * @param  array<string, mixed>  $attributes
-     */
-    private function upsertMetricSnapshot(int $deviceConnectionId, string $metricDate, array $attributes): void
-    {
-        $snapshot = MetricSnapshot::query()
-            ->where('device_connection_id', $deviceConnectionId)
-            ->whereDate('metric_date', $metricDate)
-            ->first();
-
-        if (! $snapshot) {
-            MetricSnapshot::query()->create(array_merge($attributes, [
-                'device_connection_id' => $deviceConnectionId,
-                'metric_date' => $metricDate,
-            ]));
-
-            return;
-        }
-
-        $snapshot->fill($attributes);
-        $snapshot->metric_date = $metricDate;
-        $snapshot->save();
     }
 
     /**

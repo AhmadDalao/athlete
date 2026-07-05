@@ -2,9 +2,9 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { apiRequest } from '@/api/client';
+import { apiErrorMessage, apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
-import { AppHeader, Card, EmptyState, LoadingState, MetricTile, Screen, SectionTitle } from '@/components/mobile-ui';
+import { AppHeader, Card, EmptyState, ErrorState, LoadingState, MetricTile, Screen, SectionTitle } from '@/components/mobile-ui';
 import { colors, radius } from '@/theme';
 
 type ProgressPayload = {
@@ -33,37 +33,46 @@ export default function ProgressScreen() {
   const { token } = useAuth();
   const [payload, setPayload] = useState<ProgressPayload | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadProgress = useCallback(async () => {
+    if (!token) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiRequest<ProgressPayload>('/api/v1/progress', undefined, token);
+      setPayload(response.data);
+    } catch (loadError) {
+      setError(apiErrorMessage(loadError, 'Could not load progress.'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token]);
 
   useFocusEffect(
     useCallback(() => {
-      let active = true;
-
-      async function load() {
-        if (!token) {
-          return;
-        }
-
-        const response = await apiRequest<ProgressPayload>('/api/v1/progress', undefined, token);
-
-        if (active) {
-          setPayload(response.data);
-          setIsLoading(false);
-        }
-      }
-
-      load().catch(() => {
-        if (active) {
-          setIsLoading(false);
-        }
-      });
-
-      return () => {
-        active = false;
-      };
-    }, [token]),
+      void loadProgress();
+    }, [loadProgress]),
   );
 
-  if (isLoading || !payload) {
+  if (isLoading && !payload) {
+    return <LoadingState label="Loading progress..." />;
+  }
+
+  if (error && !payload) {
+    return (
+      <Screen>
+        <AppHeader title="Health" eyebrow="Progress" />
+        <ErrorState body={error} onRetry={loadProgress} />
+      </Screen>
+    );
+  }
+
+  if (!payload) {
     return <LoadingState label="Loading progress..." />;
   }
 

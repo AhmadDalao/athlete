@@ -234,6 +234,25 @@ export function EmptyState({ title, body }: { title: string; body: string }) {
   );
 }
 
+export function ErrorState({
+  title = 'Could not load',
+  body,
+  onRetry,
+}: {
+  title?: string;
+  body: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <Card style={styles.empty}>
+      <Glyph label="!" tone="danger" />
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.note}>{body}</Text>
+      {onRetry ? <PrimaryButton label="Try again" onPress={onRetry} /> : null}
+    </Card>
+  );
+}
+
 export function PrimaryButton({
   label,
   onPress,

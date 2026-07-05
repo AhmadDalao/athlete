@@ -52,6 +52,7 @@ class AthleteAppController extends Controller
         $session = $this->nextSession($programs);
         $latestSnapshot = MetricSnapshot::query()
             ->where('user_id', $athlete->id)
+            ->liveSynced()
             ->latest('metric_date')
             ->first();
         $chartRange = $this->chartRange($request);
@@ -208,6 +209,7 @@ class AthleteAppController extends Controller
 
         $snapshots = MetricSnapshot::query()
             ->where('user_id', $athlete->id)
+            ->liveSynced()
             ->whereDate('metric_date', '>=', $startDate->toDateString())
             ->whereDate('metric_date', '<=', $endDate->toDateString())
             ->orderBy('metric_date')

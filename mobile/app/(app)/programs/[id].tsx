@@ -2,9 +2,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { apiRequest } from '@/api/client';
+import { apiErrorMessage, apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
-import { AppHeader, Card, EmptyState, LoadingState, MetricTile, Pill, Screen, SectionTitle, SessionCard } from '@/components/mobile-ui';
+import { AppHeader, Card, EmptyState, ErrorState, LoadingState, MetricTile, Pill, Screen, SectionTitle, SessionCard } from '@/components/mobile-ui';
 import { colors } from '@/theme';
 import type { TrainingProgramSummary, TrainingSessionSummary } from '@/types/api';
 
@@ -13,39 +13,48 @@ export default function ProgramDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [program, setProgram] = useState<TrainingProgramSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let active = true;
-
     async function load() {
       if (!token || !id) {
         return;
       }
 
-      const response = await apiRequest<{ program: TrainingProgramSummary }>(
-        `/api/v1/app/programs/${id}`,
-        undefined,
-        token,
-      );
+      setIsLoading(true);
+      setError(null);
 
-      if (active) {
+      try {
+        const response = await apiRequest<{ program: TrainingProgramSummary }>(
+          `/api/v1/app/programs/${id}`,
+          undefined,
+          token,
+        );
         setProgram(response.data.program);
+      } catch (loadError) {
+        setError(apiErrorMessage(loadError, 'Could not load program.'));
+      } finally {
         setIsLoading(false);
       }
     }
 
-    load().catch(() => {
-      if (active) {
-        setIsLoading(false);
-      }
-    });
-
-    return () => {
-      active = false;
-    };
+    void load();
   }, [id, token]);
 
-  if (isLoading || !program) {
+  if (isLoading && !program) {
+    return <LoadingState label="Loading program..." />;
+  }
+
+  if (error && !program) {
+    return (
+      <Screen>
+        <AppHeader title="Program" eyebrow="Assigned plan" onBack={() => router.back()} />
+        <ErrorState body={error} />
+      </Screen>
+    );
+  }
+
+  if (!program) {
     return <LoadingState label="Loading program..." />;
   }
 

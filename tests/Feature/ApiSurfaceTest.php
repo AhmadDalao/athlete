@@ -46,7 +46,7 @@ class ApiSurfaceTest extends TestCase
 
         $this->getJson(route('api.v1.progress'))
             ->assertOk()
-            ->assertJsonPath('data.athleteProfile.latestCheckIn.loggedDate', now()->toDateString());
+            ->assertJsonPath('data.athleteProfile.latestCheckIn', null);
 
         $this->getJson(route('api.v1.memberships'))
             ->assertOk()
@@ -54,7 +54,7 @@ class ApiSurfaceTest extends TestCase
 
         $this->getJson(route('api.v1.wearables'))
             ->assertOk()
-            ->assertJsonPath('data.connections.data.0.user.email', 'athlete1@throughline.test');
+            ->assertJsonCount(0, 'data.connections.data');
     }
 
     public function test_athlete_can_submit_check_in_and_workout_log_via_api(): void
@@ -161,9 +161,12 @@ class ApiSurfaceTest extends TestCase
     public function test_athlete_can_update_only_their_own_check_in_via_api(): void
     {
         $athlete = User::query()->where('email', 'athlete1@throughline.test')->firstOrFail();
-        $otherAthleteCheckIn = AthleteCheckIn::query()
-            ->whereHas('user', fn ($query) => $query->where('email', 'athlete2@throughline.test'))
-            ->firstOrFail();
+        $otherAthlete = User::query()->where('email', 'athlete2@throughline.test')->firstOrFail();
+        $otherAthleteCheckIn = AthleteCheckIn::query()->create([
+            'user_id' => $otherAthlete->id,
+            'logged_date' => now()->toDateString(),
+            'weight_kg' => 82.1,
+        ]);
 
         Sanctum::actingAs($athlete, ['progress:write']);
 

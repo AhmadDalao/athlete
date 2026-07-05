@@ -2,12 +2,13 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { apiRequest } from '@/api/client';
+import { apiErrorMessage, apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
 import {
   AppHeader,
   Card,
   EmptyState,
+  ErrorState,
   LoadingState,
   MetricTile,
   Pill,
@@ -23,38 +24,46 @@ export default function HomeScreen() {
   const { token } = useAuth();
   const [home, setHome] = useState<AppHome | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadHome = useCallback(async () => {
+    if (!token) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiRequest<AppHome>('/api/v1/app/home', undefined, token);
+      setHome(response.data);
+    } catch (loadError) {
+      setError(apiErrorMessage(loadError, 'Could not load app home.'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token]);
 
   useFocusEffect(
     useCallback(() => {
-      let active = true;
-
-      async function load() {
-        if (!token) {
-          return;
-        }
-
-        setIsLoading(true);
-        const response = await apiRequest<AppHome>('/api/v1/app/home', undefined, token);
-
-        if (active) {
-          setHome(response.data);
-          setIsLoading(false);
-        }
-      }
-
-      load().catch(() => {
-        if (active) {
-          setIsLoading(false);
-        }
-      });
-
-      return () => {
-        active = false;
-      };
-    }, [token]),
+      void loadHome();
+    }, [loadHome]),
   );
 
-  if (isLoading || !home) {
+  if (isLoading && !home) {
+    return <LoadingState />;
+  }
+
+  if (error && !home) {
+    return (
+      <Screen>
+        <AppHeader title="Throughline" eyebrow="App" />
+        <ErrorState body={error} onRetry={loadHome} />
+      </Screen>
+    );
+  }
+
+  if (!home) {
     return <LoadingState />;
   }
 
@@ -79,9 +88,9 @@ function AthleteHomeView({ home }: { home: AthleteHome }) {
       </View>
 
       <Card style={styles.signalCard}>
-        <SignalRing label="Readiness" value={readiness} detail={latest?.readinessBand ?? 'Score'} />
-        <SignalRing label="Sleep" value={sleep} detail="Hours" tone="blue" />
-        <SignalRing label="Strain" value={strain} detail="Load" tone="gold" />
+        <SignalRing label="Readiness" value={readiness} detail={latest?.readinessBand ?? 'Not synced'} />
+        <SignalRing label="Sleep" value={sleep} detail={latest ? 'Hours' : 'Not synced'} tone="blue" />
+        <SignalRing label="Strain" value={strain} detail={latest ? 'Load' : 'Not synced'} tone="gold" />
       </Card>
 
       <SectionTitle eyebrow="Today" title={home.todaySessions.length ? 'Workout assigned' : 'No workout today'} />

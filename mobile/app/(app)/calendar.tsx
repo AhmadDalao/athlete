@@ -2,9 +2,9 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { apiRequest } from '@/api/client';
+import { apiErrorMessage, apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
-import { AppHeader, EmptyState, Pill, Screen, SectionTitle, SessionCard } from '@/components/mobile-ui';
+import { AppHeader, EmptyState, ErrorState, Pill, Screen, SectionTitle, SessionCard } from '@/components/mobile-ui';
 import { colors, radius } from '@/theme';
 import type { CalendarPayload } from '@/types/api';
 
@@ -29,6 +29,7 @@ export default function CalendarScreen() {
   const [calendar, setCalendar] = useState<CalendarPayload | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const hasLoadedRef = useRef(false);
 
   const load = useCallback(async () => {
@@ -41,15 +42,22 @@ export default function CalendarScreen() {
     } else {
       setIsLoading(true);
     }
-    const response = await apiRequest<CalendarPayload>(
-      `/api/v1/app/calendar?month=${month}&date=${selectedDate}`,
-      undefined,
-      token,
-    );
-    setCalendar(response.data);
-    hasLoadedRef.current = true;
-    setIsLoading(false);
-    setIsRefreshing(false);
+    setError(null);
+
+    try {
+      const response = await apiRequest<CalendarPayload>(
+        `/api/v1/app/calendar?month=${month}&date=${selectedDate}`,
+        undefined,
+        token,
+      );
+      setCalendar(response.data);
+      hasLoadedRef.current = true;
+    } catch (loadError) {
+      setError(apiErrorMessage(loadError, 'Could not load schedule.'));
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
   }, [month, selectedDate, token]);
 
   function moveMonth(offset: number) {
@@ -60,22 +68,29 @@ export default function CalendarScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      let active = true;
-
-      load().catch(() => {
-        if (active) {
-          setIsLoading(false);
-          setIsRefreshing(false);
-        }
-      });
-
-      return () => {
-        active = false;
-      };
+      void load();
     }, [load]),
   );
 
-  if (isLoading || !calendar) {
+  if (isLoading && !calendar) {
+    return (
+      <Screen>
+        <AppHeader title="Schedule" eyebrow="Workout calendar" rightLabel={user?.name?.slice(0, 2).toUpperCase() ?? 'TL'} />
+        <SectionTitle eyebrow="Calendar" title="Loading schedule" note="Preparing your assigned sessions." />
+      </Screen>
+    );
+  }
+
+  if (error && !calendar) {
+    return (
+      <Screen>
+        <AppHeader title="Schedule" eyebrow="Workout calendar" rightLabel={user?.name?.slice(0, 2).toUpperCase() ?? 'TL'} />
+        <ErrorState body={error} onRetry={load} />
+      </Screen>
+    );
+  }
+
+  if (!calendar) {
     return (
       <Screen>
         <AppHeader title="Schedule" eyebrow="Workout calendar" rightLabel={user?.name?.slice(0, 2).toUpperCase() ?? 'TL'} />
@@ -104,6 +119,7 @@ export default function CalendarScreen() {
         </Pressable>
       </View>
       {isRefreshing ? <Text style={styles.refreshing}>Updating schedule...</Text> : null}
+      {error ? <ErrorState title="Schedule problem" body={error} onRetry={load} /> : null}
 
       <View style={styles.legend}>
         <Pill>Rest</Pill>

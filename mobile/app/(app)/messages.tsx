@@ -2,9 +2,9 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { apiRequest } from '@/api/client';
+import { apiErrorMessage, apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
-import { AppHeader, Card, EmptyState, LoadingState, Screen, SectionTitle } from '@/components/mobile-ui';
+import { AppHeader, Card, EmptyState, ErrorState, LoadingState, Screen, SectionTitle } from '@/components/mobile-ui';
 import { colors } from '@/theme';
 import type { MessageThread } from '@/types/api';
 
@@ -14,21 +14,30 @@ export default function MessagesScreen() {
   const [activeId, setActiveId] = useState<number | null>(null);
   const [body, setBody] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!token) {
       return;
     }
 
-    const response = await apiRequest<{ threads: MessageThread[] }>('/api/v1/messages', undefined, token);
-    setThreads(response.data.threads);
-    setActiveId((current) => current ?? response.data.threads[0]?.assignmentId ?? null);
-    setIsLoading(false);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await apiRequest<{ threads: MessageThread[] }>('/api/v1/messages', undefined, token);
+      setThreads(response.data.threads);
+      setActiveId((current) => current ?? response.data.threads[0]?.assignmentId ?? null);
+    } catch (loadError) {
+      setError(apiErrorMessage(loadError, 'Could not load messages.'));
+    } finally {
+      setIsLoading(false);
+    }
   }, [token]);
 
   useFocusEffect(
     useCallback(() => {
-      load().catch(() => setIsLoading(false));
+      void load();
     }, [load]),
   );
 
@@ -37,19 +46,24 @@ export default function MessagesScreen() {
       return;
     }
 
-    const response = await apiRequest<{ thread: MessageThread }>('/api/v1/messages', {
-      method: 'POST',
-      body: JSON.stringify({
-        assignment_id: activeId,
-        body: body.trim(),
-      }),
-    }, token);
+    try {
+      const response = await apiRequest<{ thread: MessageThread }>('/api/v1/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          assignment_id: activeId,
+          body: body.trim(),
+        }),
+      }, token);
 
-    setThreads((current) => current.map((thread) => (thread.assignmentId === activeId ? response.data.thread : thread)));
-    setBody('');
+      setThreads((current) => current.map((thread) => (thread.assignmentId === activeId ? response.data.thread : thread)));
+      setBody('');
+      setError(null);
+    } catch (sendError) {
+      setError(apiErrorMessage(sendError, 'Could not send message.'));
+    }
   }
 
-  if (isLoading) {
+  if (isLoading && !threads.length) {
     return <LoadingState label="Loading messages..." />;
   }
 
@@ -59,6 +73,8 @@ export default function MessagesScreen() {
     <Screen>
       <AppHeader title="Messages" eyebrow="Coach thread" />
       <SectionTitle eyebrow="Messages" title="Coach-athlete thread" />
+
+      {error ? <ErrorState title="Message problem" body={error} onRetry={load} /> : null}
 
       {threads.length ? (
         <View style={styles.threadTabs}>

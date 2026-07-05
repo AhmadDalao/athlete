@@ -97,7 +97,7 @@ class AthleteAppExperienceTest extends TestCase
             'user_id' => $athlete->id,
             'provider' => DeviceProvider::Whoop,
             'status' => DeviceConnectionStatus::Connected,
-            'external_user_id' => 'whoop-athlete-1',
+            'external_user_id' => 'real-whoop-athlete-1',
             'last_synced_at' => now(),
         ]);
 

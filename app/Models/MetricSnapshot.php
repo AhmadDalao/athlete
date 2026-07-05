@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DeviceProvider;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -72,6 +73,38 @@ class MetricSnapshot extends Model
     public function deviceConnection(): BelongsTo
     {
         return $this->belongsTo(DeviceConnection::class);
+    }
+
+    /**
+     * @param  Builder<MetricSnapshot>  $query
+     * @return Builder<MetricSnapshot>
+     */
+    public function scopeLiveSynced(Builder $query): Builder
+    {
+        return $query
+            ->whereIn('provider', [
+                DeviceProvider::HealthConnect->value,
+                DeviceProvider::AppleHealth->value,
+                DeviceProvider::Whoop->value,
+            ])
+            ->where(function (Builder $query): void {
+                $query
+                    ->whereIn('provider', [
+                        DeviceProvider::HealthConnect->value,
+                        DeviceProvider::AppleHealth->value,
+                    ])
+                    ->orWhere(function (Builder $whoopQuery): void {
+                        $whoopQuery
+                            ->where('provider', DeviceProvider::Whoop->value)
+                            ->whereHas('deviceConnection', function (Builder $connectionQuery): void {
+                                $connectionQuery->where(function (Builder $realWhoopQuery): void {
+                                    $realWhoopQuery
+                                        ->whereNull('external_user_id')
+                                        ->orWhere('external_user_id', 'not like', 'whoop-athlete-%');
+                                });
+                            });
+                    });
+            });
     }
 
     public function sleepHours(): ?float

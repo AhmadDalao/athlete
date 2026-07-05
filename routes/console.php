@@ -1,12 +1,18 @@
 <?php
 
+use App\Enums\DeviceProvider;
 use App\Enums\RoleName;
+use App\Models\AthleteCheckIn;
+use App\Models\DeviceConnection;
+use App\Models\DeviceMetricIngest;
+use App\Models\MetricSnapshot;
 use App\Models\User;
 use App\Services\MembershipStatusAuditor;
 use App\Services\Whoop\WhoopSyncService;
 use App\Services\Whoop\WhoopWebhookService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Str;
@@ -122,6 +128,93 @@ Artisan::command('throughline:security:lock-demo-users {--admin-email=} {--admin
     $this->line("Password: {$plainPassword}");
     $this->line("Demo users rotated: {$rotated}");
 })->purpose('Create a real owner admin and rotate all seeded demo credentials');
+
+Artisan::command('throughline:wearables:purge-demo-data {--apply : Delete records instead of only reporting counts} {--include-check-ins : Also delete seeded/demo manual progress check-ins} {--email=* : Limit cleanup to specific user email(s)}', function () {
+    $apply = (bool) $this->option('apply');
+    $includeCheckIns = (bool) $this->option('include-check-ins');
+    $emails = collect((array) $this->option('email'))
+        ->map(fn ($email): string => Str::lower(trim((string) $email)))
+        ->filter()
+        ->values();
+
+    $demoProviders = [
+        DeviceProvider::Garmin->value,
+        DeviceProvider::Strava->value,
+        DeviceProvider::Oura->value,
+    ];
+
+    $connectionQuery = DeviceConnection::query()
+        ->where(function ($query) use ($demoProviders): void {
+            $query
+                ->whereIn('provider', $demoProviders)
+                ->orWhere(function ($whoopQuery): void {
+                    $whoopQuery
+                        ->where('provider', DeviceProvider::Whoop->value)
+                        ->where(function ($seededWhoopQuery): void {
+                            $seededWhoopQuery->where('external_user_id', 'like', 'whoop-athlete-%');
+                        });
+                });
+        })
+        ->when($emails->isNotEmpty(), function ($query) use ($emails): void {
+            $query->whereHas('user', fn ($userQuery) => $userQuery->whereIn(DB::raw('lower(email)'), $emails->all()));
+        });
+
+    $connectionIds = (clone $connectionQuery)->pluck('id');
+    $snapshotCount = MetricSnapshot::query()
+        ->whereIn('device_connection_id', $connectionIds)
+        ->count();
+    $ingestCount = DeviceMetricIngest::query()
+        ->whereIn('device_connection_id', $connectionIds)
+        ->count();
+    $connectionCount = $connectionIds->count();
+    $checkInCount = 0;
+
+    $checkInQuery = AthleteCheckIn::query()
+        ->whereHas('user', function ($query) use ($emails): void {
+            $query->where(function ($demoQuery): void {
+                $demoQuery
+                    ->where('email', 'like', '%@throughline.test')
+                    ->orWhere('email', 'like', 'codex.%@%')
+                    ->orWhere('email', 'like', 'demo.%@%');
+            });
+
+            if ($emails->isNotEmpty()) {
+                $query->whereIn(DB::raw('lower(email)'), $emails->all());
+            }
+        });
+
+    if ($includeCheckIns) {
+        $checkInCount = (clone $checkInQuery)->count();
+    }
+
+    $this->line($apply ? 'Mode: apply' : 'Mode: dry run');
+    $this->line("Demo device connections: {$connectionCount}");
+    $this->line("Demo metric ingests: {$ingestCount}");
+    $this->line("Demo metric snapshots: {$snapshotCount}");
+    $this->line("Demo manual check-ins: {$checkInCount}");
+
+    if (! $apply) {
+        $this->warn('No records deleted. Re-run with --apply to purge.');
+
+        return self::SUCCESS;
+    }
+
+    DB::transaction(function () use ($connectionIds, $includeCheckIns, $checkInQuery): void {
+        if ($includeCheckIns) {
+            $checkInQuery->delete();
+        }
+
+        DeviceConnection::query()
+            ->whereIn('id', $connectionIds)
+            ->delete();
+    });
+
+    $this->info('Demo wearable data purged.');
+    $this->line('Live mobile providers preserved: health_connect, apple_health.');
+    $this->line('Real WHOOP OAuth rows with tokens are preserved.');
+
+    return self::SUCCESS;
+})->purpose('Remove seeded/demo wearable snapshots so only live synced data remains');
 
 Schedule::command('throughline:memberships:audit')->dailyAt('00:10');
 Schedule::command('throughline:whoop:sync')->hourly();

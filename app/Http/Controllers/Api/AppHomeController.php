@@ -99,7 +99,7 @@ class AppHomeController extends Controller
             'upcomingSessions' => $upcomingSessions,
             'membership' => $this->mobileMembershipPayload($user),
             'wearable' => [
-                'latestSnapshot' => $this->snapshotPayload($user->metricSnapshots()->latest('metric_date')->first()),
+                'latestSnapshot' => $this->snapshotPayload($user->metricSnapshots()->liveSynced()->latest('metric_date')->first()),
                 'connectedCount' => $user->deviceConnections()->where('status', 'connected')->count(),
             ],
             'progress' => [
@@ -178,13 +178,7 @@ class AppHomeController extends Controller
                     'goal' => $assignment->goal,
                     'startedAt' => $assignment->started_at?->toDateString(),
                     'latestCheckIn' => $this->checkInPayload($assignment->athlete->latestAthleteCheckIn),
-                    'latestSnapshot' => $this->snapshotPayload(
-                        $assignment->athlete->deviceConnections
-                            ->pluck('latestSnapshot')
-                            ->filter()
-                            ->sortByDesc(fn ($snapshot) => $snapshot->metric_date?->timestamp ?? 0)
-                            ->first()
-                    ),
+                    'latestSnapshot' => $this->snapshotPayload($assignment->athlete->metricSnapshots()->liveSynced()->latest('metric_date')->first()),
                 ])
                 ->values()
                 ->all(),

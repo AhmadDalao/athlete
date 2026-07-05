@@ -17,6 +17,7 @@ import {
   AppHeader,
   Card,
   EmptyState,
+  ErrorState,
   LoadingState,
   MetricRow,
   PrimaryButton,
@@ -57,24 +58,33 @@ export default function WearablesScreen() {
   const [isLinking, setIsLinking] = useState(false);
   const [linkStatus, setLinkStatus] = useState<HealthConnectPermissionStatus | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!token) {
       return;
     }
 
-    const [response, nativeStatus] = await Promise.all([
-      apiRequest<WearablesPayload>('/api/v1/wearables', undefined, token),
-      getNativeHealthLinkStatus(),
-    ]);
-    setPayload(response.data);
-    setLinkStatus(nativeStatus);
-    setIsLoading(false);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const [response, nativeStatus] = await Promise.all([
+        apiRequest<WearablesPayload>('/api/v1/wearables', undefined, token),
+        getNativeHealthLinkStatus(),
+      ]);
+      setPayload(response.data);
+      setLinkStatus(nativeStatus);
+    } catch (loadError) {
+      setError(apiErrorMessage(loadError, 'Could not load wearable data.'));
+    } finally {
+      setIsLoading(false);
+    }
   }, [token]);
 
   useFocusEffect(
     useCallback(() => {
-      load().catch(() => setIsLoading(false));
+      void load();
     }, [load]),
   );
 
@@ -154,7 +164,20 @@ export default function WearablesScreen() {
     }
   }
 
-  if (isLoading || !payload) {
+  if (isLoading && !payload) {
+    return <LoadingState label="Loading devices..." />;
+  }
+
+  if (error && !payload) {
+    return (
+      <Screen>
+        <AppHeader title="Devices" eyebrow="Wearable data" />
+        <ErrorState body={error} onRetry={load} />
+      </Screen>
+    );
+  }
+
+  if (!payload) {
     return <LoadingState label="Loading devices..." />;
   }
 
