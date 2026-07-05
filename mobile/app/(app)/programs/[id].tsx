@@ -1,4 +1,3 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -94,9 +93,7 @@ function ProgramSession({ session, canOpen }: { session: TrainingSessionSummary;
           <View style={styles.exercisePreviewHeader}>
             <Text style={styles.previewTitle}>Exercise preview</Text>
             {session.mediaCount || session.videoUrl ? (
-              <Text style={styles.mediaBadge}>
-                <MaterialCommunityIcons name="play-box-outline" size={13} /> media
-              </Text>
+              <Text style={styles.mediaBadge}>media</Text>
             ) : null}
           </View>
           {exercises.map((exercise, index) => (

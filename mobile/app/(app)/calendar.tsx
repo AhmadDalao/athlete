@@ -1,11 +1,10 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
-import { AppHeader, EmptyState, LoadingState, Pill, Screen, SectionTitle, SessionCard } from '@/components/mobile-ui';
+import { AppHeader, EmptyState, Pill, Screen, SectionTitle, SessionCard } from '@/components/mobile-ui';
 import { colors, radius } from '@/theme';
 import type { CalendarPayload } from '@/types/api';
 
@@ -29,20 +28,28 @@ export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(today);
   const [calendar, setCalendar] = useState<CalendarPayload | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const hasLoadedRef = useRef(false);
 
   const load = useCallback(async () => {
     if (!token) {
       return;
     }
 
-    setIsLoading(true);
+    if (hasLoadedRef.current) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
     const response = await apiRequest<CalendarPayload>(
       `/api/v1/app/calendar?month=${month}&date=${selectedDate}`,
       undefined,
       token,
     );
     setCalendar(response.data);
+    hasLoadedRef.current = true;
     setIsLoading(false);
+    setIsRefreshing(false);
   }, [month, selectedDate, token]);
 
   function moveMonth(offset: number) {
@@ -58,6 +65,7 @@ export default function CalendarScreen() {
       load().catch(() => {
         if (active) {
           setIsLoading(false);
+          setIsRefreshing(false);
         }
       });
 
@@ -68,7 +76,12 @@ export default function CalendarScreen() {
   );
 
   if (isLoading || !calendar) {
-    return <LoadingState label="Loading schedule..." />;
+    return (
+      <Screen>
+        <AppHeader title="Schedule" eyebrow="Workout calendar" rightLabel={user?.name?.slice(0, 2).toUpperCase() ?? 'TL'} />
+        <SectionTitle eyebrow="Calendar" title="Loading schedule" note="Preparing your assigned sessions." />
+      </Screen>
+    );
   }
 
   return (
@@ -83,13 +96,14 @@ export default function CalendarScreen() {
 
       <View style={styles.monthControls}>
         <Pressable onPress={() => moveMonth(-1)} style={styles.monthButton}>
-          <MaterialCommunityIcons name="chevron-left" size={24} color={colors.ink} />
+          <Text style={styles.monthArrow}>{'<'}</Text>
         </Pressable>
         <Text style={styles.monthLabel}>{calendar.monthLabel}</Text>
         <Pressable onPress={() => moveMonth(1)} style={styles.monthButton}>
-          <MaterialCommunityIcons name="chevron-right" size={24} color={colors.ink} />
+          <Text style={styles.monthArrow}>{'>'}</Text>
         </Pressable>
       </View>
+      {isRefreshing ? <Text style={styles.refreshing}>Updating schedule...</Text> : null}
 
       <View style={styles.legend}>
         <Pill>Rest</Pill>
@@ -159,6 +173,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '900',
     textAlign: 'center',
+  },
+  monthArrow: {
+    color: colors.ink,
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  refreshing: {
+    color: colors.green,
+    fontSize: 12,
+    fontWeight: '900',
+    textAlign: 'center',
+    textTransform: 'uppercase',
   },
   legend: {
     flexDirection: 'row',

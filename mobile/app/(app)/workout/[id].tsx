@@ -1,4 +1,3 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -6,7 +5,7 @@ import { WebView } from 'react-native-webview';
 
 import { apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
-import { AppHeader, Card, LoadingState, Pill, Screen, SecondaryButton, SectionTitle } from '@/components/mobile-ui';
+import { AppHeader, Card, Glyph, LoadingState, Pill, Screen, SecondaryButton, SectionTitle } from '@/components/mobile-ui';
 import { colors, radius } from '@/theme';
 import type { WorkoutExecution, WorkoutSetRow } from '@/types/api';
 
@@ -153,7 +152,7 @@ export default function WorkoutExecutionScreen() {
             style={[styles.footerCircle, currentExercise === 0 && styles.footerCircleDisabled]}
             disabled={currentExercise === 0}
           >
-            <MaterialCommunityIcons name="arrow-left" size={28} color={colors.ink} />
+            <Text style={styles.footerIcon}>{'<'}</Text>
           </Pressable>
           <Pressable onPress={saveSets} style={styles.footerPrimary}>
             <Text style={styles.footerPrimaryText}>Save</Text>
@@ -169,7 +168,7 @@ export default function WorkoutExecutionScreen() {
             ]}
             disabled={currentExercise === workout.exercises.length - 1}
           >
-            <MaterialCommunityIcons name="arrow-right" size={28} color={colors.ink} />
+            <Text style={styles.footerIcon}>{'>'}</Text>
           </Pressable>
         </View>
       }
@@ -296,7 +295,7 @@ function MovementMedia({ title, url }: { title: string; url: string }) {
       <View style={styles.mediaHero}>
         <Image source={{ uri: url }} style={styles.mediaImage} />
         <View style={styles.mediaOverlay}>
-          <MaterialCommunityIcons name="image-outline" size={34} color="#ffffff" />
+          <Glyph label="IMG" />
           <Text style={styles.mediaTitle} numberOfLines={2}>{title}</Text>
         </View>
       </View>
@@ -334,7 +333,7 @@ function MovementMedia({ title, url }: { title: string; url: string }) {
 
   return (
     <Pressable onPress={() => Linking.openURL(url)} style={styles.mediaFallback}>
-      <MaterialCommunityIcons name="open-in-new" size={34} color="#ffffff" />
+      <Glyph label="URL" />
       <Text style={styles.mediaTitle} numberOfLines={2}>{title}</Text>
       <Text style={styles.mediaNote}>Open movement media</Text>
     </Pressable>
@@ -618,6 +617,11 @@ const styles = StyleSheet.create({
   footerPrimaryText: {
     color: '#ffffff',
     fontSize: 15,
+    fontWeight: '900',
+  },
+  footerIcon: {
+    color: colors.ink,
+    fontSize: 30,
     fontWeight: '900',
   },
 });

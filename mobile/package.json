@@ -5,14 +5,15 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start --dev-client",
+    "start:phone": "REACT_NATIVE_PACKAGER_HOSTNAME=$(ipconfig getifaddr en0 || ipconfig getifaddr en1) expo start --dev-client --host lan",
     "ios": "expo run:ios",
     "android": "expo run:android",
+    "android:phone": "REACT_NATIVE_PACKAGER_HOSTNAME=$(ipconfig getifaddr en0 || ipconfig getifaddr en1) expo run:android --device",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0"
   },
   "dependencies": {
     "@expo/metro-runtime": "^57.0.3",
-    "@expo/vector-icons": "^15.1.1",
     "expo": "^57.0.2",
     "expo-auth-session": "^57.0.1",
     "expo-constants": "^57.0.3",

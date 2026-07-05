@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
-import { Card, EmptyState, LoadingState, Screen, SectionTitle } from '@/components/mobile-ui';
+import { AppHeader, Card, EmptyState, LoadingState, Screen, SectionTitle } from '@/components/mobile-ui';
 import { colors } from '@/theme';
 import type { MessageThread } from '@/types/api';
 
@@ -57,6 +57,7 @@ export default function MessagesScreen() {
 
   return (
     <Screen>
+      <AppHeader title="Messages" eyebrow="Coach thread" />
       <SectionTitle eyebrow="Messages" title="Coach-athlete thread" />
 
       {threads.length ? (

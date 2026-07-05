@@ -1,8 +1,8 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { PropsWithChildren, ReactNode } from 'react';
+import { router, type Href } from 'expo-router';
+import { createContext, PropsWithChildren, ReactNode, useContext, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   StyleProp,
@@ -14,9 +14,129 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors, radius, shadow } from '@/theme';
-import type { TrainingSessionSummary } from '@/types/api';
+import type { TrainingSessionSummary, Viewer } from '@/types/api';
 
-type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
+type IconName = string;
+
+type MobileMenuContextValue = {
+  openMenu: () => void;
+};
+
+const MobileMenuContext = createContext<MobileMenuContextValue | null>(null);
+
+export function MobileShell({
+  children,
+  user,
+  onSignOut,
+}: PropsWithChildren<{
+  user: Viewer | null;
+  onSignOut: () => Promise<void>;
+}>) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const role = user?.primaryRole ?? 'athlete';
+  const navItems: Array<{ label: string; hint: string; href: Href; token: string }> = [
+    { label: role === 'coach' ? 'Coach home' : 'Home', hint: 'Today and next action', href: '/home', token: 'H' },
+    { label: 'Schedule', hint: 'Calendar and daily work', href: '/calendar', token: 'CAL' },
+    { label: 'Health', hint: 'Progress and check-ins', href: '/progress', token: 'HLT' },
+    { label: 'Devices', hint: 'WHOOP and Health Connect', href: '/wearables', token: 'DEV' },
+    { label: 'Messages', hint: 'Coach-athlete thread', href: '/messages', token: 'MSG' },
+    { label: 'Profile', hint: 'Account and logout', href: '/profile', token: 'ME' },
+  ];
+
+  async function logout() {
+    setIsMenuOpen(false);
+    await onSignOut();
+    router.replace('/login');
+  }
+
+  return (
+    <MobileMenuContext.Provider value={{ openMenu: () => setIsMenuOpen(true) }}>
+      <View style={styles.shellRoot}>
+        {children}
+        <Modal animationType="fade" transparent visible={isMenuOpen} onRequestClose={() => setIsMenuOpen(false)}>
+          <View style={styles.drawerLayer}>
+            <Pressable style={styles.drawerScrim} onPress={() => setIsMenuOpen(false)} />
+            <View style={styles.drawerPanel}>
+              <View style={styles.drawerBrand}>
+                <View style={styles.drawerLogo}>
+                  <Text style={styles.drawerLogoText}>TL</Text>
+                </View>
+                <View style={styles.drawerBrandCopy}>
+                  <Text style={styles.drawerEyebrow}>{role === 'coach' ? 'Coach app' : 'Athlete app'}</Text>
+                  <Text style={styles.drawerName} numberOfLines={1}>{user?.name ?? 'Throughline'}</Text>
+                  <Text style={styles.drawerEmail} numberOfLines={1}>{user?.email ?? 'No email'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.drawerNav}>
+                {navItems.map((item) => (
+                  <Pressable
+                    key={item.label}
+                    onPress={() => {
+                      setIsMenuOpen(false);
+                      router.push(item.href);
+                    }}
+                    style={({ pressed }) => [styles.drawerItem, pressed && styles.pressedCard]}
+                  >
+                    <Glyph label={item.token} tone={item.href === '/wearables' ? 'gold' : 'neutral'} />
+                    <View style={styles.drawerItemCopy}>
+                      <Text style={styles.drawerItemLabel}>{item.label}</Text>
+                      <Text style={styles.drawerItemHint}>{item.hint}</Text>
+                    </View>
+                    <Text style={styles.drawerArrow}>{'>'}</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Pressable onPress={logout} style={styles.drawerLogout}>
+                <Glyph label="OUT" tone="danger" />
+                <Text style={styles.drawerLogoutText}>Log out</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </MobileMenuContext.Provider>
+  );
+}
+
+export function Glyph({
+  label,
+  tone = 'neutral',
+}: {
+  label: string;
+  tone?: 'neutral' | 'green' | 'gold' | 'danger';
+}) {
+  return (
+    <View
+      style={[
+        styles.glyph,
+        tone === 'green' && styles.glyphGreen,
+        tone === 'gold' && styles.glyphGold,
+        tone === 'danger' && styles.glyphDanger,
+      ]}
+    >
+      <Text
+        style={[
+          styles.glyphText,
+          tone === 'green' && styles.glyphTextGreen,
+          tone === 'gold' && styles.glyphTextGold,
+          tone === 'danger' && styles.glyphTextDanger,
+        ]}
+      >
+        {label.slice(0, 3).toUpperCase()}
+      </Text>
+    </View>
+  );
+}
+
+export function TabMark({ label, focused }: { label: string; focused: boolean }) {
+  return (
+    <View style={[styles.tabMark, focused && styles.tabMarkActive]}>
+      <Text style={[styles.tabMarkText, focused && styles.tabMarkTextActive]}>{label}</Text>
+    </View>
+  );
+}
 
 export function Screen({
   children,
@@ -53,12 +173,13 @@ export function AppHeader({
   rightLabel?: string;
   onBack?: () => void;
 }) {
+  const menu = useContext(MobileMenuContext);
   const hasBackAction = Boolean(onBack);
 
   return (
     <View style={styles.appHeader}>
-      <Pressable onPress={hasBackAction ? onBack : undefined} style={styles.headerIcon}>
-        <Ionicons name={hasBackAction ? 'chevron-back' : 'menu'} size={24} color={colors.ink} />
+      <Pressable onPress={hasBackAction ? onBack : menu?.openMenu} style={styles.headerIcon}>
+        <Text style={styles.headerIconText}>{hasBackAction ? '<' : 'MENU'}</Text>
       </Pressable>
       <View style={styles.headerText}>
         {eyebrow ? <Text style={styles.headerEyebrow}>{eyebrow}</Text> : null}
@@ -106,9 +227,7 @@ export function LoadingState({ label = 'Loading Throughline...' }: { label?: str
 export function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <Card style={styles.empty}>
-      <View style={styles.emptyIcon}>
-        <MaterialCommunityIcons name="clipboard-text-outline" size={26} color={colors.green} />
-      </View>
+      <Glyph label="OK" tone="green" />
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.note}>{body}</Text>
     </Card>
@@ -142,7 +261,7 @@ export function SecondaryButton({
 }) {
   return (
     <Pressable onPress={onPress} style={styles.secondaryButton}>
-      {icon ? <MaterialCommunityIcons name={icon} size={18} color={colors.ink} /> : null}
+      {icon ? <Glyph label={iconLabel(icon)} /> : null}
       <Text style={styles.secondaryButtonText}>{label}</Text>
     </Pressable>
   );
@@ -161,9 +280,7 @@ export function MetricTile({
 }) {
   return (
     <Card style={styles.metricTile}>
-      <View style={styles.metricIcon}>
-        <MaterialCommunityIcons name={icon} size={22} color={colors.green} />
-      </View>
+      <Glyph label={iconLabel(icon)} tone="green" />
       <Text style={styles.metricLabel} numberOfLines={2}>{label}</Text>
       <Text style={styles.metricValue}>{value}</Text>
       {detail ? <Text style={styles.note}>{detail}</Text> : null}
@@ -208,9 +325,7 @@ export function MetricRow({
 }) {
   return (
     <Card style={styles.metricRow}>
-      <View style={styles.metricRowIcon}>
-        <MaterialCommunityIcons name={icon} size={24} color="#b8c2c4" />
-      </View>
+      <Glyph label={iconLabel(icon)} />
       <Text style={styles.metricRowLabel}>{label}</Text>
       <View style={styles.metricRowValueBlock}>
         <Text style={styles.metricRowValue}>{value}</Text>
@@ -232,9 +347,7 @@ export function SessionCard({ session, canOpen = true }: { session: TrainingSess
       style={({ pressed }) => [styles.sessionCard, pressed && canOpen && styles.pressedCard]}
     >
       <View style={styles.sessionTop}>
-        <View style={styles.sessionIcon}>
-          <MaterialCommunityIcons name={hasMedia ? 'play-circle-outline' : 'dumbbell'} size={24} color={colors.green} />
-        </View>
+        <Glyph label={hasMedia ? 'VID' : 'SET'} tone="green" />
         <View style={styles.sessionCopy}>
           <Text style={styles.sessionTitle} numberOfLines={2}>{session.title}</Text>
           <Text style={styles.note}>{session.focus ?? 'Training'} - {session.scheduledDate ?? 'No date'}</Text>
@@ -245,20 +358,48 @@ export function SessionCard({ session, canOpen = true }: { session: TrainingSess
       </View>
       <Text style={styles.sessionPreview}>{preview}</Text>
       <View style={styles.sessionFooter}>
-        {hasMedia ? (
-          <Text style={styles.mediaHint}>
-            <MaterialCommunityIcons name="image-multiple-outline" size={13} /> Media attached
-          </Text>
-        ) : (
-          <Text style={styles.mediaMuted}>No media</Text>
-        )}
+        {hasMedia ? <Text style={styles.mediaHint}>Media attached</Text> : <Text style={styles.mediaMuted}>No media</Text>}
         {canOpen ? <Text style={styles.openHint}>Open</Text> : null}
       </View>
     </Pressable>
   );
 }
 
+function iconLabel(icon: IconName) {
+  const labels: Record<string, string> = {
+    'account-badge-outline': 'ID',
+    'account-circle-outline': 'ME',
+    'account-group-outline': 'ATH',
+    'alert-circle-outline': '!',
+    'bed-outline': 'SLP',
+    'calendar-check-outline': 'CAL',
+    'calendar-clock': 'CAL',
+    'calendar-clock-outline': 'CAL',
+    'chart-box-outline': 'CHT',
+    'check-circle-outline': 'OK',
+    'check-decagram-outline': 'OK',
+    'clipboard-check-outline': 'LOG',
+    'clipboard-text-outline': 'LOG',
+    'close-circle-outline': 'X',
+    'food-steak': 'FOOD',
+    'heart-pulse': 'HR',
+    'phone-outline': 'TEL',
+    'play-box-outline': 'VID',
+    'scale-bathroom': 'KG',
+    'shoe-print': 'STEP',
+    target: 'GO',
+    'timer-sand': 'TIME',
+    'watch-variant': 'DEV',
+    waveform: 'HRV',
+  };
+
+  return labels[icon] ?? icon.slice(0, 3);
+}
+
 const styles = StyleSheet.create({
+  shellRoot: {
+    flex: 1,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
@@ -323,6 +464,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderColor: colors.border,
     borderWidth: 1,
+  },
+  headerIconText: {
+    color: colors.ink,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.6,
   },
   headerText: {
     flex: 1,
@@ -395,17 +542,66 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff0c7',
     color: '#815b00',
   },
-  empty: {
-    gap: 8,
-    alignItems: 'flex-start',
-  },
-  emptyIcon: {
+  glyph: {
     width: 48,
     height: 48,
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#f3f0eb',
+    borderColor: colors.border,
+    borderWidth: 1,
+  },
+  glyphGreen: {
     backgroundColor: colors.greenSoft,
+    borderColor: '#bcebd5',
+  },
+  glyphGold: {
+    backgroundColor: '#fff0c7',
+    borderColor: '#f2d988',
+  },
+  glyphDanger: {
+    backgroundColor: '#fff0eb',
+    borderColor: '#f3c2b5',
+  },
+  glyphText: {
+    color: colors.ink,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  glyphTextGreen: {
+    color: colors.green,
+  },
+  glyphTextGold: {
+    color: '#815b00',
+  },
+  glyphTextDanger: {
+    color: colors.danger,
+  },
+  tabMark: {
+    minWidth: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f3f0eb',
+  },
+  tabMarkActive: {
+    minWidth: 52,
+    backgroundColor: colors.green,
+  },
+  tabMarkText: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  tabMarkTextActive: {
+    color: '#ffffff',
+  },
+  empty: {
+    gap: 8,
+    alignItems: 'flex-start',
   },
   emptyTitle: {
     fontSize: 20,
@@ -447,14 +643,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 145,
     gap: 8,
-  },
-  metricIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.greenSoft,
   },
   metricLabel: {
     color: colors.muted,
@@ -509,14 +697,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
   },
-  metricRowIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#223035',
-  },
   metricRowLabel: {
     flex: 1,
     color: '#ffffff',
@@ -555,14 +735,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 10,
   },
-  sessionIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.greenSoft,
-  },
   sessionCopy: {
     flex: 1,
   },
@@ -597,6 +769,109 @@ const styles = StyleSheet.create({
   openHint: {
     color: colors.green,
     fontSize: 13,
+    fontWeight: '900',
+  },
+  drawerLayer: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  drawerScrim: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(17, 17, 17, 0.32)',
+  },
+  drawerPanel: {
+    width: '82%',
+    maxWidth: 340,
+    backgroundColor: '#ffffff',
+    paddingTop: 54,
+    paddingHorizontal: 18,
+    paddingBottom: 24,
+    gap: 20,
+    borderTopRightRadius: 34,
+    borderBottomRightRadius: 34,
+    ...shadow,
+  },
+  drawerBrand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    paddingBottom: 18,
+  },
+  drawerLogo: {
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.green,
+  },
+  drawerLogoText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  drawerBrandCopy: {
+    flex: 1,
+  },
+  drawerEyebrow: {
+    color: colors.gold,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+  },
+  drawerName: {
+    color: colors.ink,
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  drawerEmail: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  drawerNav: {
+    gap: 8,
+  },
+  drawerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 22,
+    padding: 10,
+  },
+  drawerItemCopy: {
+    flex: 1,
+  },
+  drawerItemLabel: {
+    color: colors.ink,
+    fontSize: 17,
+    fontWeight: '900',
+  },
+  drawerItemHint: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  drawerArrow: {
+    color: colors.muted,
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  drawerLogout: {
+    marginTop: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 22,
+    backgroundColor: '#fff8f5',
+    padding: 12,
+  },
+  drawerLogoutText: {
+    color: colors.danger,
+    fontSize: 17,
     fontWeight: '900',
   },
 });
