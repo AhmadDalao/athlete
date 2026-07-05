@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-import { apiRequest } from '@/api/client';
+import { apiErrorMessage, apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
 import { AppHeader, Card, Glyph, LoadingState, Pill, Screen, SecondaryButton, SectionTitle } from '@/components/mobile-ui';
 import { colors, radius } from '@/theme';
@@ -21,6 +21,7 @@ export default function WorkoutExecutionScreen() {
   const [currentExercise, setCurrentExercise] = useState(0);
   const [timer, setTimer] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [statusText, setStatusText] = useState<string | null>(null);
   const [journalNotes, setJournalNotes] = useState('');
 
@@ -83,29 +84,43 @@ export default function WorkoutExecutionScreen() {
     );
   }
 
-  async function saveSets() {
+  async function saveSets(): Promise<boolean> {
     if (!token || !id) {
-      return;
+      setStatusText('You need to log in again before saving this workout.');
+
+      return false;
     }
 
+    setIsSaving(true);
     setStatusText('Saving sets...');
-    const response = await apiRequest<WorkoutExecution>(`/api/v1/training/sessions/${id}/sets`, {
-      method: 'POST',
-      body: JSON.stringify({
-        sets: rows.map((row) => ({
-          exercise_index: row.exerciseIndex,
-          set_number: row.setNumber,
-          actual_reps: row.actualReps,
-          actual_load: row.actualLoad,
-          actual_rpe: row.actualRpe,
-          completed: Boolean(row.completed),
-          notes: row.notes,
-        })),
-      }),
-    }, token);
-    setWorkout(response.data);
-    setRows(response.data.setLogs.map((row) => ({ ...row, completed: Boolean(row.completedAt) })));
-    setStatusText('Saved.');
+
+    try {
+      const response = await apiRequest<WorkoutExecution>(`/api/v1/training/sessions/${id}/sets`, {
+        method: 'POST',
+        body: JSON.stringify({
+          sets: rows.map((row) => ({
+            exercise_index: row.exerciseIndex,
+            set_number: row.setNumber,
+            actual_reps: row.actualReps,
+            actual_load: row.actualLoad,
+            actual_rpe: row.actualRpe,
+            completed: Boolean(row.completed),
+            notes: row.notes,
+          })),
+        }),
+      }, token);
+      setWorkout(response.data);
+      setRows(response.data.setLogs.map((row) => ({ ...row, completed: Boolean(row.completedAt) })));
+      setStatusText('Saved.');
+
+      return true;
+    } catch (error) {
+      setStatusText(apiErrorMessage(error, 'Could not save sets.'));
+
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   async function complete(status: 'completed' | 'partial' | 'missed') {
@@ -113,19 +128,32 @@ export default function WorkoutExecutionScreen() {
       return;
     }
 
-    await saveSets();
+    const saved = await saveSets();
+
+    if (!saved) {
+      return;
+    }
+
+    setIsSaving(true);
     setStatusText('Saving workout status...');
-    const response = await apiRequest<WorkoutExecution>(`/api/v1/training/sessions/${id}/complete`, {
-      method: 'POST',
-      body: JSON.stringify({
-        completion_status: status,
-        performed_at: new Date().toISOString(),
-        notes: journalNotes.trim() || (status === 'missed' ? 'Marked missed from mobile.' : 'Saved from mobile.'),
-      }),
-    }, token);
-    setWorkout(response.data);
-    setRows(response.data.setLogs.map((row) => ({ ...row, completed: Boolean(row.completedAt) })));
-    setStatusText(`Workout ${status}.`);
+
+    try {
+      const response = await apiRequest<WorkoutExecution>(`/api/v1/training/sessions/${id}/complete`, {
+        method: 'POST',
+        body: JSON.stringify({
+          completion_status: status,
+          performed_at: new Date().toISOString(),
+          notes: journalNotes.trim() || (status === 'missed' ? 'Marked missed from mobile.' : 'Saved from mobile.'),
+        }),
+      }, token);
+      setWorkout(response.data);
+      setRows(response.data.setLogs.map((row) => ({ ...row, completed: Boolean(row.completedAt) })));
+      setStatusText(`Workout ${status}.`);
+    } catch (error) {
+      setStatusText(apiErrorMessage(error, 'Could not update workout status.'));
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   if (isLoading) {
@@ -154,10 +182,22 @@ export default function WorkoutExecutionScreen() {
           >
             <Text style={styles.footerIcon}>{'<'}</Text>
           </Pressable>
-          <Pressable onPress={saveSets} style={styles.footerPrimary}>
-            <Text style={styles.footerPrimaryText}>Save</Text>
+          <Pressable
+            disabled={isSaving}
+            onPress={() => {
+              void saveSets();
+            }}
+            style={[styles.footerPrimary, isSaving && styles.footerPrimaryDisabled]}
+          >
+            <Text style={styles.footerPrimaryText}>{isSaving ? 'Saving' : 'Save'}</Text>
           </Pressable>
-          <Pressable onPress={() => complete('completed')} style={styles.footerPrimary}>
+          <Pressable
+            disabled={isSaving}
+            onPress={() => {
+              void complete('completed');
+            }}
+            style={[styles.footerPrimary, isSaving && styles.footerPrimaryDisabled]}
+          >
             <Text style={styles.footerPrimaryText}>Complete</Text>
           </Pressable>
           <Pressable
@@ -214,7 +254,13 @@ export default function WorkoutExecutionScreen() {
 
         <View style={styles.actionRow}>
           {mediaUrl ? <SecondaryButton label="Open media" icon="play-box-outline" onPress={() => Linking.openURL(mediaUrl)} /> : null}
-          <SecondaryButton label="Opt out" icon="close-circle-outline" onPress={() => complete('missed')} />
+          <SecondaryButton
+            label="Opt out"
+            icon="close-circle-outline"
+            onPress={() => {
+              void complete('missed');
+            }}
+          />
         </View>
       </Card>
 
@@ -266,7 +312,16 @@ export default function WorkoutExecutionScreen() {
             />
             <TextInput
               keyboardType="number-pad"
-              onChangeText={(value) => updateRow(row, { actualRpe: value ? Number(value) : null })}
+              maxLength={2}
+              onChangeText={(value) => {
+                const actualRpe = normalizeRpeInput(value);
+
+                if (Number(value) > 10) {
+                  setStatusText('RPE is capped at 10.');
+                }
+
+                updateRow(row, { actualRpe });
+              }}
               placeholder="-"
               style={styles.rpeInput}
               value={row.actualRpe ? String(row.actualRpe) : ''}
@@ -362,6 +417,16 @@ function isImageUrl(url: string) {
 
 function isVideoUrl(url: string) {
   return /\.(mp4|mov|m4v|webm)(\?.*)?$/i.test(url);
+}
+
+function normalizeRpeInput(value: string) {
+  const parsed = Number.parseInt(value, 10);
+
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return Math.max(1, Math.min(10, parsed));
 }
 
 const styles = StyleSheet.create({
@@ -613,6 +678,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.green,
+  },
+  footerPrimaryDisabled: {
+    opacity: 0.55,
   },
   footerPrimaryText: {
     color: '#ffffff',

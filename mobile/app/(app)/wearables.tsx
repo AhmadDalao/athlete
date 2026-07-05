@@ -2,7 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { apiRequest } from '@/api/client';
+import { apiErrorMessage, apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
 import { collectNativeHealthRecords, syncMobileHealthRecords } from '@/health/health-sync';
 import { AppHeader, Card, EmptyState, LoadingState, MetricRow, PrimaryButton, Screen, SectionTitle, SignalRing } from '@/components/mobile-ui';
@@ -75,7 +75,7 @@ export default function WearablesScreen() {
       setMessage(`${records.length} daily health record(s) synced.`);
       await load();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Health sync failed. Reopen permissions and try again.');
+      setMessage(apiErrorMessage(error, 'Health sync failed. Reopen permissions and try again.'));
     } finally {
       setIsSyncing(false);
     }

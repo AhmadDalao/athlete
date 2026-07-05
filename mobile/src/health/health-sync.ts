@@ -24,6 +24,14 @@ type HealthRecord = Record<string, any>;
 type HealthConnectModule = typeof import('react-native-health-connect');
 
 const HEALTH_CONNECT_DAYS = 14;
+const integerMetricKeys = new Set<keyof NormalizedHealthRecord['metrics']>([
+  'steps',
+  'calories_burned',
+  'sleep_minutes',
+  'active_minutes',
+  'resting_heart_rate',
+  'training_load',
+]);
 
 const healthConnectPermissions: Permission[] = [
   { accessType: 'read', recordType: 'Steps' },
@@ -181,7 +189,9 @@ async function readHealthRecords(
 function compactMetrics(metrics: NormalizedHealthRecord['metrics']): NormalizedHealthRecord['metrics'] {
   return Object.entries(metrics).reduce<NormalizedHealthRecord['metrics']>((carry, [key, value]) => {
     if (value !== undefined && value !== null && Number.isFinite(value)) {
-      carry[key as keyof NormalizedHealthRecord['metrics']] = Math.round(value * 10) / 10;
+      const metricKey = key as keyof NormalizedHealthRecord['metrics'];
+
+      carry[metricKey] = integerMetricKeys.has(metricKey) ? Math.round(value) : Math.round(value * 10) / 10;
     }
 
     return carry;
