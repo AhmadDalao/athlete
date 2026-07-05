@@ -437,6 +437,22 @@ This follow-up applies the same table-first cleanup to coach and admin workspace
     - guest `/app`, `/coach`, and `/admin/control-center` redirect to login
     - remote manifest checksum matches the local build checksum
 
+## 2026-07-05 mobile wearable link deploy note
+
+This deployment added the live backend route that lets the native app save Samsung Health / Health Connect linked-device status before records are synced.
+
+- Production target: `https://athlete.ahmaddalao.com`
+- GitHub commit deployed for this slice: `9d88483`
+- Runtime files synced:
+    - `app/Http/Controllers/Api/MobileWearableLinkController.php`
+    - `routes/api.php`
+- Laravel cache action:
+    - `/opt/alt/php85/usr/bin/php artisan optimize:clear`
+- Live smoke passed:
+    - production route list includes `POST /api/v1/wearables/mobile-link`
+    - unauthenticated `POST /api/v1/wearables/mobile-link` returns HTTP 401 instead of 404
+    - unauthenticated `POST /api/v1/wearables/mobile-sync` still returns HTTP 401
+
 ## Cron jobs
 
 Hostinger shared hosting does not expose `crontab` over SSH here, so add these in hPanel:
