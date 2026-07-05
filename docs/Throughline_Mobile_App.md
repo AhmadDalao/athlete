@@ -176,6 +176,24 @@ npm --prefix mobile run ios
 npm --prefix mobile run android
 ```
 
+## Samsung Health / Galaxy Watch Sync
+
+Galaxy Watch data reaches Throughline through this path:
+
+1. Galaxy Watch records into Samsung Health.
+2. Samsung Health shares selected data into Android Health Connect.
+3. Throughline asks for Health Connect permissions inside the mobile app.
+4. Throughline creates a linked `health_connect` device record.
+5. The user taps `Sync Samsung Health` to send daily records to the Laravel API.
+
+The athlete mobile `Devices` screen now includes:
+
+- `Link Samsung Health`: opens the Android Health Connect permission flow and records linked status in the backend.
+- `Sync Samsung Health`: reads permitted records and posts them to `POST /api/v1/wearables/mobile-sync`.
+- `Open Health Connect settings`: lets the user change permissions later.
+
+If the backend is not deployed with `POST /api/v1/wearables/mobile-link`, the app can show the native permission popup but the linked-device status cannot be saved.
+
 ## Production Notes
 
 The backend API can be deployed to Hostinger now.

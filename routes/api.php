@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\MeController;
 use App\Http\Controllers\Api\MembershipIndexController;
 use App\Http\Controllers\Api\MessageIndexController;
 use App\Http\Controllers\Api\MessageStoreController;
+use App\Http\Controllers\Api\MobileWearableLinkController;
 use App\Http\Controllers\Api\MobileWearableSyncController;
 use App\Http\Controllers\Api\ProgressIndexController;
 use App\Http\Controllers\Api\RosterIndexController;
@@ -100,6 +101,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('wearables', WearableIndexController::class)
             ->middleware('abilities:wearable:read')
             ->name('wearables');
+
+        Route::post('wearables/mobile-link', MobileWearableLinkController::class)
+            ->middleware('abilities:wearable:write')
+            ->name('wearables.mobile-link');
 
         Route::post('wearables/mobile-sync', MobileWearableSyncController::class)
             ->middleware('abilities:wearable:write')

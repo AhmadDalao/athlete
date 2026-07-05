@@ -285,6 +285,28 @@ Supported providers:
 
 The endpoint upserts a mobile `DeviceConnection` and writes snapshots through the existing ingestion service.
 
+### `POST /api/v1/wearables/mobile-link`
+
+Ability: `wearable:write`
+
+Athlete only.
+
+This endpoint records that a mobile health provider has been linked, even before any records are available to sync. Android uses this for Samsung Health through Health Connect.
+
+Request:
+
+```json
+{
+    "provider": "health_connect",
+    "device_name": "Samsung Health via Health Connect",
+    "platform": "android",
+    "permission_status": "granted",
+    "scopes": ["Steps", "SleepSession", "HeartRate"]
+}
+```
+
+`permission_status` can be `granted`, `partial`, or `denied`. Granted and partial links are stored as connected; denied links are stored as attention-needed.
+
 ## Internal web routes for coach-owned athlete onboarding
 
 These are normal Laravel/Inertia web routes, not `/api/v1` JSON routes.

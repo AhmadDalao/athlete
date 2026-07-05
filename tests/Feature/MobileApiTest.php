@@ -140,6 +140,34 @@ class MobileApiTest extends TestCase
         ]);
     }
 
+    public function test_athlete_can_link_health_connect_before_records_are_available(): void
+    {
+        $athlete = User::factory()->create(['email' => 'mobile-link@example.com']);
+        $athlete->assignRole(RoleName::Athlete);
+
+        Sanctum::actingAs($athlete, ['wearable:write']);
+
+        $this->postJson(route('api.v1.wearables.mobile-link'), [
+            'provider' => DeviceProvider::HealthConnect->value,
+            'device_id' => 'galaxy-watch-link-test',
+            'device_name' => 'Samsung Health via Health Connect',
+            'platform' => 'android',
+            'permission_status' => 'granted',
+            'scopes' => ['Steps', 'SleepSession', 'HeartRate'],
+        ])
+            ->assertAccepted()
+            ->assertJsonPath('data.connection.provider', DeviceProvider::HealthConnect->value)
+            ->assertJsonPath('data.connection.status', 'connected')
+            ->assertJsonPath('data.connection.authType', 'mobile');
+
+        $this->assertDatabaseHas('device_connections', [
+            'user_id' => $athlete->id,
+            'provider' => DeviceProvider::HealthConnect->value,
+            'auth_type' => 'mobile',
+            'status' => 'connected',
+        ]);
+    }
+
     public function test_admin_cannot_use_mobile_app_home(): void
     {
         $admin = User::factory()->create(['email' => 'admin-mobile-blocked@example.com']);

@@ -4,21 +4,43 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { apiErrorMessage, apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
-import { collectNativeHealthRecords, syncMobileHealthRecords } from '@/health/health-sync';
-import { AppHeader, Card, EmptyState, LoadingState, MetricRow, PrimaryButton, Screen, SectionTitle, SignalRing } from '@/components/mobile-ui';
+import {
+  collectNativeHealthRecords,
+  getNativeHealthLinkStatus,
+  linkMobileHealthProvider,
+  openNativeHealthSettings,
+  requestNativeHealthAccess,
+  syncMobileHealthRecords,
+  type HealthConnectPermissionStatus,
+} from '@/health/health-sync';
+import {
+  AppHeader,
+  Card,
+  EmptyState,
+  LoadingState,
+  MetricRow,
+  PrimaryButton,
+  Screen,
+  SecondaryButton,
+  SectionTitle,
+  SignalRing,
+} from '@/components/mobile-ui';
 import { colors } from '@/theme';
 import type { Snapshot } from '@/types/api';
+
+type WearableConnection = {
+  id: number;
+  provider: string;
+  providerLabel: string;
+  status: string;
+  lastSyncedAt?: string | null;
+  latestSnapshot?: Snapshot | null;
+};
 
 type WearablesPayload = {
   summary: Record<string, number | null>;
   connections: {
-    data: Array<{
-      id: number;
-      providerLabel: string;
-      status: string;
-      lastSyncedAt?: string | null;
-      latestSnapshot?: Snapshot | null;
-    }>;
+    data: WearableConnection[];
   };
   whoopIntegration?: {
     connectUrl?: string;
@@ -32,6 +54,8 @@ export default function WearablesScreen() {
   const [tab, setTab] = useState<'daily' | 'trends'>('daily');
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isLinking, setIsLinking] = useState(false);
+  const [linkStatus, setLinkStatus] = useState<HealthConnectPermissionStatus | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -39,8 +63,12 @@ export default function WearablesScreen() {
       return;
     }
 
-    const response = await apiRequest<WearablesPayload>('/api/v1/wearables', undefined, token);
+    const [response, nativeStatus] = await Promise.all([
+      apiRequest<WearablesPayload>('/api/v1/wearables', undefined, token),
+      getNativeHealthLinkStatus(),
+    ]);
     setPayload(response.data);
+    setLinkStatus(nativeStatus);
     setIsLoading(false);
   }, [token]);
 
@@ -49,6 +77,35 @@ export default function WearablesScreen() {
       load().catch(() => setIsLoading(false));
     }, [load]),
   );
+
+  async function linkNative() {
+    if (!token) {
+      return;
+    }
+
+    setIsLinking(true);
+    setMessage(null);
+
+    try {
+      const status = await requestNativeHealthAccess();
+      setLinkStatus(status);
+      await linkMobileHealthProvider({
+        token,
+        provider: 'health_connect',
+        deviceName: 'Samsung Health via Health Connect',
+        scopes: status.grantedScopes,
+        permissionStatus: status.permissionStatus,
+      });
+      setMessage(status.permissionStatus === 'granted'
+        ? 'Samsung Health is linked. You can sync now.'
+        : 'Samsung Health is partially linked. Sync will use the permissions you allowed.');
+      await load();
+    } catch (error) {
+      setMessage(apiErrorMessage(error, 'Could not link Samsung Health.'));
+    } finally {
+      setIsLinking(false);
+    }
+  }
 
   async function syncNative() {
     if (!token) {
@@ -59,6 +116,21 @@ export default function WearablesScreen() {
     setMessage(null);
 
     try {
+      let status = linkStatus ?? await getNativeHealthLinkStatus();
+
+      if (!status.canSync) {
+        status = await requestNativeHealthAccess();
+        await linkMobileHealthProvider({
+          token,
+          provider: 'health_connect',
+          deviceName: 'Samsung Health via Health Connect',
+          scopes: status.grantedScopes,
+          permissionStatus: status.permissionStatus,
+        });
+      }
+
+      setLinkStatus(status);
+
       const records = await collectNativeHealthRecords();
 
       if (!records.length) {
@@ -71,6 +143,7 @@ export default function WearablesScreen() {
         provider: 'health_connect',
         records,
         deviceName: Platform.OS === 'android' ? 'Android Health Connect' : 'Mobile device',
+        scopes: status.grantedScopes,
       });
       setMessage(`${records.length} daily health record(s) synced.`);
       await load();
@@ -86,6 +159,7 @@ export default function WearablesScreen() {
   }
 
   const latest = payload.connections.data.find((connection) => connection.latestSnapshot)?.latestSnapshot ?? null;
+  const healthConnectConnection = payload.connections.data.find((connection) => connection.provider === 'health_connect');
 
   return (
     <Screen>
@@ -104,11 +178,50 @@ export default function WearablesScreen() {
             <SignalRing label="Strain" value={latest?.strainScore ?? '--'} tone="gold" />
           </Card>
 
-          <PrimaryButton
-            label={isSyncing ? 'Syncing...' : Platform.OS === 'android' ? 'Sync Health Connect' : 'Apple Health coming next'}
-            onPress={syncNative}
-            disabled={isSyncing}
-          />
+          <Card style={styles.linkCard}>
+            <View style={styles.linkHeader}>
+              <View style={styles.flexOne}>
+                <Text style={styles.cardTitle}>Samsung Health link</Text>
+                <Text style={styles.note}>
+                  Galaxy Watch data should sync into Samsung Health first, then Health Connect lets Throughline read it.
+                </Text>
+              </View>
+              <View style={[styles.statusDot, linkStatus?.canSync && styles.statusDotLinked]} />
+            </View>
+
+            <View style={styles.statusGrid}>
+              <StatusTile label="Phone permission" value={permissionLabel(linkStatus)} />
+              <StatusTile label="Backend device" value={connectionLabel(healthConnectConnection)} />
+              <StatusTile label="Last sync" value={healthConnectConnection?.lastSyncedAt ?? 'Not synced'} />
+            </View>
+
+            {linkStatus?.missingScopes.length ? (
+              <Text style={styles.warningText}>
+                Missing permissions: {linkStatus.missingScopes.slice(0, 4).join(', ')}
+                {linkStatus.missingScopes.length > 4 ? '...' : ''}
+              </Text>
+            ) : null}
+
+            <View style={styles.buttonStack}>
+              <PrimaryButton
+                label={isLinking ? 'Opening permission...' : linkStatus?.canSync ? 'Relink permissions' : 'Link Samsung Health'}
+                onPress={linkNative}
+                disabled={isLinking || isSyncing || Platform.OS !== 'android'}
+              />
+              <PrimaryButton
+                label={isSyncing ? 'Syncing data...' : 'Sync Samsung Health'}
+                onPress={syncNative}
+                disabled={isSyncing || isLinking || Platform.OS !== 'android'}
+              />
+              <SecondaryButton
+                label="Open Health Connect settings"
+                onPress={() => {
+                  void openNativeHealthSettings();
+                }}
+              />
+            </View>
+          </Card>
+
           {message ? <Text style={styles.message}>{message}</Text> : null}
 
           <SectionTitle eyebrow="Today" title="Health monitor" note="Latest available wearable snapshot." />
@@ -158,8 +271,45 @@ function TabButton({ label, active, onPress }: { label: string; active: boolean;
   );
 }
 
+function StatusTile({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.statusTile}>
+      <Text style={styles.statusLabel}>{label}</Text>
+      <Text style={styles.statusValue} numberOfLines={2}>{value}</Text>
+    </View>
+  );
+}
+
 function formatValue(value?: number | null) {
   return value === null || value === undefined ? '--' : value;
+}
+
+function permissionLabel(status: HealthConnectPermissionStatus | null) {
+  if (!status) {
+    return 'Checking';
+  }
+
+  if (!status.available) {
+    return 'Unavailable';
+  }
+
+  if (status.permissionStatus === 'granted') {
+    return 'Linked';
+  }
+
+  if (status.permissionStatus === 'partial') {
+    return 'Partial';
+  }
+
+  return 'Needs permission';
+}
+
+function connectionLabel(connection?: WearableConnection) {
+  if (!connection) {
+    return 'Not linked';
+  }
+
+  return connection.status === 'connected' ? 'Linked' : connection.status;
 }
 
 const styles = StyleSheet.create({
@@ -189,6 +339,58 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 8,
+  },
+  linkCard: {
+    gap: 16,
+  },
+  linkHeader: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  flexOne: {
+    flex: 1,
+  },
+  statusDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.gold,
+  },
+  statusDotLinked: {
+    backgroundColor: colors.green,
+  },
+  statusGrid: {
+    gap: 8,
+  },
+  statusTile: {
+    borderColor: colors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 14,
+    backgroundColor: '#ffffff',
+  },
+  statusLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  },
+  statusValue: {
+    color: colors.ink,
+    fontSize: 17,
+    fontWeight: '900',
+    marginTop: 6,
+  },
+  warningText: {
+    color: colors.danger,
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+  },
+  buttonStack: {
+    gap: 10,
   },
   metricRows: {
     gap: 10,

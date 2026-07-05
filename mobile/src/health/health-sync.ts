@@ -22,6 +22,17 @@ export type NormalizedHealthRecord = {
 
 type HealthRecord = Record<string, any>;
 type HealthConnectModule = typeof import('react-native-health-connect');
+type HealthPermission = Permission | { accessType?: string; recordType?: string };
+
+export type HealthConnectPermissionStatus = {
+  available: boolean;
+  platform: 'android' | 'ios' | 'unsupported';
+  grantedScopes: string[];
+  missingScopes: string[];
+  permissionStatus: 'granted' | 'partial' | 'denied';
+  canSync: boolean;
+  message: string;
+};
 
 const HEALTH_CONNECT_DAYS = 14;
 const integerMetricKeys = new Set<keyof NormalizedHealthRecord['metrics']>([
@@ -44,16 +55,43 @@ const healthConnectPermissions: Permission[] = [
   { accessType: 'read', recordType: 'ExerciseSession' },
 ];
 
+export async function linkMobileHealthProvider({
+  token,
+  provider,
+  deviceName,
+  scopes,
+  permissionStatus,
+}: {
+  token: string;
+  provider: MobileHealthProvider;
+  deviceName?: string;
+  scopes?: string[];
+  permissionStatus?: 'granted' | 'partial' | 'denied';
+}) {
+  return apiRequest('/api/v1/wearables/mobile-link', {
+    method: 'POST',
+    body: JSON.stringify({
+      provider,
+      device_name: deviceName,
+      platform: provider === 'apple_health' ? 'ios' : 'android',
+      scopes,
+      permission_status: permissionStatus,
+    }),
+  }, token);
+}
+
 export async function syncMobileHealthRecords({
   token,
   provider,
   records,
   deviceName,
+  scopes,
 }: {
   token: string;
   provider: MobileHealthProvider;
   records: NormalizedHealthRecord[];
   deviceName?: string;
+  scopes?: string[];
 }) {
   return apiRequest('/api/v1/wearables/mobile-sync', {
     method: 'POST',
@@ -61,12 +99,21 @@ export async function syncMobileHealthRecords({
       provider,
       device_name: deviceName,
       platform: provider === 'apple_health' ? 'ios' : 'android',
+      scopes,
       records,
     }),
   }, token);
 }
 
 export async function collectNativeHealthRecords(): Promise<NormalizedHealthRecord[]> {
+  await requestNativeHealthAccess();
+
+  const health = await import('react-native-health-connect');
+
+  return collectHealthConnectDailyRecords(health);
+}
+
+export async function requestNativeHealthAccess(): Promise<HealthConnectPermissionStatus> {
   if (Platform.OS !== 'android') {
     throw new Error('Apple Health is not wired yet. This build currently syncs Android Health Connect records.');
   }
@@ -79,16 +126,68 @@ export async function collectNativeHealthRecords(): Promise<NormalizedHealthReco
   }
 
   const granted = await health.requestPermission(healthConnectPermissions);
-  const grantedKeys = new Set(granted.map((permission) => `${permission.accessType}:${permission.recordType}`));
-  const hasRequiredPermission = healthConnectPermissions.some((permission) =>
-    grantedKeys.has(`${permission.accessType}:${permission.recordType}`),
-  );
+  const status = healthConnectStatusFromPermissions(granted);
 
-  if (!hasRequiredPermission) {
+  if (!status.canSync) {
     throw new Error('Health Connect permissions were not granted.');
   }
 
-  return collectHealthConnectDailyRecords(health);
+  return status;
+}
+
+export async function getNativeHealthLinkStatus(): Promise<HealthConnectPermissionStatus> {
+  if (Platform.OS !== 'android') {
+    return {
+      available: false,
+      platform: Platform.OS === 'ios' ? 'ios' : 'unsupported',
+      grantedScopes: [],
+      missingScopes: healthConnectPermissions.map((permission) => permission.recordType),
+      permissionStatus: 'denied',
+      canSync: false,
+      message: Platform.OS === 'ios'
+        ? 'Apple Health permissions are coming next.'
+        : 'Native health sync is only available on Android in this build.',
+    };
+  }
+
+  try {
+    const health = await import('react-native-health-connect');
+    const initialized = await health.initialize();
+
+    if (!initialized) {
+      return {
+        available: false,
+        platform: 'android',
+        grantedScopes: [],
+        missingScopes: healthConnectPermissions.map((permission) => permission.recordType),
+        permissionStatus: 'denied',
+        canSync: false,
+        message: 'Health Connect is not available on this device.',
+      };
+    }
+
+    return healthConnectStatusFromPermissions(await health.getGrantedPermissions());
+  } catch (error) {
+    return {
+      available: false,
+      platform: 'android',
+      grantedScopes: [],
+      missingScopes: healthConnectPermissions.map((permission) => permission.recordType),
+      permissionStatus: 'denied',
+      canSync: false,
+      message: error instanceof Error ? error.message : 'Could not read Health Connect permissions.',
+    };
+  }
+}
+
+export async function openNativeHealthSettings() {
+  if (Platform.OS !== 'android') {
+    return;
+  }
+
+  const health = await import('react-native-health-connect');
+  await health.initialize();
+  health.openHealthConnectSettings();
 }
 
 async function collectHealthConnectDailyRecords(health: HealthConnectModule): Promise<NormalizedHealthRecord[]> {
@@ -196,6 +295,38 @@ function compactMetrics(metrics: NormalizedHealthRecord['metrics']): NormalizedH
 
     return carry;
   }, {});
+}
+
+function healthConnectStatusFromPermissions(granted: HealthPermission[]): HealthConnectPermissionStatus {
+  const grantedKeys = new Set(
+    granted
+      .filter(isRecordPermission)
+      .map((permission) => `${permission.accessType}:${permission.recordType}`),
+  );
+  const grantedScopes = healthConnectPermissions
+    .filter((permission) => grantedKeys.has(`${permission.accessType}:${permission.recordType}`))
+    .map((permission) => permission.recordType);
+  const missingScopes = healthConnectPermissions
+    .filter((permission) => !grantedKeys.has(`${permission.accessType}:${permission.recordType}`))
+    .map((permission) => permission.recordType);
+  const canSync = grantedScopes.length > 0;
+  const permissionStatus = missingScopes.length === 0 ? 'granted' : canSync ? 'partial' : 'denied';
+
+  return {
+    available: true,
+    platform: 'android',
+    grantedScopes,
+    missingScopes,
+    permissionStatus,
+    canSync,
+    message: canSync
+      ? `${grantedScopes.length} Health Connect permission(s) enabled.`
+      : 'Health Connect permissions are not enabled yet.',
+  };
+}
+
+function isRecordPermission(permission: HealthPermission): permission is Permission {
+  return typeof permission.accessType === 'string' && typeof permission.recordType === 'string';
 }
 
 function sumBy(records: HealthRecord[], selector: (record: HealthRecord) => number | undefined) {
