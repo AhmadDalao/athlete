@@ -20,7 +20,45 @@ export type NormalizedHealthRecord = {
   raw_payload?: Record<string, unknown>;
 };
 
+export type HealthConnectReadDiagnostic = {
+  metricDate: string;
+  recordCounts: Record<string, number>;
+  errors: Array<{ recordType: string; message: string }>;
+};
+
+export type NativeHealthCollectionResult = {
+  records: NormalizedHealthRecord[];
+  diagnostics: HealthConnectReadDiagnostic[];
+  readableRecordCount: number;
+  readErrors: Array<{ metricDate: string; recordType: string; message: string }>;
+  permissionStatus: HealthConnectPermissionStatus;
+  message: string;
+};
+
+export type MobileHealthSyncResponse = {
+  connection: {
+    id: number;
+    publicId: string;
+    provider: MobileHealthProvider;
+    providerLabel: string;
+    status: string;
+    authType?: string | null;
+    lastSyncedAt?: string | null;
+  };
+  receivedRecordCount: number;
+  acceptedCount: number;
+  acceptedMetricDates: string[];
+  latestSnapshot?: Record<string, unknown> | null;
+  recordCounts: Array<Record<string, number>>;
+  syncMessage: string;
+  snapshots: Array<Record<string, unknown> | null>;
+};
+
 type HealthRecord = Record<string, any>;
+type HealthRecordReadResult = {
+  records: HealthRecord[];
+  error?: string;
+};
 type HealthConnectModule = typeof import('react-native-health-connect');
 type HealthPermission = Permission | { accessType?: string; recordType?: string };
 
@@ -93,7 +131,7 @@ export async function syncMobileHealthRecords({
   deviceName?: string;
   scopes?: string[];
 }) {
-  return apiRequest('/api/v1/wearables/mobile-sync', {
+  return apiRequest<MobileHealthSyncResponse>('/api/v1/wearables/mobile-sync', {
     method: 'POST',
     body: JSON.stringify({
       provider,
@@ -106,11 +144,20 @@ export async function syncMobileHealthRecords({
 }
 
 export async function collectNativeHealthRecords(): Promise<NormalizedHealthRecord[]> {
-  await requestNativeHealthAccess();
+  const result = await collectNativeHealthRecordsWithDiagnostics();
 
+  return result.records;
+}
+
+export async function collectNativeHealthRecordsWithDiagnostics(): Promise<NativeHealthCollectionResult> {
+  const permissionStatus = await requestNativeHealthAccess();
   const health = await import('react-native-health-connect');
+  const result = await collectHealthConnectDailyRecords(health);
 
-  return collectHealthConnectDailyRecords(health);
+  return {
+    ...result,
+    permissionStatus,
+  };
 }
 
 export async function requestNativeHealthAccess(): Promise<HealthConnectPermissionStatus> {
@@ -190,9 +237,13 @@ export async function openNativeHealthSettings() {
   health.openHealthConnectSettings();
 }
 
-async function collectHealthConnectDailyRecords(health: HealthConnectModule): Promise<NormalizedHealthRecord[]> {
+async function collectHealthConnectDailyRecords(
+  health: HealthConnectModule,
+): Promise<Omit<NativeHealthCollectionResult, 'permissionStatus'>> {
   const today = startOfDay(new Date());
   const records: NormalizedHealthRecord[] = [];
+  const diagnostics: HealthConnectReadDiagnostic[] = [];
+  const readErrors: NativeHealthCollectionResult['readErrors'] = [];
 
   for (let offset = HEALTH_CONNECT_DAYS - 1; offset >= 0; offset -= 1) {
     const day = addDays(today, -offset);
@@ -200,14 +251,14 @@ async function collectHealthConnectDailyRecords(health: HealthConnectModule): Pr
     const metricDate = toDateKey(day);
 
     const [
-      steps,
-      activeCalories,
-      totalCalories,
-      sleepSessions,
-      heartRate,
-      restingHeartRate,
-      heartRateVariability,
-      exerciseSessions,
+      stepsResult,
+      activeCaloriesResult,
+      totalCaloriesResult,
+      sleepSessionsResult,
+      heartRateResult,
+      restingHeartRateResult,
+      heartRateVariabilityResult,
+      exerciseSessionsResult,
     ] = await Promise.all([
       readHealthRecords(health, 'Steps', day, nextDay),
       readHealthRecords(health, 'ActiveCaloriesBurned', day, nextDay),
@@ -218,6 +269,43 @@ async function collectHealthConnectDailyRecords(health: HealthConnectModule): Pr
       readHealthRecords(health, 'HeartRateVariabilityRmssd', day, nextDay),
       readHealthRecords(health, 'ExerciseSession', day, nextDay),
     ]);
+    const steps = stepsResult.records;
+    const activeCalories = activeCaloriesResult.records;
+    const totalCalories = totalCaloriesResult.records;
+    const sleepSessions = sleepSessionsResult.records;
+    const heartRate = heartRateResult.records;
+    const restingHeartRate = restingHeartRateResult.records;
+    const heartRateVariability = heartRateVariabilityResult.records;
+    const exerciseSessions = exerciseSessionsResult.records;
+    const dayErrors = [
+      ['Steps', stepsResult.error],
+      ['ActiveCaloriesBurned', activeCaloriesResult.error],
+      ['TotalCaloriesBurned', totalCaloriesResult.error],
+      ['SleepSession', sleepSessionsResult.error],
+      ['HeartRate', heartRateResult.error],
+      ['RestingHeartRate', restingHeartRateResult.error],
+      ['HeartRateVariabilityRmssd', heartRateVariabilityResult.error],
+      ['ExerciseSession', exerciseSessionsResult.error],
+    ]
+      .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].length > 0)
+      .map(([recordType, message]) => ({ recordType, message }));
+    const recordCounts = {
+      steps: steps.length,
+      active_calories: activeCalories.length,
+      total_calories: totalCalories.length,
+      sleep: sleepSessions.length,
+      heart_rate: heartRate.length,
+      resting_heart_rate: restingHeartRate.length,
+      heart_rate_variability: heartRateVariability.length,
+      exercise: exerciseSessions.length,
+    };
+
+    diagnostics.push({
+      metricDate,
+      recordCounts,
+      errors: dayErrors,
+    });
+    readErrors.push(...dayErrors.map((error) => ({ metricDate, ...error })));
 
     const metrics = {
       steps: sumBy(steps, (record) => numberValue(record.count)),
@@ -245,21 +333,28 @@ async function collectHealthConnectDailyRecords(health: HealthConnectModule): Pr
       raw_payload: {
         provider: 'health_connect',
         source: 'mobile_native',
-        record_counts: {
-          steps: steps.length,
-          active_calories: activeCalories.length,
-          total_calories: totalCalories.length,
-          sleep: sleepSessions.length,
-          heart_rate: heartRate.length,
-          resting_heart_rate: restingHeartRate.length,
-          heart_rate_variability: heartRateVariability.length,
-          exercise: exerciseSessions.length,
-        },
+        record_counts: recordCounts,
+        read_errors: dayErrors,
       },
     });
   }
 
-  return records;
+  const readableRecordCount = diagnostics.reduce(
+    (total, day) => total + Object.values(day.recordCounts).reduce((dayTotal, count) => dayTotal + count, 0),
+    0,
+  );
+
+  return {
+    records,
+    diagnostics,
+    readableRecordCount,
+    readErrors,
+    message: records.length
+      ? `${records.length} day(s) with Health Connect metrics found.`
+      : readErrors.length
+        ? 'Health Connect permissions exist, but one or more metric reads failed.'
+        : 'Health Connect returned no readable Samsung Health records for the selected window.',
+  };
 }
 
 async function readHealthRecords(
@@ -267,7 +362,7 @@ async function readHealthRecords(
   recordType: RecordType,
   startTime: Date,
   endTime: Date,
-): Promise<HealthRecord[]> {
+): Promise<HealthRecordReadResult> {
   try {
     const result = await health.readRecords(recordType, {
       timeRangeFilter: {
@@ -279,9 +374,14 @@ async function readHealthRecords(
       pageSize: 250,
     });
 
-    return Array.isArray(result.records) ? (result.records as HealthRecord[]) : [];
-  } catch {
-    return [];
+    return {
+      records: Array.isArray(result.records) ? (result.records as HealthRecord[]) : [],
+    };
+  } catch (error) {
+    return {
+      records: [],
+      error: error instanceof Error ? error.message : `Could not read ${recordType}.`,
+    };
   }
 }
 

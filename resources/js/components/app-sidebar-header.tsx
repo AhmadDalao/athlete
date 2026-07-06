@@ -35,20 +35,20 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
 
     return (
         <header className="flex shrink-0 items-center gap-3 pt-4 pb-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:pt-3">
-            <div className="grid w-full gap-4 rounded-[1.6rem] border border-stone-200/90 bg-white px-5 py-4 shadow-[0_16px_32px_-28px_rgba(15,23,42,0.18)] lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="grid w-full gap-4 rounded-[1.6rem] border border-white/10 bg-[#0d1416] px-5 py-4 shadow-[0_24px_70px_-46px_rgba(0,0,0,0.85)] lg:grid-cols-[1fr_auto] lg:items-center">
                 <div className="min-w-0 space-y-3">
                     <div className="flex flex-wrap items-center gap-3">
-                        <SidebarTrigger className="-ml-1 rounded-full border border-stone-200 bg-white text-stone-700 hover:bg-stone-100 hover:text-stone-950" />
-                        <Badge variant="outline" className="border-stone-200 bg-stone-50 text-stone-700">
+                        <SidebarTrigger className="-ml-1 rounded-full border border-white/10 bg-white/[0.04] text-stone-200 hover:bg-white/10 hover:text-white" />
+                        <Badge variant="outline" className="border-lime-300/25 bg-lime-300/10 text-lime-100">
                             {auth.user.primary_role ?? 'user'}
                         </Badge>
-                        <p className="text-sm font-medium text-stone-900">{currentPage}</p>
+                        <p className="text-sm font-medium text-stone-100">{currentPage}</p>
                     </div>
                     <div className="space-y-1">
-                        <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-stone-400 uppercase">Workspace focus</p>
-                        <p className="max-w-3xl text-sm leading-7 text-stone-600">{descriptions[currentPage] ?? 'Keep the next decision obvious.'}</p>
+                        <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-lime-200/60 uppercase">Workspace focus</p>
+                        <p className="max-w-3xl text-sm leading-7 text-stone-300">{descriptions[currentPage] ?? 'Keep the next decision obvious.'}</p>
                     </div>
-                    <div className="text-sm text-stone-500">
+                    <div className="text-sm text-stone-400">
                         <Breadcrumbs breadcrumbs={breadcrumbs} />
                     </div>
                 </div>
@@ -57,31 +57,31 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                     <form action={route('search.index')} method="get" className="min-w-[220px] flex-1 lg:max-w-[360px]">
                         <label className="relative block">
                             <span className="sr-only">Search workspace</span>
-                            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone-400" />
+                            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone-500" />
                             <input
                                 name="q"
                                 type="search"
                                 placeholder="Search workspace..."
-                                className="h-11 w-full rounded-full border border-stone-200 bg-white pr-4 pl-10 text-sm text-stone-900 transition outline-none placeholder:text-stone-400 focus:border-stone-400 focus:ring-2 focus:ring-amber-100"
+                                className="h-11 w-full rounded-full border border-white/10 bg-white/[0.04] pr-4 pl-10 text-sm text-stone-100 transition outline-none placeholder:text-stone-500 focus:border-lime-300/55 focus:ring-2 focus:ring-lime-300/10"
                             />
                         </label>
                     </form>
-                    <div className="hidden rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 md:flex md:min-w-[240px]">
+                    <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-stone-100 md:flex md:min-w-[240px]">
                         <UserInfo user={auth.user} />
                     </div>
-                    <Button asChild size="sm" variant="outline" className="rounded-xl border-stone-200 bg-white">
+                    <Button asChild size="sm" variant="outline" className="rounded-xl border-white/10 bg-white/[0.04] text-stone-100 hover:bg-white/10 hover:text-white">
                         <Link href={route('contact.show')}>Need help?</Link>
                     </Button>
-                    <Button asChild size="sm" variant="outline" className="rounded-xl border-stone-200 bg-white">
+                    <Button asChild size="sm" variant="outline" className="rounded-xl border-white/10 bg-white/[0.04] text-stone-100 hover:bg-white/10 hover:text-white">
                         <Link href={route('notifications.index')} className="relative">
                             <Bell className="size-4" />
                             Alerts
                             {unreadCount > 0 && (
-                                <span className="ml-1 rounded-full bg-amber-200 px-2 py-0.5 text-xs font-semibold text-stone-950">{unreadCount}</span>
+                                <span className="ml-1 rounded-full bg-lime-300 px-2 py-0.5 text-xs font-semibold text-[#07100c]">{unreadCount}</span>
                             )}
                         </Link>
                     </Button>
-                    <Button asChild size="sm" className="rounded-xl bg-stone-950 text-white hover:bg-stone-800">
+                    <Button asChild size="sm" className="rounded-xl bg-lime-300 text-[#07100c] hover:bg-lime-200">
                         <Link href={route('profile.edit')}>
                             <Settings2 className="size-4" />
                             Account

@@ -27,7 +27,12 @@ export default function AppTabs() {
             paddingTop: 7,
             paddingBottom: 10,
             borderTopColor: colors.border,
-            backgroundColor: '#ffffff',
+            backgroundColor: colors.panelDark,
+            shadowColor: '#000',
+            shadowOpacity: 0.35,
+            shadowRadius: 24,
+            shadowOffset: { width: 0, height: -10 },
+            elevation: 20,
           },
           tabBarLabelStyle: {
             fontSize: 9,

@@ -9,6 +9,7 @@ use App\Enums\RoleName;
 use App\Http\Controllers\Api\Concerns\FormatsApiPayloads;
 use App\Http\Controllers\Controller;
 use App\Models\DeviceConnection;
+use App\Models\MetricSnapshot;
 use App\Models\User;
 use App\Models\WhoopWebhookEvent;
 use App\Services\MetricAnalyticsService;
@@ -36,6 +37,8 @@ class WearableIndexController extends Controller
         $normalizedStatusFilter = in_array($statusFilter, $allowedStatuses, true) ? $statusFilter : null;
 
         $baseQuery = $this->visibleConnectionsQuery($user);
+        $latestSnapshot = $this->latestVisibleSnapshot($baseQuery);
+        $latestLiveSnapshot = $this->latestVisibleSnapshot($baseQuery, liveOnly: true);
         $connections = (clone $baseQuery)
             ->with(['user.roles', 'latestSnapshot'])
             ->when($normalizedStatusFilter, fn (Builder $query, string $status) => $query->where('status', $status))
@@ -88,6 +91,16 @@ class WearableIndexController extends Controller
                     'syncedToday' => (clone $baseQuery)->where('last_synced_at', '>=', now()->startOfDay())->count(),
                     'averageReadiness' => $this->averageReadiness($baseQuery),
                 ],
+                'latestSnapshot' => $this->snapshotPayload($latestLiveSnapshot ?? $latestSnapshot),
+                'syncState' => [
+                    'hasLiveData' => (bool) $latestLiveSnapshot,
+                    'latestProvider' => ($latestLiveSnapshot ?? $latestSnapshot)?->provider->value,
+                    'latestMetricDate' => ($latestLiveSnapshot ?? $latestSnapshot)?->metric_date?->toDateString(),
+                    'message' => $latestLiveSnapshot
+                        ? 'Live wearable data is available.'
+                        : 'No live Health Connect, Apple Health, or WHOOP snapshot has been synced yet.',
+                ],
+                'providerStatus' => $this->providerStatus($baseQuery),
                 'connections' => $this->paginationPayload($connections),
                 'whoopIntegration' => [
                     'oauthReady' => $whoopClient->isConfigured(),
@@ -164,5 +177,69 @@ class WearableIndexController extends Controller
         }
 
         return round($latestScores->avg(), 1);
+    }
+
+    private function latestVisibleSnapshot(Builder $baseQuery, bool $liveOnly = false): ?MetricSnapshot
+    {
+        $connectionIds = (clone $baseQuery)->pluck('id');
+
+        if ($connectionIds->isEmpty()) {
+            return null;
+        }
+
+        $query = MetricSnapshot::query()
+            ->whereIn('device_connection_id', $connectionIds)
+            ->latest('metric_date')
+            ->latest('updated_at');
+
+        if ($liveOnly) {
+            $query->liveSynced();
+        }
+
+        return $query->first();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function providerStatus(Builder $baseQuery): array
+    {
+        $connections = (clone $baseQuery)
+            ->whereIn('provider', [
+                DeviceProvider::HealthConnect->value,
+                DeviceProvider::AppleHealth->value,
+                DeviceProvider::Whoop->value,
+            ])
+            ->with('latestSnapshot')
+            ->get()
+            ->keyBy(fn (DeviceConnection $connection): string => $connection->provider->value);
+
+        return collect([
+            DeviceProvider::HealthConnect,
+            DeviceProvider::AppleHealth,
+            DeviceProvider::Whoop,
+        ])
+            ->mapWithKeys(function (DeviceProvider $provider) use ($connections): array {
+                /** @var DeviceConnection|null $connection */
+                $connection = $connections->get($provider->value);
+
+                return [
+                    $provider->value => [
+                        'provider' => $provider->value,
+                        'providerLabel' => $provider->label(),
+                        'linked' => (bool) $connection,
+                        'status' => $connection?->status->value,
+                        'authType' => $connection?->auth_type,
+                        'grantedScopes' => $connection?->granted_scopes ?? [],
+                        'lastSyncedAt' => $connection?->last_synced_at?->toIso8601String(),
+                        'lastSyncStartedAt' => $connection?->last_sync_started_at?->toIso8601String(),
+                        'lastErrorAt' => $connection?->last_error_at?->toIso8601String(),
+                        'lastErrorMessage' => $connection?->last_error_message,
+                        'syncFailuresCount' => $connection?->sync_failures_count ?? 0,
+                        'latestSnapshot' => $this->snapshotPayload($connection?->latestSnapshot),
+                    ],
+                ];
+            })
+            ->all();
     }
 }

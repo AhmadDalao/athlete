@@ -101,7 +101,7 @@ class MobileApiTest extends TestCase
         $athlete = User::factory()->create(['email' => 'mobile-sync@example.com']);
         $athlete->assignRole(RoleName::Athlete);
 
-        Sanctum::actingAs($athlete, ['wearable:write']);
+        Sanctum::actingAs($athlete, ['wearable:read', 'wearable:write']);
 
         $this->postJson(route('api.v1.wearables.mobile-sync'), [
             'provider' => DeviceProvider::HealthConnect->value,
@@ -112,6 +112,13 @@ class MobileApiTest extends TestCase
             'records' => [
                 [
                     'metric_date' => now()->toDateString(),
+                    'raw_payload' => [
+                        'record_counts' => [
+                            'steps' => 1,
+                            'sleep' => 1,
+                            'resting_heart_rate' => 1,
+                        ],
+                    ],
                     'metrics' => [
                         'steps' => 9021,
                         'calories_burned' => 2410,
@@ -125,7 +132,17 @@ class MobileApiTest extends TestCase
             ->assertAccepted()
             ->assertJsonPath('data.connection.provider', DeviceProvider::HealthConnect->value)
             ->assertJsonPath('data.acceptedCount', 1)
+            ->assertJsonPath('data.receivedRecordCount', 1)
+            ->assertJsonPath('data.latestSnapshot.steps', 9021)
+            ->assertJsonPath('data.recordCounts.0.steps', 1)
             ->assertJsonPath('data.snapshots.0.steps', 9021);
+
+        $this->getJson(route('api.v1.wearables'))
+            ->assertOk()
+            ->assertJsonPath('data.latestSnapshot.steps', 9021)
+            ->assertJsonPath('data.syncState.hasLiveData', true)
+            ->assertJsonPath('data.providerStatus.health_connect.linked', true)
+            ->assertJsonPath('data.providerStatus.health_connect.latestSnapshot.steps', 9021);
 
         $this->assertDatabaseHas('device_connections', [
             'user_id' => $athlete->id,

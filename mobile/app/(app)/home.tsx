@@ -192,10 +192,12 @@ function initials(name: string) {
 
 const styles = StyleSheet.create({
   hero: {
-    backgroundColor: colors.green,
+    backgroundColor: colors.greenDark,
     borderRadius: radius.xl,
     padding: 20,
     gap: 8,
+    borderColor: 'rgba(168, 255, 47, 0.3)',
+    borderWidth: 1,
   },
   coachHero: {
     backgroundColor: colors.greenDark,
@@ -204,20 +206,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   heroEyebrow: {
-    color: '#d8eee5',
+    color: colors.green,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
   heroTitle: {
-    color: '#ffffff',
+    color: colors.ink,
     fontSize: 34,
     fontWeight: '900',
     letterSpacing: -1.2,
   },
   heroNote: {
-    color: '#d8eee5',
+    color: colors.panelMuted,
     fontSize: 16,
     lineHeight: 24,
   },
@@ -264,7 +266,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderColor: colors.border,
     borderWidth: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     padding: 18,
   },
   programAction: {

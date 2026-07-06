@@ -1,16 +1,17 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { apiErrorMessage, apiRequest } from '@/api/client';
 import { useAuth } from '@/auth/auth-context';
 import {
-  collectNativeHealthRecords,
+  collectNativeHealthRecordsWithDiagnostics,
   getNativeHealthLinkStatus,
   linkMobileHealthProvider,
   openNativeHealthSettings,
   requestNativeHealthAccess,
   syncMobileHealthRecords,
+  type HealthConnectReadDiagnostic,
   type HealthConnectPermissionStatus,
 } from '@/health/health-sync';
 import {
@@ -35,11 +36,34 @@ type WearableConnection = {
   providerLabel: string;
   status: string;
   lastSyncedAt?: string | null;
+  lastSyncStartedAt?: string | null;
+  grantedScopes?: string[];
+  lastErrorMessage?: string | null;
+  latestSnapshot?: Snapshot | null;
+};
+
+type ProviderStatus = {
+  linked: boolean;
+  status?: string | null;
+  authType?: string | null;
+  grantedScopes: string[];
+  lastSyncedAt?: string | null;
+  lastSyncStartedAt?: string | null;
+  lastErrorMessage?: string | null;
+  syncFailuresCount: number;
   latestSnapshot?: Snapshot | null;
 };
 
 type WearablesPayload = {
   summary: Record<string, number | null>;
+  latestSnapshot?: Snapshot | null;
+  syncState?: {
+    hasLiveData: boolean;
+    latestProvider?: string | null;
+    latestMetricDate?: string | null;
+    message?: string | null;
+  };
+  providerStatus?: Record<'health_connect' | 'apple_health' | 'whoop', ProviderStatus>;
   connections: {
     data: WearableConnection[];
   };
@@ -57,6 +81,7 @@ export default function WearablesScreen() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLinking, setIsLinking] = useState(false);
   const [linkStatus, setLinkStatus] = useState<HealthConnectPermissionStatus | null>(null);
+  const [diagnostics, setDiagnostics] = useState<HealthConnectReadDiagnostic[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +112,18 @@ export default function WearablesScreen() {
       void load();
     }, [load]),
   );
+
+  useEffect(() => {
+    if (!token || tab !== 'daily') {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      void load();
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [load, tab, token]);
 
   async function linkNative() {
     if (!token) {
@@ -141,21 +178,35 @@ export default function WearablesScreen() {
 
       setLinkStatus(status);
 
-      const records = await collectNativeHealthRecords();
+      const collection = await collectNativeHealthRecordsWithDiagnostics();
+      const records = collection.records;
+      setDiagnostics(collection.diagnostics);
 
       if (!records.length) {
-        setMessage('Health Connect returned no readable records. Check Samsung Health and Health Connect permissions.');
+        setMessage(collection.message);
         return;
       }
 
-      await syncMobileHealthRecords({
+      const syncResponse = await syncMobileHealthRecords({
         token,
         provider: 'health_connect',
         records,
         deviceName: Platform.OS === 'android' ? 'Android Health Connect' : 'Mobile device',
         scopes: status.grantedScopes,
       });
-      setMessage(`${records.length} daily health record(s) synced.`);
+      setPayload((current) => current
+        ? {
+            ...current,
+            latestSnapshot: (syncResponse.data.latestSnapshot as Snapshot | null | undefined) ?? current.latestSnapshot,
+            syncState: {
+              hasLiveData: true,
+              latestProvider: 'health_connect',
+              latestMetricDate: (syncResponse.data.latestSnapshot as Snapshot | null | undefined)?.metricDate ?? current.syncState?.latestMetricDate,
+              message: syncResponse.data.syncMessage,
+            },
+          }
+        : current);
+      setMessage(`${syncResponse.data.acceptedCount} of ${syncResponse.data.receivedRecordCount} daily health record(s) synced.`);
       await load();
     } catch (error) {
       setMessage(apiErrorMessage(error, 'Health sync failed. Reopen permissions and try again.'));
@@ -181,8 +232,13 @@ export default function WearablesScreen() {
     return <LoadingState label="Loading devices..." />;
   }
 
-  const latest = payload.connections.data.find((connection) => connection.latestSnapshot)?.latestSnapshot ?? null;
+  const healthConnectProvider = payload.providerStatus?.health_connect;
   const healthConnectConnection = payload.connections.data.find((connection) => connection.provider === 'health_connect');
+  const latest = payload.latestSnapshot
+    ?? healthConnectProvider?.latestSnapshot
+    ?? payload.connections.data.find((connection) => connection.latestSnapshot)?.latestSnapshot
+    ?? null;
+  const latestDiagnostics = diagnostics.slice(-3).reverse();
 
   return (
     <Screen>
@@ -214,9 +270,12 @@ export default function WearablesScreen() {
 
             <View style={styles.statusGrid}>
               <StatusTile label="Phone permission" value={permissionLabel(linkStatus)} />
-              <StatusTile label="Backend device" value={connectionLabel(healthConnectConnection)} />
-              <StatusTile label="Last sync" value={healthConnectConnection?.lastSyncedAt ?? 'Not synced'} />
+              <StatusTile label="Backend device" value={connectionLabel(healthConnectProvider, healthConnectConnection)} />
+              <StatusTile label="Last API sync" value={healthConnectProvider?.lastSyncedAt ?? healthConnectConnection?.lastSyncedAt ?? 'Not synced'} />
+              <StatusTile label="Latest displayed" value={latest?.metricDate ?? 'No live snapshot'} />
             </View>
+
+            <Text style={styles.syncStateText}>{payload.syncState?.message ?? 'Sync state is waiting for the first real health record.'}</Text>
 
             {linkStatus?.missingScopes.length ? (
               <Text style={styles.warningText}>
@@ -246,6 +305,28 @@ export default function WearablesScreen() {
           </Card>
 
           {message ? <Text style={styles.message}>{message}</Text> : null}
+
+          {latestDiagnostics.length ? (
+            <Card style={styles.diagnosticsCard}>
+              <Text style={styles.cardTitle}>Health Connect diagnostics</Text>
+              {latestDiagnostics.map((day) => (
+                <View key={day.metricDate} style={styles.diagnosticRow}>
+                  <Text style={styles.statusLabel}>{day.metricDate}</Text>
+                  <Text style={styles.note}>
+                    {Object.entries(day.recordCounts)
+                      .filter(([, count]) => count > 0)
+                      .map(([key, count]) => `${key.replace(/_/g, ' ')} ${count}`)
+                      .join(' · ') || 'No readable records'}
+                  </Text>
+                  {day.errors.length ? (
+                    <Text style={styles.warningText}>
+                      {day.errors.slice(0, 2).map((readError) => `${readError.recordType}: ${readError.message}`).join(' · ')}
+                    </Text>
+                  ) : null}
+                </View>
+              ))}
+            </Card>
+          ) : null}
 
           <SectionTitle eyebrow="Today" title="Health monitor" note="Latest available wearable snapshot." />
           <View style={styles.metricRows}>
@@ -327,12 +408,14 @@ function permissionLabel(status: HealthConnectPermissionStatus | null) {
   return 'Needs permission';
 }
 
-function connectionLabel(connection?: WearableConnection) {
-  if (!connection) {
+function connectionLabel(provider?: ProviderStatus, connection?: WearableConnection) {
+  if (!provider?.linked && !connection) {
     return 'Not linked';
   }
 
-  return connection.status === 'connected' ? 'Linked' : connection.status;
+  const status = provider?.status ?? connection?.status;
+
+  return status === 'connected' ? 'Linked' : status ?? 'Linked';
 }
 
 const styles = StyleSheet.create({
@@ -347,7 +430,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   tabButtonActive: {
-    borderBottomColor: colors.ink,
+    borderBottomColor: colors.green,
     borderBottomWidth: 2,
   },
   tabText: {
@@ -356,7 +439,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   tabTextActive: {
-    color: colors.ink,
+    color: colors.green,
   },
   signalCard: {
     flexDirection: 'row',
@@ -391,7 +474,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     padding: 14,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.cardRaised,
   },
   statusLabel: {
     color: colors.muted,
@@ -411,6 +494,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     lineHeight: 18,
+  },
+  syncStateText: {
+    color: colors.blue,
+    fontSize: 13,
+    fontWeight: '900',
+    lineHeight: 18,
+  },
+  diagnosticsCard: {
+    gap: 14,
+  },
+  diagnosticRow: {
+    gap: 5,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    paddingTop: 12,
   },
   buttonStack: {
     gap: 10,

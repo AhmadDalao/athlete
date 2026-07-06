@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   athleteRow: {
     borderRadius: 22,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderColor: colors.border,
     borderWidth: 1,
     padding: 16,
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   barRow: {
     minHeight: 104,
     borderRadius: radius.lg,
-    backgroundColor: '#f4f8f4',
+    backgroundColor: colors.panelDark,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',

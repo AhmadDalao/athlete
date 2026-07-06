@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderColor: colors.border,
     borderWidth: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   threadTabTextActive: {
-    color: '#ffffff',
+    color: colors.panelDark,
   },
   threadCard: {
     gap: 12,
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   },
   theirs: {
     alignSelf: 'flex-start',
-    backgroundColor: '#f3f0eb',
+    backgroundColor: colors.panel,
   },
   sender: {
     color: colors.muted,
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   sendText: {
-    color: '#ffffff',
+    color: colors.panelDark,
     fontWeight: '900',
   },
 });

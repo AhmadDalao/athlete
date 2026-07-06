@@ -108,6 +108,15 @@ class MobileWearableSyncController extends Controller
         }
 
         $connection->refresh();
+        $latestSnapshot = collect($snapshots)
+            ->filter(fn ($snapshot): bool => is_array($snapshot))
+            ->sortByDesc(fn (array $snapshot): string => (string) ($snapshot['metricDate'] ?? ''))
+            ->first();
+        $recordCounts = collect($validated['records'])
+            ->map(fn (array $record): array => $record['raw_payload']['record_counts'] ?? [])
+            ->filter()
+            ->values()
+            ->all();
 
         return response()->json([
             'data' => [
@@ -120,7 +129,18 @@ class MobileWearableSyncController extends Controller
                     'authType' => $connection->auth_type,
                     'lastSyncedAt' => $connection->last_synced_at?->toIso8601String(),
                 ],
+                'receivedRecordCount' => count($validated['records']),
                 'acceptedCount' => count($snapshots),
+                'acceptedMetricDates' => collect($snapshots)
+                    ->pluck('metricDate')
+                    ->filter()
+                    ->values()
+                    ->all(),
+                'latestSnapshot' => $latestSnapshot,
+                'recordCounts' => $recordCounts,
+                'syncMessage' => count($snapshots) > 0
+                    ? 'Mobile health records were synced.'
+                    : 'No mobile health records were accepted.',
                 'snapshots' => $snapshots,
             ],
             'meta' => $this->metaPayload(),

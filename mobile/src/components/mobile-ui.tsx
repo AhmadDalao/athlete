@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 12,
     paddingBottom: 18,
-    backgroundColor: 'rgba(250, 248, 243, 0.96)',
+    backgroundColor: 'rgba(5, 8, 9, 0.96)',
     borderTopColor: colors.border,
     borderTopWidth: 1,
   },
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.cardRaised,
     borderColor: colors.border,
     borderWidth: 1,
   },
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green,
   },
   headerAvatarText: {
-    color: '#ffffff',
+    color: colors.panelDark,
     fontSize: 13,
     fontWeight: '900',
   },
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     overflow: 'hidden',
     borderRadius: 999,
-    backgroundColor: '#f2eee7',
+    backgroundColor: colors.panel,
     color: colors.ink,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -558,8 +558,8 @@ const styles = StyleSheet.create({
     color: colors.green,
   },
   goldPill: {
-    backgroundColor: '#fff0c7',
-    color: '#815b00',
+    backgroundColor: 'rgba(248, 198, 75, 0.14)',
+    color: colors.gold,
   },
   glyph: {
     width: 48,
@@ -567,21 +567,21 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f3f0eb',
+    backgroundColor: colors.panel,
     borderColor: colors.border,
     borderWidth: 1,
   },
   glyphGreen: {
     backgroundColor: colors.greenSoft,
-    borderColor: '#bcebd5',
+    borderColor: 'rgba(168, 255, 47, 0.45)',
   },
   glyphGold: {
-    backgroundColor: '#fff0c7',
-    borderColor: '#f2d988',
+    backgroundColor: 'rgba(248, 198, 75, 0.14)',
+    borderColor: 'rgba(248, 198, 75, 0.45)',
   },
   glyphDanger: {
-    backgroundColor: '#fff0eb',
-    borderColor: '#f3c2b5',
+    backgroundColor: 'rgba(255, 107, 87, 0.14)',
+    borderColor: 'rgba(255, 107, 87, 0.45)',
   },
   glyphText: {
     color: colors.ink,
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
     color: colors.green,
   },
   glyphTextGold: {
-    color: '#815b00',
+    color: colors.gold,
   },
   glyphTextDanger: {
     color: colors.danger,
@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f3f0eb',
+    backgroundColor: colors.panel,
   },
   tabMarkActive: {
     minWidth: 52,
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   tabMarkTextActive: {
-    color: '#ffffff',
+    color: colors.panelDark,
   },
   empty: {
     gap: 8,
@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: colors.panelDark,
     fontSize: 16,
     fontWeight: '900',
   },
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderColor: colors.border,
     borderWidth: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.cardRaised,
     paddingVertical: 14,
     paddingHorizontal: 18,
     alignItems: 'center',
@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
     borderWidth: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.panelDark,
   },
   signalValue: {
     color: colors.ink,
@@ -718,7 +718,7 @@ const styles = StyleSheet.create({
   },
   metricRowLabel: {
     flex: 1,
-    color: '#ffffff',
+    color: colors.ink,
     fontSize: 14,
     fontWeight: '900',
     letterSpacing: 1.4,
@@ -728,17 +728,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   metricRowValue: {
-    color: '#ffffff',
+    color: colors.ink,
     fontSize: 28,
     fontWeight: '900',
   },
   metricRowTarget: {
-    color: '#8c9698',
+    color: colors.panelMuted,
     fontSize: 13,
     fontWeight: '800',
   },
   sessionCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: radius.lg,
@@ -796,12 +796,12 @@ const styles = StyleSheet.create({
   },
   drawerScrim: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(17, 17, 17, 0.32)',
+    backgroundColor: 'rgba(0, 0, 0, 0.62)',
   },
   drawerPanel: {
     width: '82%',
     maxWidth: 340,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.panelDark,
     paddingTop: 54,
     paddingHorizontal: 18,
     paddingBottom: 24,
@@ -827,7 +827,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green,
   },
   drawerLogoText: {
-    color: '#ffffff',
+    color: colors.panelDark,
     fontSize: 18,
     fontWeight: '900',
   },
@@ -885,7 +885,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderRadius: 22,
-    backgroundColor: '#fff8f5',
+    backgroundColor: 'rgba(255, 107, 87, 0.12)',
     padding: 12,
   },
   drawerLogoutText: {

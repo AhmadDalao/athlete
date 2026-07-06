@@ -75,7 +75,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.greenDark,
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
@@ -85,27 +85,34 @@ const styles = StyleSheet.create({
   hero: {
     paddingTop: 36,
     gap: 14,
+    borderRadius: radius.xl,
+    borderColor: 'rgba(168, 255, 47, 0.24)',
+    borderWidth: 1,
+    backgroundColor: colors.greenDark,
+    padding: 22,
   },
   eyebrow: {
-    color: colors.gold,
+    color: colors.green,
     fontSize: 13,
     fontWeight: '900',
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
   title: {
-    color: '#ffffff',
+    color: colors.ink,
     fontSize: 48,
     fontWeight: '900',
     letterSpacing: -1.8,
   },
   body: {
-    color: '#d8e3dd',
+    color: colors.panelMuted,
     fontSize: 18,
     lineHeight: 28,
   },
   form: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderWidth: 1,
     borderRadius: radius.xl,
     padding: 22,
     gap: 12,
@@ -136,7 +143,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#ffffff',
+    color: colors.panelDark,
     fontSize: 17,
     fontWeight: '900',
   },

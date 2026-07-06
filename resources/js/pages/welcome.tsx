@@ -176,28 +176,28 @@ export default function Welcome({ content }: WelcomePageProps) {
 
             <section className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
                 <div className="space-y-8">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-stone-900/10 bg-white/70 px-4 py-2 text-xs font-semibold tracking-[0.22em] text-stone-600 uppercase shadow-sm backdrop-blur">
-                        <ShieldCheck className="h-4 w-4 text-amber-700" />
+                    <div className="inline-flex items-center gap-2 rounded-full border border-lime-300/20 bg-lime-300/10 px-4 py-2 text-xs font-semibold tracking-[0.22em] text-lime-100 uppercase shadow-sm backdrop-blur">
+                        <ShieldCheck className="h-4 w-4 text-lime-200" />
                         {heroEyebrow}
                     </div>
 
                     <div className="space-y-5">
-                        <h1 className="max-w-4xl font-['Space_Grotesk'] text-5xl font-bold tracking-tight text-stone-950 sm:text-6xl">
+                        <h1 className="max-w-4xl font-['Space_Grotesk'] text-5xl font-bold tracking-tight text-stone-50 sm:text-6xl">
                             {heroHeadline}
                         </h1>
-                        <p className="max-w-2xl text-lg leading-8 text-stone-700">{heroSubheadline}</p>
+                        <p className="max-w-2xl text-lg leading-8 text-stone-300">{heroSubheadline}</p>
                     </div>
 
                     <div className="flex flex-col gap-3 sm:flex-row">
                         {auth.user ? (
-                            <Button asChild size="lg" className="rounded-full bg-stone-950 px-7 text-stone-50 hover:bg-stone-800">
+                            <Button asChild size="lg" className="rounded-full bg-lime-300 px-7 text-[#07100c] hover:bg-lime-200">
                                 <Link href={auth.user.landing_path ?? '/app'}>
                                     Open app
                                     <ArrowRight className="h-4 w-4" />
                                 </Link>
                             </Button>
                         ) : (
-                            <Button asChild size="lg" className="rounded-full bg-stone-950 px-7 text-stone-50 hover:bg-stone-800">
+                            <Button asChild size="lg" className="rounded-full bg-lime-300 px-7 text-[#07100c] hover:bg-lime-200">
                                 <Link href={route('register')}>
                                     Start building
                                     <ArrowRight className="h-4 w-4" />
@@ -208,7 +208,7 @@ export default function Welcome({ content }: WelcomePageProps) {
                             asChild
                             size="lg"
                             variant="outline"
-                            className="rounded-full border-stone-950/20 bg-white/70 px-7 text-stone-900 hover:bg-white"
+                            className="rounded-full border-white/10 bg-white/[0.05] px-7 text-stone-100 hover:bg-white/10 hover:text-white"
                         >
                             <Link href={route('coaches.index')}>Browse coaches</Link>
                         </Button>

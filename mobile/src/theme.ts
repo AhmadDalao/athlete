@@ -1,18 +1,19 @@
 export const colors = {
-  background: '#f7f5ef',
-  card: '#ffffff',
-  panel: '#20292c',
-  panelDark: '#11191b',
-  panelMuted: '#8c9698',
-  ink: '#111111',
-  muted: '#74706b',
-  border: '#e7e1d8',
-  green: '#006b4f',
-  greenDark: '#123c31',
-  greenSoft: '#e1f5eb',
-  gold: '#e6b95c',
-  blue: '#32b9d6',
-  danger: '#c7432b',
+  background: '#070b0d',
+  card: '#10171a',
+  cardRaised: '#151f22',
+  panel: '#1d282b',
+  panelDark: '#050809',
+  panelMuted: '#9aa7aa',
+  ink: '#f8fff5',
+  muted: '#94a19f',
+  border: '#263235',
+  green: '#a8ff2f',
+  greenDark: '#064f3a',
+  greenSoft: 'rgba(168, 255, 47, 0.14)',
+  gold: '#f8c64b',
+  blue: '#39d5ff',
+  danger: '#ff6b57',
 };
 
 export const radius = {
@@ -23,9 +24,9 @@ export const radius = {
 };
 
 export const shadow = {
-  shadowColor: '#10261f',
-  shadowOpacity: 0.12,
-  shadowOffset: { width: 0, height: 14 },
-  shadowRadius: 28,
-  elevation: 4,
+  shadowColor: '#000000',
+  shadowOpacity: 0.35,
+  shadowOffset: { width: 0, height: 18 },
+  shadowRadius: 34,
+  elevation: 6,
 };

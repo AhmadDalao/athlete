@@ -22,7 +22,7 @@ export function AppShell({ children, variant = 'header' }: AppShellProps) {
     }
 
     return (
-        <SidebarProvider defaultOpen={isOpen} open={isOpen} onOpenChange={handleSidebarChange} className="bg-white text-stone-950">
+        <SidebarProvider defaultOpen={isOpen} open={isOpen} onOpenChange={handleSidebarChange} className="bg-[#070b0d] text-stone-50">
             {children}
         </SidebarProvider>
     );

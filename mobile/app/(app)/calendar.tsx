@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.cardRaised,
     borderColor: colors.border,
     borderWidth: 1,
     alignItems: 'center',
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   },
   calendarGrid: {
     borderRadius: radius.lg,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
     borderColor: colors.border,
     borderWidth: 1,
     padding: 10,
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   },
   dayCellWorkout: {
     backgroundColor: colors.greenSoft,
-    borderColor: '#bcebd5',
+    borderColor: 'rgba(168, 255, 47, 0.45)',
   },
   dayCellSelected: {
     backgroundColor: colors.green,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenSoft,
   },
   dayDotSelected: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.panelDark,
   },
   dayDotText: {
     color: colors.green,
@@ -270,6 +270,6 @@ const styles = StyleSheet.create({
     color: colors.green,
   },
   daySelectedText: {
-    color: '#ffffff',
+    color: colors.panelDark,
   },
 });

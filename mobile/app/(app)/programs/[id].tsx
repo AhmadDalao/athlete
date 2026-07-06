@@ -127,7 +127,7 @@ function ProgramSession({ session, canOpen }: { session: TrainingSessionSummary;
 const styles = StyleSheet.create({
   hero: {
     gap: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.card,
   },
   heroTitle: {
     color: colors.ink,
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   exercisePreviewCard: {
     gap: 12,
-    backgroundColor: '#fbfaf6',
+    backgroundColor: colors.panelDark,
     shadowOpacity: 0,
     elevation: 0,
   },
