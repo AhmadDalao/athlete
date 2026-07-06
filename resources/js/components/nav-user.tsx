@@ -19,14 +19,14 @@ export function NavUser() {
                     <DropdownMenuTrigger asChild>
                         <SidebarMenuButton
                             size="lg"
-                            className="group rounded-2xl border border-white/10 bg-white/[0.05] text-stone-100 shadow-none data-[state=open]:bg-white/10"
+                            className="group rounded-2xl border border-stone-200 bg-white text-stone-800 shadow-none data-[state=open]:bg-[#fffaf0]"
                         >
                             <UserInfo user={auth.user} />
                             <ChevronsUpDown className="ml-auto size-4" />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
-                        className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-[1.2rem] border border-white/10 bg-[#0d1416] text-stone-100"
+                        className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-[1.2rem] border border-stone-200 bg-white text-stone-800"
                         align="end"
                         side={isMobile ? 'bottom' : state === 'collapsed' ? 'left' : 'bottom'}
                     >

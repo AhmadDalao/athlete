@@ -29,46 +29,46 @@ export function WorkspaceHero({
     aside?: ReactNode;
 }) {
     return (
-        <section className="min-w-0 rounded-[1.8rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(168,255,47,0.18),transparent_34%),linear-gradient(135deg,#10171a,#070b0d)] p-6 text-stone-50 shadow-[0_28px_80px_-52px_rgba(0,0,0,0.9)]">
+        <section className="min-w-0 rounded-[1.8rem] border border-stone-200 bg-[radial-gradient(circle_at_top_right,rgba(11,110,105,0.12),transparent_34%),linear-gradient(135deg,#fffdf8,#f7efe3)] p-6 text-stone-950 shadow-[0_24px_60px_-46px_rgba(22,18,11,0.22)]">
             <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                 <div className="min-w-0 space-y-4">
                     <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[0.72rem] font-black tracking-[0.14em] text-lime-200">
+                        <span className="text-[0.72rem] font-black tracking-[0.14em] text-[#9a6a1f] uppercase">
                             {eyebrow}
                         </span>
                         {badges.map((badge) => (
-                            <Badge key={badge} variant="outline" className="rounded-full border-lime-300/25 bg-lime-300/10 text-lime-100">
+                            <Badge key={badge} variant="outline" className="rounded-full border-[#e8d7b9] bg-[#f4ead9] text-[#6f4a19]">
                                 {badge}
                             </Badge>
                         ))}
                     </div>
                     <div className="space-y-2">
-                        <h1 className="max-w-3xl font-['Space_Grotesk'] text-4xl leading-none font-black tracking-[-0.06em] text-stone-50 sm:text-[2.65rem]">
+                        <h1 className="max-w-3xl font-['Space_Grotesk'] text-4xl leading-none font-black tracking-[-0.06em] text-stone-950 sm:text-[2.65rem]">
                             {title}
                         </h1>
-                        <p className="max-w-2xl text-base leading-7 text-stone-300">{description}</p>
+                        <p className="max-w-2xl text-base leading-7 text-stone-600">{description}</p>
                     </div>
                 </div>
                 {actions && <div className="flex min-w-0 shrink-0 flex-wrap gap-3">{actions}</div>}
             </div>
-            {aside && <div className="mt-5 min-w-0 border-t border-white/10 pt-5">{aside}</div>}
+            {aside && <div className="mt-5 min-w-0 border-t border-stone-200 pt-5">{aside}</div>}
         </section>
     );
 }
 
 export function WorkspaceMetricCard({ title, value, note, icon: Icon }: { title: string; value: string; note: string; icon: LucideIcon }) {
     return (
-        <div className="min-w-0 rounded-[1.2rem] border border-white/10 bg-white/[0.04] p-4">
+        <div className="min-w-0 rounded-[1.2rem] border border-stone-200 bg-white p-4 shadow-[0_18px_44px_-38px_rgba(22,18,11,0.28)]">
             <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                    <p className="text-xs font-black tracking-[0.14em] text-stone-400 uppercase">{title}</p>
-                    <p className="mt-2 font-['Space_Grotesk'] text-3xl font-black tracking-[-0.06em] text-stone-50">{value}</p>
+                    <p className="text-xs font-black tracking-[0.14em] text-stone-500 uppercase">{title}</p>
+                    <p className="mt-2 font-['Space_Grotesk'] text-3xl font-black tracking-[-0.06em] text-stone-950">{value}</p>
                 </div>
-                <div className="grid size-8 shrink-0 place-items-center rounded-full bg-lime-300 text-[#07100c]">
+                <div className="grid size-9 shrink-0 place-items-center rounded-full bg-[#f0bd4f] text-stone-950">
                     <Icon className="size-4" />
                 </div>
             </div>
-            <p className="mt-3 text-sm leading-6 text-stone-300">{note}</p>
+            <p className="mt-3 text-sm leading-6 text-stone-500">{note}</p>
         </div>
     );
 }
@@ -76,15 +76,15 @@ export function WorkspaceMetricCard({ title, value, note, icon: Icon }: { title:
 export function WorkspaceActionCard({ title, href, note, icon: Icon }: { title: string; href: string; note: string; icon: LucideIcon }) {
     return (
         <Link href={href} className="block min-w-0">
-            <div className="flex h-full min-w-0 items-start justify-between gap-4 rounded-[1.2rem] border border-white/10 bg-white/[0.04] p-4 transition-colors hover:bg-white/[0.07]">
+            <div className="flex h-full min-w-0 items-start justify-between gap-4 rounded-[1.2rem] border border-stone-200 bg-white p-4 transition-colors hover:border-[#e4c179] hover:bg-[#fffaf0]">
                 <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                        <Icon className="size-4 text-lime-200" />
-                        <p className="font-['Space_Grotesk'] text-lg font-black tracking-[-0.04em] text-stone-50">{title}</p>
+                        <Icon className="size-4 text-[#8a5b1b]" />
+                        <p className="font-['Space_Grotesk'] text-lg font-black tracking-[-0.04em] text-stone-950">{title}</p>
                     </div>
-                    <p className="mt-2 text-sm leading-6 text-stone-300">{note}</p>
+                    <p className="mt-2 text-sm leading-6 text-stone-500">{note}</p>
                 </div>
-                <span className="inline-flex shrink-0 items-center text-sm font-black text-lime-200">
+                <span className="inline-flex shrink-0 items-center text-sm font-black text-[#7a4d14]">
                     Open view
                     <ArrowRight className="ml-1.5 size-4" />
                 </span>
@@ -122,10 +122,10 @@ export function WorkspacePanel({
 export function WorkspaceSectionHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
     return (
         <div className="space-y-2">
-            <p className="text-[0.7rem] font-black tracking-[0.14em] text-lime-200/70 uppercase">{eyebrow}</p>
+            <p className="text-[0.7rem] font-black tracking-[0.14em] text-[#9a6a1f] uppercase">{eyebrow}</p>
             <div className="space-y-1">
-                <h2 className="font-['Space_Grotesk'] text-2xl font-black tracking-[-0.05em] text-stone-50">{title}</h2>
-                <p className="max-w-4xl text-sm leading-7 text-stone-300">{description}</p>
+                <h2 className="font-['Space_Grotesk'] text-2xl font-black tracking-[-0.05em] text-stone-950">{title}</h2>
+                <p className="max-w-4xl text-sm leading-7 text-stone-500">{description}</p>
             </div>
         </div>
     );

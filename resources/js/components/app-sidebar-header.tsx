@@ -35,20 +35,20 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
 
     return (
         <header className="flex shrink-0 items-center gap-3 pt-4 pb-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:pt-3">
-            <div className="grid w-full gap-4 rounded-[1.6rem] border border-white/10 bg-[#0d1416] px-5 py-4 shadow-[0_24px_70px_-46px_rgba(0,0,0,0.85)] lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="grid w-full gap-4 rounded-[1.6rem] border border-stone-200 bg-[#fffdf8] px-5 py-4 shadow-[0_24px_70px_-56px_rgba(22,18,11,0.35)] lg:grid-cols-[1fr_auto] lg:items-center">
                 <div className="min-w-0 space-y-3">
                     <div className="flex flex-wrap items-center gap-3">
-                        <SidebarTrigger className="-ml-1 rounded-full border border-white/10 bg-white/[0.04] text-stone-200 hover:bg-white/10 hover:text-white" />
-                        <Badge variant="outline" className="border-lime-300/25 bg-lime-300/10 text-lime-100">
+                        <SidebarTrigger className="-ml-1 rounded-full border border-stone-200 bg-white text-stone-700 hover:bg-[#fffaf0] hover:text-stone-950" />
+                        <Badge variant="outline" className="border-[#e8d7b9] bg-[#f4ead9] text-[#6f4a19]">
                             {auth.user.primary_role ?? 'user'}
                         </Badge>
-                        <p className="text-sm font-medium text-stone-100">{currentPage}</p>
+                        <p className="text-sm font-medium text-stone-950">{currentPage}</p>
                     </div>
                     <div className="space-y-1">
-                        <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-lime-200/60 uppercase">Workspace focus</p>
-                        <p className="max-w-3xl text-sm leading-7 text-stone-300">{descriptions[currentPage] ?? 'Keep the next decision obvious.'}</p>
+                        <p className="text-[0.68rem] font-semibold tracking-[0.22em] text-[#9a6a1f] uppercase">Workspace focus</p>
+                        <p className="max-w-3xl text-sm leading-7 text-stone-600">{descriptions[currentPage] ?? 'Keep the next decision obvious.'}</p>
                     </div>
-                    <div className="text-sm text-stone-400">
+                    <div className="text-sm text-stone-500">
                         <Breadcrumbs breadcrumbs={breadcrumbs} />
                     </div>
                 </div>
@@ -62,26 +62,26 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                                 name="q"
                                 type="search"
                                 placeholder="Search workspace..."
-                                className="h-11 w-full rounded-full border border-white/10 bg-white/[0.04] pr-4 pl-10 text-sm text-stone-100 transition outline-none placeholder:text-stone-500 focus:border-lime-300/55 focus:ring-2 focus:ring-lime-300/10"
+                                className="h-11 w-full rounded-full border border-stone-200 bg-white pr-4 pl-10 text-sm text-stone-950 transition outline-none placeholder:text-stone-400 focus:border-[#d8b36c] focus:ring-2 focus:ring-[#f0bd4f]/20"
                             />
                         </label>
                     </form>
-                    <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-stone-100 md:flex md:min-w-[240px]">
+                    <div className="hidden rounded-2xl border border-stone-200 bg-white px-4 py-3 text-stone-800 md:flex md:min-w-[240px]">
                         <UserInfo user={auth.user} />
                     </div>
-                    <Button asChild size="sm" variant="outline" className="rounded-xl border-white/10 bg-white/[0.04] text-stone-100 hover:bg-white/10 hover:text-white">
+                    <Button asChild size="sm" variant="outline" className="rounded-xl border-stone-200 bg-white text-stone-700 hover:bg-[#fffaf0] hover:text-stone-950">
                         <Link href={route('contact.show')}>Need help?</Link>
                     </Button>
-                    <Button asChild size="sm" variant="outline" className="rounded-xl border-white/10 bg-white/[0.04] text-stone-100 hover:bg-white/10 hover:text-white">
+                    <Button asChild size="sm" variant="outline" className="rounded-xl border-stone-200 bg-white text-stone-700 hover:bg-[#fffaf0] hover:text-stone-950">
                         <Link href={route('notifications.index')} className="relative">
                             <Bell className="size-4" />
                             Alerts
                             {unreadCount > 0 && (
-                                <span className="ml-1 rounded-full bg-lime-300 px-2 py-0.5 text-xs font-semibold text-[#07100c]">{unreadCount}</span>
+                                <span className="ml-1 rounded-full bg-[#f0bd4f] px-2 py-0.5 text-xs font-semibold text-stone-950">{unreadCount}</span>
                             )}
                         </Link>
                     </Button>
-                    <Button asChild size="sm" className="rounded-xl bg-lime-300 text-[#07100c] hover:bg-lime-200">
+                    <Button asChild size="sm" className="rounded-xl bg-[#f0bd4f] text-stone-950 hover:bg-[#e2ad3f]">
                         <Link href={route('profile.edit')}>
                             <Settings2 className="size-4" />
                             Account
