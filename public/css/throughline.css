@@ -250,6 +250,56 @@ a {
     color: #c7d1ca;
 }
 
+.tl-mini-chart {
+    background:
+        linear-gradient(180deg, rgba(183, 255, 60, 0.08), transparent),
+        var(--tl-panel-2);
+    border: 1px solid var(--tl-line);
+    border-radius: 1.1rem;
+    height: 100%;
+    padding: 1rem;
+}
+
+.tl-bars {
+    align-items: end;
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    min-height: 170px;
+}
+
+.tl-bar-item {
+    align-items: center;
+    display: grid;
+    gap: 0.4rem;
+    grid-template-rows: auto 1fr auto;
+    height: 170px;
+    justify-items: center;
+    min-width: 0;
+}
+
+.tl-bar-value,
+.tl-bar-date {
+    color: var(--tl-muted);
+    font-size: 0.72rem;
+    line-height: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+    text-align: center;
+}
+
+.tl-bar {
+    align-self: end;
+    background: linear-gradient(180deg, var(--tl-lime), var(--tl-emerald));
+    border-radius: 999px 999px 0.35rem 0.35rem;
+    box-shadow: 0 12px 30px rgba(183, 255, 60, 0.16);
+    display: block;
+    min-height: 0.45rem;
+    width: min(100%, 1.1rem);
+}
+
 .pagination {
     --bs-pagination-bg: #0f1518;
     --bs-pagination-border-color: var(--tl-line);

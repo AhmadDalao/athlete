@@ -6,11 +6,15 @@ use App\Livewire\Admin\ContactSubmissionsTable;
 use App\Livewire\Admin\InvitationsTable;
 use App\Livewire\Admin\PermissionsPanel;
 use App\Livewire\Admin\SettingsPanel;
+use App\Livewire\Athlete\ProgressPanel;
 use App\Livewire\Athlete\WorkoutDetail;
 use App\Livewire\Coach\ProgramDetail;
 use App\Models\AthleteInvitation;
+use App\Models\AuditLog;
 use App\Models\CoachAthleteAssignment;
 use App\Models\ContactSubmission;
+use App\Models\EmailLog;
+use App\Models\ProgressEntry;
 use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use App\Models\User;
@@ -108,6 +112,43 @@ class RebuildSmokeTest extends TestCase
             'duration_minutes' => 48,
             'rpe' => 7,
             'notes' => 'Felt controlled.',
+        ]);
+    }
+
+    public function test_athlete_can_save_and_filter_progress_entries(): void
+    {
+        $athlete = User::factory()->create(['role' => 'athlete']);
+
+        ProgressEntry::create([
+            'athlete_id' => $athlete->id,
+            'logged_on' => now()->subDay()->toDateString(),
+            'weight' => 82.4,
+            'protein' => 155,
+            'energy' => 7,
+            'notes' => 'Previous entry',
+        ]);
+
+        Livewire::actingAs($athlete)
+            ->test(ProgressPanel::class)
+            ->set('loggedOn', now()->toDateString())
+            ->set('weight', 82.1)
+            ->set('calories', 2500)
+            ->set('protein', 160)
+            ->set('hydration', 3000)
+            ->set('sleepQuality', 8)
+            ->set('soreness', 3)
+            ->set('energy', 8)
+            ->set('notes', 'Solid training day')
+            ->call('save')
+            ->set('search', 'Solid')
+            ->assertSee('Solid training day')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('progress_entries', [
+            'athlete_id' => $athlete->id,
+            'logged_on' => today()->toDateTimeString(),
+            'protein' => 160,
+            'notes' => 'Solid training day',
         ]);
     }
 
@@ -306,5 +347,52 @@ class RebuildSmokeTest extends TestCase
         $this->assertDatabaseMissing('training_sessions', [
             'id' => $session->id,
         ]);
+    }
+
+    public function test_admin_can_filter_and_export_logs(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+        $admin = User::factory()->create(['role' => 'admin', 'name' => 'Log Admin']);
+
+        AuditLog::create([
+            'user_id' => $admin->id,
+            'action' => 'settings.updated',
+            'entity' => 'platform_settings',
+            'summary' => 'Updated public website copy.',
+            'ip_address' => '127.0.0.1',
+        ]);
+
+        EmailLog::create([
+            'recipient' => 'failed@example.com',
+            'subject' => 'Invite failed',
+            'type' => 'athlete_invite',
+            'status' => 'failed',
+            'error' => 'SMTP rejected message.',
+        ]);
+
+        $this->actingAs($owner)
+            ->get(route('admin.audit'))
+            ->assertOk()
+            ->assertSee('settings.updated');
+
+        $auditExport = $this->actingAs($owner)
+            ->get(route('admin.audit.export', [
+                'tab' => 'audit',
+                'audit_action' => 'settings.updated',
+                'audit_entity' => 'platform_settings',
+            ]))
+            ->assertOk();
+
+        $this->assertStringContainsString('Updated public website copy.', $auditExport->streamedContent());
+
+        $emailExport = $this->actingAs($owner)
+            ->get(route('admin.audit.export', [
+                'tab' => 'email',
+                'email_status' => 'failed',
+                'email_type' => 'athlete_invite',
+            ]))
+            ->assertOk();
+
+        $this->assertStringContainsString('failed@example.com', $emailExport->streamedContent());
     }
 }

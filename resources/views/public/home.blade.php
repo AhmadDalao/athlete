@@ -19,7 +19,7 @@
                     <div class="row g-3 mt-1">
                         <div class="col-6"><div class="tl-stat"><i class="fa-solid fa-user-tie text-warning"></i><strong>Coach</strong><span class="tl-muted">Invites, roster, programs</span></div></div>
                         <div class="col-6"><div class="tl-stat"><i class="fa-solid fa-person-running text-success"></i><strong>Athlete</strong><span class="tl-muted">Calendar, workouts, logs</span></div></div>
-                        <div class="col-12"><div class="tl-stat"><i class="fa-solid fa-table text-info"></i><strong>Admin tables</strong><span class="tl-muted">Permissions, settings, tracking, exports later</span></div></div>
+                        <div class="col-12"><div class="tl-stat"><i class="fa-solid fa-table text-info"></i><strong>Admin tables</strong><span class="tl-muted">Permissions, settings, tracking, and exports</span></div></div>
                     </div>
                 </div>
             </div>

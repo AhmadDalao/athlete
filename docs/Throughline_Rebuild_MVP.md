@@ -63,6 +63,7 @@ Owner accounts have every permission and cannot be locked out.
 | Admin | `/admin/permissions` | Grouped permission control |
 | Admin | `/admin/settings` | Website, invite, and mail settings |
 | Admin | `/admin/audit-log` | Audit and email log table |
+| Admin | `/admin/audit-log/export` | Filtered audit/email CSV export |
 | Coach | `/coach` | Coach workspace summary |
 | Coach | `/coach/athletes` | Assigned athletes table |
 | Coach | `/coach/athletes/{athlete}` | Coach-scoped athlete profile |
@@ -145,8 +146,10 @@ Current automated coverage:
 - Admin can resend invitations and write email/audit logs.
 - Admin can export invitation records.
 - Admin can review contact submissions and export them.
+- Admin can filter and export audit/email logs.
 - Admin permissions and settings writes create audit logs.
 - Coach can update programs, edit sessions, and delete empty sessions.
+- Athlete can save progress check-ins and filter the progress table.
 
 ## Completed Rebuild Slices
 
@@ -173,15 +176,16 @@ Current automated coverage:
 - Added invitation CSV export that respects current search/status filters.
 - Added coach program update/archive controls.
 - Added coach session edit/delete controls. Empty sessions can be deleted; sessions with athlete logs are cancelled instead to protect history.
+- Added audit/email log filters for action, entity, status, type, date range, search, page size, and CSV export.
+- Improved athlete progress with summary stats, compact trend charts, date filters, and the table as the source of truth.
 
 ## Next Build Slice
 
 Build next in this order:
 
-1. Add dedicated email log filters and export.
-2. Add athlete progress charts/tables with cleaner mobile layout.
-3. Add settings-driven public pricing/membership copy.
-4. Add production deployment checklist for Hostinger.
-5. Deploy rebuild branch only after local smoke testing is accepted.
+1. Add settings-driven public pricing/membership copy.
+2. Add production deployment checklist for Hostinger.
+3. Tighten coach/athlete mobile-width layout passes.
+4. Deploy rebuild branch only after local smoke testing is accepted.
 
 Do not reintroduce native mobile, watch sync, Stripe, OAuth, or API complexity until the website MVP is stable.

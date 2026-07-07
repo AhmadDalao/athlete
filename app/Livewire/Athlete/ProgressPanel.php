@@ -4,6 +4,8 @@ namespace App\Livewire\Athlete;
 
 use App\Livewire\Concerns\WithTableControls;
 use App\Models\ProgressEntry;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -31,9 +33,20 @@ class ProgressPanel extends Component
 
     public string $notes = '';
 
+    public string $from = '';
+
+    public string $to = '';
+
     public function mount(): void
     {
         $this->loggedOn = today()->toDateString();
+    }
+
+    public function updated($property): void
+    {
+        if (in_array($property, ['from', 'to'], true)) {
+            $this->resetPage();
+        }
     }
 
     public function save(): void
@@ -64,18 +77,73 @@ class ProgressPanel extends Component
             ]
         );
 
+        $this->reset(['weight', 'calories', 'protein', 'hydration', 'sleepQuality', 'soreness', 'energy', 'notes']);
+        $this->loggedOn = today()->toDateString();
         session()->flash('status', 'Progress saved.');
     }
 
     public function render()
     {
-        $query = ProgressEntry::where('athlete_id', Auth::id())
+        $query = $this->filteredQuery()
             ->when($this->search, fn ($query) => $query->where('notes', 'like', "%{$this->search}%"))
             ->orderByDesc('logged_on');
+
+        $recent = ProgressEntry::where('athlete_id', Auth::id())
+            ->orderByDesc('logged_on')
+            ->limit(7)
+            ->get()
+            ->reverse()
+            ->values();
+
+        $statsQuery = $this->filteredQuery();
 
         return view('livewire.athlete.progress-panel', [
             'entries' => $this->paginateQuery($query),
             'latest' => ProgressEntry::where('athlete_id', Auth::id())->latest('logged_on')->first(),
+            'stats' => [
+                'entries' => (clone $statsQuery)->count(),
+                'avgWeight' => $this->formatNumber((clone $statsQuery)->whereNotNull('weight')->avg('weight'), 1),
+                'avgProtein' => $this->formatNumber((clone $statsQuery)->whereNotNull('protein')->avg('protein'), 0),
+                'avgEnergy' => $this->formatNumber((clone $statsQuery)->whereNotNull('energy')->avg('energy'), 1),
+            ],
+            'charts' => [
+                'weight' => $this->series($recent, 'weight', 'kg'),
+                'protein' => $this->series($recent, 'protein', 'g'),
+                'energy' => $this->series($recent, 'energy', '/10'),
+            ],
         ])->layout('layouts.app', ['title' => 'Progress']);
+    }
+
+    private function filteredQuery(): Builder
+    {
+        return ProgressEntry::where('athlete_id', Auth::id())
+            ->when($this->from !== '', fn (Builder $query) => $query->whereDate('logged_on', '>=', $this->from))
+            ->when($this->to !== '', fn (Builder $query) => $query->whereDate('logged_on', '<=', $this->to));
+    }
+
+    private function formatNumber(mixed $value, int $precision): string
+    {
+        if ($value === null) {
+            return '-';
+        }
+
+        return number_format((float) $value, $precision);
+    }
+
+    private function series(Collection $entries, string $field, string $unit): array
+    {
+        $max = (float) $entries->pluck($field)->filter()->max();
+        $max = $max > 0 ? $max : 1;
+
+        return $entries->map(function (ProgressEntry $entry) use ($field, $max, $unit): array {
+            $value = $entry->{$field};
+            $height = $value ? max(10, min(100, (int) round(((float) $value / $max) * 100))) : 0;
+
+            return [
+                'date' => $entry->logged_on->format('M j'),
+                'value' => $value === null ? '-' : rtrim(rtrim(number_format((float) $value, 1), '0'), '.').$unit,
+                'height' => $height,
+            ];
+        })->all();
     }
 }

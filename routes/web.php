@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ContactSubmissionExportController;
 use App\Http\Controllers\Admin\InvitationExportController;
+use App\Http\Controllers\Admin\LogExportController;
 use App\Http\Controllers\Admin\UserExportController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardRedirectController;
@@ -35,6 +36,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/invitations', Admin\InvitationsTable::class)->name('invitations');
         Route::get('/permissions', Admin\PermissionsPanel::class)->name('permissions');
         Route::get('/settings', Admin\SettingsPanel::class)->name('settings');
+        Route::get('/audit-log/export', LogExportController::class)->middleware('can:admin.audit')->name('audit.export');
         Route::get('/audit-log', Admin\AuditLogTable::class)->name('audit');
     });
 

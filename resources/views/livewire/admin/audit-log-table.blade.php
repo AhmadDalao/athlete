@@ -1,7 +1,71 @@
 <div>
     <div class="tl-hero"><div class="tl-eyebrow">Accountability</div><h2 class="h1 fw-bold">Logs</h2><p class="tl-muted mb-0">Audit and email delivery records.</p></div>
-    <div class="tl-panel d-flex gap-2"><button class="btn {{ $tab === 'audit' ? 'btn-tl' : 'btn-outline-tl' }}" wire:click="$set('tab','audit')">Audit</button><button class="btn {{ $tab === 'email' ? 'btn-tl' : 'btn-outline-tl' }}" wire:click="$set('tab','email')">Email</button></div>
-    @include('livewire.partials.table-toolbar', ['placeholder' => 'Search logs'])
+    <div class="tl-panel">
+        <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn {{ $tab === 'audit' ? 'btn-tl' : 'btn-outline-tl' }}" type="button" wire:click="setTab('audit')">Audit</button>
+                <button class="btn {{ $tab === 'email' ? 'btn-tl' : 'btn-outline-tl' }}" type="button" wire:click="setTab('email')">Email</button>
+            </div>
+            <a class="btn btn-outline-tl" href="{{ route('admin.audit.export', ['tab' => $tab, 'search' => $search, 'audit_action' => $auditAction, 'audit_entity' => $auditEntity, 'email_status' => $emailStatus, 'email_type' => $emailType, 'from' => $from, 'to' => $to]) }}"><i class="fa-solid fa-download me-2"></i>Export CSV</a>
+        </div>
+    </div>
+    <div class="tl-panel">
+        <div class="row g-3 align-items-end">
+            <div class="col-lg-4">
+                <label class="form-label">Search</label>
+                <input class="form-control" type="search" placeholder="Search logs" wire:model.live.debounce.300ms="search">
+            </div>
+            @if($tab === 'audit')
+                <div class="col-md-2">
+                    <label class="form-label">Action</label>
+                    <select class="form-select" wire:model.live="auditAction">
+                        <option value="all">All actions</option>
+                        @foreach($auditActions as $action)
+                            <option value="{{ $action }}">{{ $action }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Entity</label>
+                    <select class="form-select" wire:model.live="auditEntity">
+                        <option value="all">All entities</option>
+                        @foreach($auditEntities as $entity)
+                            <option value="{{ $entity }}">{{ $entity }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @else
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" wire:model.live="emailStatus">
+                        <option value="all">All statuses</option>
+                        @foreach($emailStatuses as $status)
+                            <option value="{{ $status }}">{{ $status }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Type</label>
+                    <select class="form-select" wire:model.live="emailType">
+                        <option value="all">All types</option>
+                        @foreach($emailTypes as $type)
+                            <option value="{{ $type }}">{{ $type }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
+            <div class="col-md-2"><label class="form-label">From</label><input class="form-control" type="date" wire:model.live="from"></div>
+            <div class="col-md-2"><label class="form-label">To</label><input class="form-control" type="date" wire:model.live="to"></div>
+            <div class="col-md-2">
+                <label class="form-label">Show</label>
+                <select class="form-select" wire:model.live="perPage">
+                    @foreach($pageSizeOptions as $option)
+                        <option value="{{ $option }}">{{ $option === 'all' ? 'All' : $option }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+    </div>
     <div class="tl-panel">
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
             @if($tab === 'audit')
