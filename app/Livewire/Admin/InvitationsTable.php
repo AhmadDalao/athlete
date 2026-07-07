@@ -63,7 +63,8 @@ class InvitationsTable extends Component
             ->when($this->status !== 'all', fn ($query) => $query->where('status', $this->status))
             ->when($this->search, fn ($query) => $query->where(fn ($query) => $query
                 ->where('email', 'like', "%{$this->search}%")
-                ->orWhere('name', 'like', "%{$this->search}%")))
+                ->orWhere('name', 'like', "%{$this->search}%")
+                ->orWhereHas('coach', fn ($query) => $query->where('name', 'like', "%{$this->search}%"))))
             ->latest();
 
         return view('livewire.admin.invitations-table', [

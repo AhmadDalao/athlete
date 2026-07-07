@@ -1,8 +1,34 @@
 <div>
     <div class="tl-hero"><div class="tl-eyebrow">Invitations</div><h2 class="h1 fw-bold">Athlete invites</h2><p class="tl-muted mb-0">Track every invite across every coach.</p></div>
-    @include('livewire.partials.table-toolbar', ['placeholder' => 'Search invite name or email'])
     <div class="tl-panel">
-        <div class="row mb-3"><div class="col-md-3"><label class="form-label">Status</label><select class="form-select" wire:model.live="status"><option value="all">All</option><option value="pending">Pending</option><option value="accepted">Accepted</option><option value="cancelled">Cancelled</option></select></div></div>
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label">Search</label>
+                <input class="form-control" type="search" placeholder="Search invite name, email, or coach" wire:model.live.debounce.300ms="search">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Status</label>
+                <select class="form-select" wire:model.live="status">
+                    <option value="all">All</option>
+                    <option value="pending">Pending</option>
+                    <option value="accepted">Accepted</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Show</label>
+                <select class="form-select" wire:model.live="perPage">
+                    @foreach($pageSizeOptions as $option)
+                        <option value="{{ $option }}">{{ $option === 'all' ? 'All' : $option }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-3">
+                <a class="btn btn-outline-tl w-100" href="{{ route('admin.invitations.export', ['search' => $search, 'status' => $status]) }}"><i class="fa-solid fa-download me-2"></i>Export CSV</a>
+            </div>
+        </div>
+    </div>
+    <div class="tl-panel">
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
             <thead><tr><th>Athlete</th><th>Coach</th><th>Status</th><th>Expires</th><th>Created</th><th>Actions</th></tr></thead>
             <tbody>

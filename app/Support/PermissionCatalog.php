@@ -12,6 +12,7 @@ class PermissionCatalog
                 'admin.settings' => 'Manage website and system settings',
                 'admin.permissions' => 'Manage admin permissions',
                 'admin.audit' => 'View audit and email logs',
+                'admin.contacts' => 'Manage website contact submissions',
             ],
             'People' => [
                 'users.manage' => 'Create and edit users',
@@ -40,7 +41,7 @@ class PermissionCatalog
     public static function defaultsForRole(string $role): array
     {
         return match ($role) {
-            'admin' => ['admin.access', 'admin.audit', 'users.manage', 'coaches.manage', 'athletes.manage', 'invitations.manage'],
+            'admin' => ['admin.access', 'admin.audit', 'admin.contacts', 'users.manage', 'coaches.manage', 'athletes.manage', 'invitations.manage'],
             'coach' => ['coach.access', 'programs.manage', 'athletes.view', 'invitations.manage'],
             'athlete' => ['athlete.access', 'progress.manage', 'workouts.complete'],
             default => static::all(),

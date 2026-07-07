@@ -2,12 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Admin\ContactSubmissionsTable;
 use App\Livewire\Admin\InvitationsTable;
 use App\Livewire\Admin\PermissionsPanel;
 use App\Livewire\Admin\SettingsPanel;
 use App\Livewire\Athlete\WorkoutDetail;
+use App\Livewire\Coach\ProgramDetail;
 use App\Models\AthleteInvitation;
 use App\Models\CoachAthleteAssignment;
+use App\Models\ContactSubmission;
 use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use App\Models\User;
@@ -179,6 +182,12 @@ class RebuildSmokeTest extends TestCase
             'entity' => 'athlete_invitation',
             'entity_id' => $invite->id,
         ]);
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.invitations.export', ['search' => 'new-athlete']))
+            ->assertOk();
+
+        $this->assertStringContainsString('new-athlete@example.com', $response->streamedContent());
     }
 
     public function test_admin_permissions_and_settings_write_audit_logs(): void
@@ -215,6 +224,87 @@ class RebuildSmokeTest extends TestCase
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'settings.updated',
             'entity' => 'platform_settings',
+        ]);
+    }
+
+    public function test_admin_can_manage_contact_submissions(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+        $submission = ContactSubmission::create([
+            'name' => 'Lead Athlete',
+            'email' => 'lead@example.com',
+            'phone' => '+15550001111',
+            'message' => 'I need coaching.',
+            'status' => 'new',
+        ]);
+
+        $this->actingAs($owner)
+            ->get(route('admin.contact-submissions'))
+            ->assertOk()
+            ->assertSee('lead@example.com');
+
+        Livewire::actingAs($owner)
+            ->test(ContactSubmissionsTable::class)
+            ->call('markStatus', $submission->id, 'reviewed')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('contact_submissions', [
+            'id' => $submission->id,
+            'status' => 'reviewed',
+        ]);
+
+        $response = $this->actingAs($owner)
+            ->get(route('admin.contact-submissions.export', ['search' => 'lead']))
+            ->assertOk();
+
+        $this->assertStringContainsString('lead@example.com', $response->streamedContent());
+    }
+
+    public function test_coach_can_update_program_and_maintain_sessions(): void
+    {
+        $coach = User::factory()->create(['role' => 'coach']);
+        $athlete = User::factory()->create(['role' => 'athlete']);
+
+        $program = TrainingProgram::create([
+            'coach_id' => $coach->id,
+            'athlete_id' => $athlete->id,
+            'title' => 'Old Plan',
+            'status' => 'draft',
+        ]);
+
+        $session = TrainingSession::create([
+            'training_program_id' => $program->id,
+            'title' => 'Old Session',
+            'scheduled_on' => now()->toDateString(),
+            'status' => 'scheduled',
+            'exercises' => [['name' => 'Squat', 'sets' => 3, 'reps' => 5]],
+        ]);
+
+        Livewire::actingAs($coach)
+            ->test(ProgramDetail::class, ['program' => $program])
+            ->set('programTitle', 'Updated Plan')
+            ->set('programGoal', 'Return to sprinting')
+            ->set('programStatus', 'active')
+            ->call('updateProgram')
+            ->call('startEditSession', $session->id)
+            ->set('editTitle', 'Updated Session')
+            ->set('editFocus', 'Strength')
+            ->set('editScheduledOn', now()->addDay()->toDateString())
+            ->set('editExercises.0.name', 'Trap bar deadlift')
+            ->set('editExercises.0.sets', '4')
+            ->set('editExercises.0.reps', '5')
+            ->call('updateSession')
+            ->call('deleteSession', $session->id)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('training_programs', [
+            'id' => $program->id,
+            'title' => 'Updated Plan',
+            'status' => 'active',
+        ]);
+
+        $this->assertDatabaseMissing('training_sessions', [
+            'id' => $session->id,
         ]);
     }
 }

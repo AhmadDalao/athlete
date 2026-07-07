@@ -57,6 +57,9 @@ Owner accounts have every permission and cannot be locked out.
 | Admin | `/admin/coaches` | Coach table |
 | Admin | `/admin/athletes` | Athlete table |
 | Admin | `/admin/invitations` | Invitation tracking |
+| Admin | `/admin/invitations/export` | Filtered invitation CSV export |
+| Admin | `/admin/contact-submissions` | Public contact inbox |
+| Admin | `/admin/contact-submissions/export` | Filtered contact CSV export |
 | Admin | `/admin/permissions` | Grouped permission control |
 | Admin | `/admin/settings` | Website, invite, and mail settings |
 | Admin | `/admin/audit-log` | Audit and email log table |
@@ -78,7 +81,7 @@ Permissions live in `App\Support\PermissionCatalog`.
 Default role behavior:
 
 - `owner`: every permission through `Gate::before`.
-- `admin`: admin access, audit, users, coaches, athletes, invitations.
+- `admin`: admin access, audit, contact inbox, users, coaches, athletes, invitations.
 - `coach`: coach workspace, programs, assigned athlete records, invitations.
 - `athlete`: athlete app, own progress, own workout completion.
 
@@ -140,7 +143,10 @@ Current automated coverage:
 - Admin can open and export users.
 - Coach can open only assigned athlete profiles.
 - Admin can resend invitations and write email/audit logs.
+- Admin can export invitation records.
+- Admin can review contact submissions and export them.
 - Admin permissions and settings writes create audit logs.
+- Coach can update programs, edit sessions, and delete empty sessions.
 
 ## Completed Rebuild Slices
 
@@ -163,17 +169,19 @@ Current automated coverage:
 - Added invitation email subject/body settings with template tokens.
 - Added permissions defaults/clear shortcuts and audit logging.
 - Grouped settings into website identity, invitation control, and mail labels.
+- Added admin contact inbox with Livewire search, status filter, page size control, CSV export, and audit logging.
+- Added invitation CSV export that respects current search/status filters.
+- Added coach program update/archive controls.
+- Added coach session edit/delete controls. Empty sessions can be deleted; sessions with athlete logs are cancelled instead to protect history.
 
 ## Next Build Slice
 
 Build next in this order:
 
-1. Add coach program/session edit and delete controls.
-2. Add admin invitation export and dedicated email log filters.
-3. Add athlete progress charts/tables with cleaner mobile layout.
-4. Add settings-driven public pricing/membership copy.
-5. Add contact submission admin table.
-6. Add production deployment checklist for Hostinger.
-7. Deploy rebuild branch only after local smoke testing is accepted.
+1. Add dedicated email log filters and export.
+2. Add athlete progress charts/tables with cleaner mobile layout.
+3. Add settings-driven public pricing/membership copy.
+4. Add production deployment checklist for Hostinger.
+5. Deploy rebuild branch only after local smoke testing is accepted.
 
 Do not reintroduce native mobile, watch sync, Stripe, OAuth, or API complexity until the website MVP is stable.

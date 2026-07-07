@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\ContactSubmissionExportController;
+use App\Http\Controllers\Admin\InvitationExportController;
 use App\Http\Controllers\Admin\UserExportController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardRedirectController;
@@ -27,6 +29,9 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/users/{user}', Admin\UserDetail::class)->name('users.show');
         Route::get('/coaches', Admin\CoachesTable::class)->name('coaches');
         Route::get('/athletes', Admin\AthletesTable::class)->name('athletes');
+        Route::get('/contact-submissions/export', ContactSubmissionExportController::class)->middleware('can:admin.contacts')->name('contact-submissions.export');
+        Route::get('/contact-submissions', Admin\ContactSubmissionsTable::class)->middleware('can:admin.contacts')->name('contact-submissions');
+        Route::get('/invitations/export', InvitationExportController::class)->middleware('can:invitations.manage')->name('invitations.export');
         Route::get('/invitations', Admin\InvitationsTable::class)->name('invitations');
         Route::get('/permissions', Admin\PermissionsPanel::class)->name('permissions');
         Route::get('/settings', Admin\SettingsPanel::class)->name('settings');

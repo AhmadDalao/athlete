@@ -31,6 +31,9 @@
             <a class="tl-nav-link {{ request()->routeIs('admin.coaches') ? 'active' : '' }}" href="{{ route('admin.coaches') }}"><i class="fa-solid fa-user-tie"></i> Coaches</a>
             <a class="tl-nav-link {{ request()->routeIs('admin.athletes') ? 'active' : '' }}" href="{{ route('admin.athletes') }}"><i class="fa-solid fa-person-running"></i> Athletes</a>
             <a class="tl-nav-link {{ request()->routeIs('admin.invitations') ? 'active' : '' }}" href="{{ route('admin.invitations') }}"><i class="fa-solid fa-envelope-open-text"></i> Invitations</a>
+            @can('admin.contacts')
+                <a class="tl-nav-link {{ request()->routeIs('admin.contact-submissions') ? 'active' : '' }}" href="{{ route('admin.contact-submissions') }}"><i class="fa-solid fa-inbox"></i> Contact inbox</a>
+            @endcan
             <a class="tl-nav-link {{ request()->routeIs('admin.permissions') ? 'active' : '' }}" href="{{ route('admin.permissions') }}"><i class="fa-solid fa-key"></i> Permissions</a>
             <a class="tl-nav-link {{ request()->routeIs('admin.settings') ? 'active' : '' }}" href="{{ route('admin.settings') }}"><i class="fa-solid fa-sliders"></i> Settings</a>
             <a class="tl-nav-link {{ request()->routeIs('admin.audit') ? 'active' : '' }}" href="{{ route('admin.audit') }}"><i class="fa-solid fa-clipboard-list"></i> Logs</a>
