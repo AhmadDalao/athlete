@@ -4,10 +4,10 @@ namespace App\Livewire\Coach;
 
 use App\Livewire\Concerns\WithTableControls;
 use App\Models\AthleteInvitation;
-use App\Models\EmailLog;
+use App\Models\AuditLog;
 use App\Models\PlatformSetting;
+use App\Services\InvitationDeliveryService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -21,7 +21,7 @@ class InvitationsPanel extends Component
 
     public string $email = '';
 
-    public function invite(): void
+    public function invite(InvitationDeliveryService $delivery): void
     {
         $data = $this->validate([
             'name' => ['nullable', 'string', 'max:120'],
@@ -38,17 +38,16 @@ class InvitationsPanel extends Component
             'expires_at' => now()->addDays((int) PlatformSetting::get('invite_expiry_days', '7')),
         ]);
 
-        $link = route('invites.accept', $invite->token);
-        $subject = PlatformSetting::get('app_name', 'Throughline').' athlete invitation';
+        $sent = $delivery->send($invite);
 
-        try {
-            Mail::raw('You were invited to Throughline by '.Auth::user()->name.". Accept here: {$link}", function ($message) use ($invite, $subject): void {
-                $message->to($invite->email)->subject($subject);
-            });
-            EmailLog::create(['recipient' => $invite->email, 'subject' => $subject, 'type' => 'athlete_invite', 'status' => 'sent']);
-        } catch (\Throwable $exception) {
-            EmailLog::create(['recipient' => $invite->email, 'subject' => $subject, 'type' => 'athlete_invite', 'status' => 'failed', 'error' => $exception->getMessage()]);
-        }
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'invite.created',
+            'entity' => 'athlete_invitation',
+            'entity_id' => $invite->id,
+            'summary' => "Invited {$invite->email}. Email ".($sent ? 'sent' : 'failed').'.',
+            'ip_address' => request()->ip(),
+        ]);
 
         $this->reset(['name', 'email']);
         session()->flash('status', 'Invitation created. If mail is configured, the athlete will receive it.');
@@ -56,10 +55,37 @@ class InvitationsPanel extends Component
 
     public function cancel(int $inviteId): void
     {
-        AthleteInvitation::where('coach_id', Auth::id())->findOrFail($inviteId)->update([
+        $invite = AthleteInvitation::where('coach_id', Auth::id())->findOrFail($inviteId);
+        $invite->update([
             'status' => 'cancelled',
             'cancelled_at' => now(),
         ]);
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'invite.cancelled',
+            'entity' => 'athlete_invitation',
+            'entity_id' => $invite->id,
+            'summary' => "Cancelled invite for {$invite->email}.",
+            'ip_address' => request()->ip(),
+        ]);
+    }
+
+    public function resend(int $inviteId, InvitationDeliveryService $delivery): void
+    {
+        $invite = AthleteInvitation::where('coach_id', Auth::id())->where('status', 'pending')->findOrFail($inviteId);
+        $sent = $delivery->send($invite);
+
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'invite.resent',
+            'entity' => 'athlete_invitation',
+            'entity_id' => $invite->id,
+            'summary' => "Resent invite for {$invite->email}. Email ".($sent ? 'sent' : 'failed').'.',
+            'ip_address' => request()->ip(),
+        ]);
+
+        session()->flash('status', $sent ? 'Invitation resent.' : 'Invitation resend logged as failed. Check mail settings.');
     }
 
     public function render()

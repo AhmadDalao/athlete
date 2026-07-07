@@ -7,7 +7,21 @@
             <thead><tr><th>Athlete</th><th>Coach</th><th>Status</th><th>Expires</th><th>Created</th><th>Actions</th></tr></thead>
             <tbody>
             @forelse($invitations as $invite)
-                <tr><td><strong>{{ $invite->name ?: 'No name' }}</strong><br><span class="tl-muted">{{ $invite->email }}</span></td><td>{{ $invite->coach?->name }}</td><td><span class="tl-badge {{ $invite->status === 'pending' ? 'gold' : 'gray' }}">{{ $invite->status }}</span></td><td>{{ $invite->expires_at->format('Y-m-d') }}</td><td>{{ $invite->created_at->format('Y-m-d') }}</td><td>@if($invite->status === 'pending')<button class="btn btn-outline-danger btn-sm" wire:click="cancel({{ $invite->id }})">Cancel</button>@endif</td></tr>
+                <tr>
+                    <td><strong>{{ $invite->name ?: 'No name' }}</strong><br><span class="tl-muted">{{ $invite->email }}</span></td>
+                    <td>{{ $invite->coach?->name }}</td>
+                    <td><span class="tl-badge {{ $invite->status === 'pending' ? 'gold' : 'gray' }}">{{ $invite->status }}</span></td>
+                    <td>{{ $invite->expires_at->format('Y-m-d') }}</td>
+                    <td>{{ $invite->created_at->format('Y-m-d') }}</td>
+                    <td>
+                        @if($invite->status === 'pending')
+                            <button class="btn btn-outline-tl btn-sm" wire:click="resend({{ $invite->id }})">Resend</button>
+                            <button class="btn btn-outline-danger btn-sm" wire:click="cancel({{ $invite->id }})">Cancel</button>
+                        @else
+                            <span class="tl-muted">No action</span>
+                        @endif
+                    </td>
+                </tr>
             @empty
                 <tr><td colspan="6" class="tl-muted">No invitations found.</td></tr>
             @endforelse

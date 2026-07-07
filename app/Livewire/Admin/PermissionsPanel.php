@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use App\Support\PermissionCatalog;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class PermissionsPanel extends Component
@@ -45,7 +47,42 @@ class PermissionsPanel extends Component
         $user->permissions()->delete();
         $permissions->each(fn (string $permission) => $user->permissions()->create(['permission' => $permission]));
 
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'permissions.updated',
+            'entity' => 'user',
+            'entity_id' => $user->id,
+            'summary' => "Updated permissions for {$user->email}.",
+            'ip_address' => request()->ip(),
+        ]);
+
         session()->flash('status', 'Permissions updated.');
+    }
+
+    public function applyRoleDefaults(): void
+    {
+        $user = User::findOrFail($this->selectedUserId);
+
+        if ($user->isOwner()) {
+            $this->selectedPermissions = PermissionCatalog::all();
+
+            return;
+        }
+
+        $this->selectedPermissions = PermissionCatalog::defaultsForRole($user->role);
+    }
+
+    public function clearSelection(): void
+    {
+        $user = User::findOrFail($this->selectedUserId);
+
+        if ($user->isOwner()) {
+            $this->selectedPermissions = PermissionCatalog::all();
+
+            return;
+        }
+
+        $this->selectedPermissions = [];
     }
 
     public function render()

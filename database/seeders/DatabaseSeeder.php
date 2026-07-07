@@ -22,7 +22,11 @@ class DatabaseSeeder extends Seeder
             'invite_expiry_days' => '7',
             'homepage_headline' => 'Training, coaching, and progress tracking without the mess.',
             'homepage_subheadline' => 'A direct platform for coaches to manage athletes, assign programs, and track real execution.',
-        ])->each(fn (string $value, string $key) => PlatformSetting::put($key, $value, 'site'));
+            'invite_email_subject' => 'Your Throughline athlete invitation',
+            'invite_email_body' => "Coach {coach_name} invited you to {app_name}.\n\nAccept here: {invite_link}\n\nThis invite expires on {expires_at}.",
+        ])->each(function (string $value, string $key): void {
+            PlatformSetting::put($key, $value, str_starts_with($key, 'invite_') ? 'invitations' : 'site');
+        });
 
         $owner = User::query()->create([
             'name' => 'Ahmad Dalao',

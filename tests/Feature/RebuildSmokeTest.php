@@ -2,12 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Admin\InvitationsTable;
+use App\Livewire\Admin\PermissionsPanel;
+use App\Livewire\Admin\SettingsPanel;
 use App\Livewire\Athlete\WorkoutDetail;
+use App\Models\AthleteInvitation;
 use App\Models\CoachAthleteAssignment;
 use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -141,5 +146,75 @@ class RebuildSmokeTest extends TestCase
         $this->actingAs($coach)
             ->get(route('coach.athletes.show', $otherAthlete))
             ->assertForbidden();
+    }
+
+    public function test_admin_can_resend_invitation_and_log_email(): void
+    {
+        Mail::fake();
+
+        $admin = User::factory()->create(['role' => 'owner']);
+        $coach = User::factory()->create(['role' => 'coach']);
+        $invite = AthleteInvitation::create([
+            'coach_id' => $coach->id,
+            'email' => 'new-athlete@example.com',
+            'name' => 'New Athlete',
+            'token' => 'test-token',
+            'status' => 'pending',
+            'expires_at' => now()->addWeek(),
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(InvitationsTable::class)
+            ->call('resend', $invite->id)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('email_logs', [
+            'recipient' => 'new-athlete@example.com',
+            'type' => 'athlete_invite',
+            'status' => 'sent',
+        ]);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'invite.resent',
+            'entity' => 'athlete_invitation',
+            'entity_id' => $invite->id,
+        ]);
+    }
+
+    public function test_admin_permissions_and_settings_write_audit_logs(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        Livewire::actingAs($owner)
+            ->test(PermissionsPanel::class)
+            ->set('selectedUserId', $admin->id)
+            ->set('selectedPermissions', ['admin.access', 'users.manage'])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'permissions.updated',
+            'entity' => 'user',
+            'entity_id' => $admin->id,
+        ]);
+
+        Livewire::actingAs($owner)
+            ->test(SettingsPanel::class)
+            ->set('settings.app_name', 'Throughline')
+            ->set('settings.tagline', 'Coach OS')
+            ->set('settings.support_email', 'support@example.com')
+            ->set('settings.invite_expiry_days', '7')
+            ->set('settings.homepage_headline', 'Train better')
+            ->set('settings.homepage_subheadline', 'Simple coaching software')
+            ->set('settings.invite_email_subject', 'Invite')
+            ->set('settings.invite_email_body', 'Accept here: {invite_link}')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'settings.updated',
+            'entity' => 'platform_settings',
+        ]);
     }
 }

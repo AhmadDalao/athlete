@@ -52,6 +52,8 @@ Owner accounts have every permission and cannot be locked out.
 | Redirect | `/dashboard` | Sends users to the correct role area |
 | Admin | `/admin/dashboard` | Business operations dashboard |
 | Admin | `/admin/users` | User table and account creation |
+| Admin | `/admin/users/export` | Filtered user CSV export |
+| Admin | `/admin/users/{user}` | User profile, edit form, programs, logs, and audit trail |
 | Admin | `/admin/coaches` | Coach table |
 | Admin | `/admin/athletes` | Athlete table |
 | Admin | `/admin/invitations` | Invitation tracking |
@@ -60,6 +62,7 @@ Owner accounts have every permission and cannot be locked out.
 | Admin | `/admin/audit-log` | Audit and email log table |
 | Coach | `/coach` | Coach workspace summary |
 | Coach | `/coach/athletes` | Assigned athletes table |
+| Coach | `/coach/athletes/{athlete}` | Coach-scoped athlete profile |
 | Coach | `/coach/programs` | Program list and creation |
 | Coach | `/coach/programs/{program}` | Add sessions and exercises |
 | Coach | `/coach/invitations` | Invite athletes by email |
@@ -104,6 +107,8 @@ The rebuild uses one compact migration:
 
 This keeps the MVP direct. Memberships, files, payments, watch sync, and native app tables are intentionally postponed.
 
+`workout_logs` now stores simple execution data: status, duration, RPE, notes, and a JSON set log for actual reps/load/RPE per prescribed set. That is enough for the MVP without rebuilding the old oversized set-log system.
+
 ## UI Rules
 
 - Dark premium Throughline identity across public, admin, coach, and athlete areas.
@@ -131,18 +136,44 @@ Current automated coverage:
 - Dashboard redirects by role.
 - Coach/athlete admin access is forbidden.
 - Athlete can only view own program.
-- Athlete can mark own workout completed.
+- Athlete can mark own workout completed with execution data.
+- Admin can open and export users.
+- Coach can open only assigned athlete profiles.
+- Admin can resend invitations and write email/audit logs.
+- Admin permissions and settings writes create audit logs.
+
+## Completed Rebuild Slices
+
+### Foundation
+
+- Archived old React/Inertia/mobile-heavy application.
+- Rebuilt public/auth/admin/coach/athlete shell with Laravel, Blade, Livewire, Bootstrap, FontAwesome, and a custom dark theme.
+- Added seeded owner/admin/coach/athlete accounts.
+- Added role-aware `/dashboard` redirect.
+
+### Control And Coaching
+
+- Added admin user detail/edit page.
+- Added filtered user CSV export.
+- Added coach athlete profile detail with programs, schedule, workout logs, and progress logs.
+- Added athlete workout execution logging for status, duration, RPE, notes, and set rows.
+- Added centralized invitation delivery service.
+- Added coach/admin invite resend and cancel actions.
+- Added email and audit logging for invitation actions.
+- Added invitation email subject/body settings with template tokens.
+- Added permissions defaults/clear shortcuts and audit logging.
+- Grouped settings into website identity, invitation control, and mail labels.
 
 ## Next Build Slice
 
 Build next in this order:
 
-1. Add exports and row-detail pages to admin tables.
-2. Add admin edit screens for users, coaches, and athletes.
-3. Add stronger invitation email templates and resend/cancel audit records.
-4. Add coach-side athlete profile detail with programs, sessions, logs, and progress.
-5. Add athlete workout set logging instead of only session status.
-6. Add settings-driven public pricing/membership copy.
-7. Add production deployment checklist for Hostinger.
+1. Add coach program/session edit and delete controls.
+2. Add admin invitation export and dedicated email log filters.
+3. Add athlete progress charts/tables with cleaner mobile layout.
+4. Add settings-driven public pricing/membership copy.
+5. Add contact submission admin table.
+6. Add production deployment checklist for Hostinger.
+7. Deploy rebuild branch only after local smoke testing is accepted.
 
 Do not reintroduce native mobile, watch sync, Stripe, OAuth, or API complexity until the website MVP is stable.
