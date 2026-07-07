@@ -181,11 +181,20 @@ Current automated coverage:
 - Improved athlete progress with summary stats, compact trend charts, date filters, and the table as the source of truth.
 - Added Hostinger deployment checklist: `docs/Hostinger_Deployment_Checklist.md`.
 
+### Mobile Usability
+
+- Added a compact mobile top bar with a slide-out role navigation menu.
+- Added role-specific fixed bottom navigation for admin, coach, and athlete users.
+- Tightened mobile spacing, calendar cells, panels, stat cards, forms, and table overflow rules.
+- Added mobile-first athlete workout cards for the selected daily schedule.
+- Added mobile-first athlete program session cards.
+- Added mobile-first athlete workout execution cards for exercises and set logging while keeping desktop tables intact.
+
 ## Next Build Slice
 
 Build next in this order:
 
-1. Tighten coach/athlete mobile-width layout passes.
+1. Tighten coach program builder and coach athlete profile mobile-width layouts.
 2. Add settings-driven contact and pricing polish where needed.
 3. Deploy rebuild branch only after local smoke testing is accepted.
 

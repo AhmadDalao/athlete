@@ -8,7 +8,26 @@
 
     <div class="tl-panel">
         <h3 class="h5">Exercises</h3>
-        <div class="tl-table-wrap"><table class="table tl-table align-middle">
+        <div class="d-md-none vstack gap-2">
+            @forelse($session->exercises ?? [] as $exercise)
+                <div class="tl-mobile-record">
+                    <div class="fw-bold">{{ $exercise['name'] ?? 'Exercise' }}</div>
+                    <div class="tl-mobile-record-grid mt-3">
+                        <div><span class="tl-muted small d-block">Sets</span><span>{{ $exercise['sets'] ?? '-' }}</span></div>
+                        <div><span class="tl-muted small d-block">Reps/time</span><span>{{ $exercise['reps'] ?? '-' }}</span></div>
+                        <div><span class="tl-muted small d-block">Rest</span><span>{{ $exercise['rest'] ?? '-' }}</span></div>
+                        <div><span class="tl-muted small d-block">Load</span><span>{{ $exercise['load'] ?? '-' }}</span></div>
+                    </div>
+                    @if($exercise['note'] ?? null)
+                        <div class="tl-muted small mt-3">{{ $exercise['note'] }}</div>
+                    @endif
+                </div>
+            @empty
+                <div class="tl-mobile-record tl-muted">No exercises listed.</div>
+            @endforelse
+        </div>
+
+        <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
             <thead><tr><th>Exercise</th><th>Sets</th><th>Reps/time</th><th>Rest</th><th>Load</th><th>Note</th></tr></thead>
             <tbody>
             @forelse($session->exercises ?? [] as $exercise)
@@ -35,7 +54,37 @@
             <div class="col-md-6"><label class="form-label">Notes for coach</label><input class="form-control" wire:model="notes" placeholder="How did it feel?"></div>
         </div>
 
-        <div class="tl-table-wrap mb-3"><table class="table tl-table align-middle">
+        <div class="d-md-none vstack gap-2 mb-3">
+            @forelse($setLogs as $index => $row)
+                <div class="tl-mobile-record">
+                    <div class="d-flex justify-content-between gap-2 align-items-start">
+                        <div>
+                            <div class="fw-bold">{{ $row['exercise'] }}</div>
+                            <div class="tl-muted small">Set {{ $row['set'] }} · Target {{ $row['target_reps'] ?: '-' }} reps · {{ $row['target_load'] ?: 'bodyweight' }}</div>
+                        </div>
+                        <input class="form-check-input mt-1" type="checkbox" wire:model="setLogs.{{ $index }}.completed" aria-label="Complete set {{ $row['set'] }}">
+                    </div>
+                    <div class="tl-mobile-record-grid mt-3">
+                        <div class="tl-mobile-field">
+                            <label class="form-label small">Actual reps</label>
+                            <input class="form-control" wire:model="setLogs.{{ $index }}.actual_reps">
+                        </div>
+                        <div class="tl-mobile-field">
+                            <label class="form-label small">Actual load</label>
+                            <input class="form-control" wire:model="setLogs.{{ $index }}.actual_load">
+                        </div>
+                        <div class="tl-mobile-field">
+                            <label class="form-label small">Set RPE</label>
+                            <input class="form-control" type="number" min="1" max="10" wire:model="setLogs.{{ $index }}.rpe">
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="tl-mobile-record tl-muted">No set rows were generated for this workout.</div>
+            @endforelse
+        </div>
+
+        <div class="tl-table-wrap d-none d-md-block mb-3"><table class="table tl-table align-middle">
             <thead><tr><th>Done</th><th>Exercise</th><th>Set</th><th>Target reps</th><th>Target load</th><th>Actual reps</th><th>Actual load</th><th>Set RPE</th></tr></thead>
             <tbody>
             @forelse($setLogs as $index => $row)

@@ -48,7 +48,33 @@
         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <div><div class="tl-eyebrow">Selected day</div><h3 class="h5 mb-0">{{ \Illuminate\Support\Carbon::parse($selectedDate)->format('M j, Y') }}</h3></div>
         </div>
-        <div class="tl-table-wrap"><table class="table tl-table align-middle">
+
+        <div class="d-md-none vstack gap-2">
+            @forelse($selectedSessions as $session)
+                @php($log = $session->logs->firstWhere('athlete_id', auth()->id()))
+                <a class="tl-mobile-record" href="{{ route('app.workouts.show', $session) }}">
+                    <div class="d-flex justify-content-between gap-2 align-items-start">
+                        <div>
+                            <div class="fw-bold">{{ $session->title }}</div>
+                            <div class="tl-muted small">{{ $session->program->title }} · {{ $session->program->coach->name }}</div>
+                        </div>
+                        <span class="tl-badge {{ $log?->status === 'completed' ? 'green' : 'gray' }}">{{ $log?->status ?? 'open' }}</span>
+                    </div>
+                    <div class="tl-mobile-record-grid mt-3">
+                        <div><span class="tl-muted small d-block">Focus</span><span>{{ $session->focus ?: '-' }}</span></div>
+                        <div><span class="tl-muted small d-block">Exercises</span><span>{{ $session->exerciseSummary() }}</span></div>
+                    </div>
+                    <div class="mt-3 d-flex justify-content-between align-items-center">
+                        <span class="{{ $session->media_url ? 'tl-badge green' : 'tl-muted small' }}">{{ $session->media_url ? 'Media attached' : 'No media' }}</span>
+                        <span class="btn btn-tl btn-sm">Open</span>
+                    </div>
+                </a>
+            @empty
+                <div class="tl-mobile-record tl-muted">No workouts scheduled for this day.</div>
+            @endforelse
+        </div>
+
+        <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
             <thead><tr><th>Workout</th><th>Coach</th><th>Program</th><th>Preview</th><th>Media</th><th>Status</th><th>Action</th></tr></thead>
             <tbody>
             @forelse($selectedSessions as $session)
