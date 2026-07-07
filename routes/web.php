@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UserExportController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardRedirectController;
 use App\Livewire\Admin;
@@ -22,6 +23,8 @@ Route::middleware('auth')->group(function (): void {
         Route::redirect('/', '/admin/dashboard')->name('root');
         Route::get('/dashboard', Admin\Dashboard::class)->name('dashboard');
         Route::get('/users', Admin\UsersTable::class)->name('users');
+        Route::get('/users/export', UserExportController::class)->name('users.export');
+        Route::get('/users/{user}', Admin\UserDetail::class)->name('users.show');
         Route::get('/coaches', Admin\CoachesTable::class)->name('coaches');
         Route::get('/athletes', Admin\AthletesTable::class)->name('athletes');
         Route::get('/invitations', Admin\InvitationsTable::class)->name('invitations');
@@ -33,6 +36,7 @@ Route::middleware('auth')->group(function (): void {
     Route::middleware('can:coach.access')->prefix('coach')->name('coach.')->group(function (): void {
         Route::get('/', Coach\Home::class)->name('home');
         Route::get('/athletes', Coach\AthletesTable::class)->name('athletes');
+        Route::get('/athletes/{athlete}', Coach\AthleteDetail::class)->name('athletes.show');
         Route::get('/programs', Coach\ProgramsTable::class)->name('programs');
         Route::get('/programs/{program}', Coach\ProgramDetail::class)->name('programs.show');
         Route::get('/invitations', Coach\InvitationsPanel::class)->name('invitations');

@@ -7,12 +7,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class WorkoutLog extends Model
 {
-    protected $fillable = ['training_session_id', 'athlete_id', 'status', 'completed_at', 'notes'];
+    protected $fillable = [
+        'training_session_id',
+        'athlete_id',
+        'status',
+        'duration_minutes',
+        'rpe',
+        'set_logs',
+        'completed_at',
+        'notes',
+    ];
 
     protected function casts(): array
     {
         return [
             'completed_at' => 'datetime',
+            'set_logs' => 'array',
         ];
     }
 

@@ -145,6 +145,9 @@ return new class extends Migration
             $table->foreignId('training_session_id')->constrained()->cascadeOnDelete();
             $table->foreignId('athlete_id')->constrained('users')->cascadeOnDelete();
             $table->string('status')->default('partial')->index();
+            $table->unsignedSmallInteger('duration_minutes')->nullable();
+            $table->unsignedTinyInteger('rpe')->nullable();
+            $table->json('set_logs')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();

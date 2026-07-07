@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Livewire\Athlete\WorkoutDetail;
+use App\Models\CoachAthleteAssignment;
 use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use App\Models\User;
@@ -84,6 +85,11 @@ class RebuildSmokeTest extends TestCase
 
         Livewire::test(WorkoutDetail::class, ['session' => $session])
             ->set('notes', 'Felt controlled.')
+            ->set('durationMinutes', '48')
+            ->set('rpe', '7')
+            ->set('setLogs.0.completed', true)
+            ->set('setLogs.0.actual_reps', '5')
+            ->set('setLogs.0.actual_load', '80kg')
             ->call('mark', 'completed')
             ->assertHasNoErrors();
 
@@ -91,7 +97,49 @@ class RebuildSmokeTest extends TestCase
             'training_session_id' => $session->id,
             'athlete_id' => $athlete->id,
             'status' => 'completed',
+            'duration_minutes' => 48,
+            'rpe' => 7,
             'notes' => 'Felt controlled.',
         ]);
+    }
+
+    public function test_admin_can_open_and_export_users(): void
+    {
+        $admin = User::factory()->create(['role' => 'owner']);
+        $athlete = User::factory()->create(['role' => 'athlete', 'email' => 'export-athlete@example.com']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.show', $athlete))
+            ->assertOk()
+            ->assertSee('export-athlete@example.com');
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.users.export', ['role' => 'athlete']))
+            ->assertOk();
+
+        $this->assertStringContainsString('export-athlete@example.com', $response->streamedContent());
+    }
+
+    public function test_coach_can_open_only_assigned_athlete_profile(): void
+    {
+        $coach = User::factory()->create(['role' => 'coach']);
+        $athlete = User::factory()->create(['role' => 'athlete']);
+        $otherAthlete = User::factory()->create(['role' => 'athlete']);
+
+        CoachAthleteAssignment::create([
+            'coach_id' => $coach->id,
+            'athlete_id' => $athlete->id,
+            'status' => 'active',
+            'started_at' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($coach)
+            ->get(route('coach.athletes.show', $athlete))
+            ->assertOk()
+            ->assertSee($athlete->email);
+
+        $this->actingAs($coach)
+            ->get(route('coach.athletes.show', $otherAthlete))
+            ->assertForbidden();
     }
 }

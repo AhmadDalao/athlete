@@ -1,7 +1,7 @@
 <div>
     <div class="tl-hero">
         <div class="tl-eyebrow">People control</div>
-        <h2 class="h1 fw-bold">Users</h2>
+        <h2 class="h1 fw-bold">{{ $role === 'all' ? 'Users' : ucfirst($role).'s' }}</h2>
         <p class="tl-muted mb-0">Create users, control roles, and keep access direct.</p>
     </div>
 
@@ -32,6 +32,11 @@
                     <option value="athlete">Athlete</option>
                 </select>
             </div>
+            <div class="col-md-3">
+                <a class="btn btn-outline-tl w-100" href="{{ route('admin.users.export', ['role' => $role, 'search' => $search]) }}">
+                    <i class="fa-solid fa-download"></i> Export CSV
+                </a>
+            </div>
         </div>
 
         <div class="tl-table-wrap">
@@ -51,6 +56,7 @@
                         </td>
                         <td>{{ $user->created_at->format('Y-m-d') }}</td>
                         <td>
+                            <a class="btn btn-outline-tl btn-sm" href="{{ route('admin.users.show', $user) }}">Open</a>
                             @if($user->role === 'owner')
                                 <span class="tl-badge gold">Owner locked</span>
                             @else

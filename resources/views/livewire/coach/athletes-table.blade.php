@@ -3,12 +3,12 @@
     @include('livewire.partials.table-toolbar', ['placeholder' => 'Search athlete, email, goal'])
     <div class="tl-panel">
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
-            <thead><tr><th>Athlete</th><th>Goal</th><th>Progress logs</th><th>Workout logs</th><th>Joined</th></tr></thead>
+            <thead><tr><th>Athlete</th><th>Goal</th><th>Progress logs</th><th>Workout logs</th><th>Joined</th><th>Action</th></tr></thead>
             <tbody>
             @forelse($athletes as $athlete)
-                <tr><td><strong>{{ $athlete->name }}</strong><br><span class="tl-muted">{{ $athlete->email }}</span></td><td>{{ $athlete->primary_goal ?: 'Not set' }}</td><td>{{ $athlete->progress_entries_count }}</td><td>{{ $athlete->workout_logs_count }}</td><td>{{ $athlete->created_at->format('Y-m-d') }}</td></tr>
+                <tr><td><strong>{{ $athlete->name }}</strong><br><span class="tl-muted">{{ $athlete->email }}</span></td><td>{{ $athlete->primary_goal ?: 'Not set' }}</td><td>{{ $athlete->progress_entries_count }}</td><td>{{ $athlete->workout_logs_count }}</td><td>{{ $athlete->created_at->format('Y-m-d') }}</td><td><a class="btn btn-outline-tl btn-sm" href="{{ route('coach.athletes.show', $athlete) }}">Open</a></td></tr>
             @empty
-                <tr><td colspan="5" class="tl-muted">No assigned athletes.</td></tr>
+                <tr><td colspan="6" class="tl-muted">No assigned athletes.</td></tr>
             @endforelse
             </tbody>
         </table></div>
