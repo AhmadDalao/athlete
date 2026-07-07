@@ -19,7 +19,26 @@
 
     <div class="tl-panel">
         <h3 class="h5">Assigned programs</h3>
-        <div class="tl-table-wrap"><table class="table tl-table align-middle">
+        <div class="d-md-none vstack gap-2">
+            @forelse($programs as $program)
+                <a class="tl-mobile-record" href="{{ route('coach.programs.show', $program) }}">
+                    <div class="d-flex justify-content-between gap-2 align-items-start">
+                        <div>
+                            <div class="fw-bold">{{ $program->title }}</div>
+                            <div class="tl-muted small">{{ $program->goal ?: 'No goal set' }}</div>
+                        </div>
+                        <span class="tl-badge {{ $program->status === 'active' ? 'green' : 'gray' }}">{{ $program->status }}</span>
+                    </div>
+                    <div class="tl-mobile-record-grid mt-3">
+                        <div><span class="tl-muted small d-block">Dates</span><span>{{ $program->starts_on?->format('Y-m-d') ?: '-' }} to {{ $program->ends_on?->format('Y-m-d') ?: '-' }}</span></div>
+                        <div><span class="tl-muted small d-block">Sessions</span><span>{{ $program->sessions->count() }}</span></div>
+                    </div>
+                </a>
+            @empty
+                <div class="tl-mobile-record tl-muted">No programs assigned by you yet.</div>
+            @endforelse
+        </div>
+        <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
             <thead><tr><th>Program</th><th>Goal</th><th>Status</th><th>Dates</th><th>Sessions</th><th>Action</th></tr></thead>
             <tbody>
             @forelse($programs as $program)
@@ -40,7 +59,28 @@
 
     <div class="tl-panel">
         <h3 class="h5">Schedule</h3>
-        <div class="tl-table-wrap"><table class="table tl-table align-middle">
+        <div class="d-md-none vstack gap-2">
+            @forelse($sessions as $session)
+                @php($log = $session->logs->firstWhere('athlete_id', $athlete->id))
+                <div class="tl-mobile-record">
+                    <div class="d-flex justify-content-between gap-2 align-items-start">
+                        <div>
+                            <div class="tl-muted small">{{ $session->scheduled_on->format('M j, Y') }}</div>
+                            <div class="fw-bold">{{ $session->title }}</div>
+                        </div>
+                        <span class="tl-badge {{ $log?->status === 'completed' ? 'green' : 'gray' }}">{{ $log?->status ?? 'open' }}</span>
+                    </div>
+                    <div class="tl-mobile-record-grid mt-3">
+                        <div><span class="tl-muted small d-block">Program</span><span>{{ $session->program->title }}</span></div>
+                        <div><span class="tl-muted small d-block">Focus</span><span>{{ $session->focus ?: '-' }}</span></div>
+                        <div><span class="tl-muted small d-block">Exercises</span><span>{{ $session->exerciseSummary() }}</span></div>
+                    </div>
+                </div>
+            @empty
+                <div class="tl-mobile-record tl-muted">No scheduled sessions.</div>
+            @endforelse
+        </div>
+        <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
             <thead><tr><th>Date</th><th>Session</th><th>Program</th><th>Focus</th><th>Exercises</th><th>Status</th></tr></thead>
             <tbody>
             @forelse($sessions as $session)
@@ -62,7 +102,29 @@
 
     <div class="tl-panel">
         <h3 class="h5">Workout logs</h3>
-        <div class="tl-table-wrap"><table class="table tl-table align-middle">
+        <div class="d-md-none vstack gap-2">
+            @forelse($workoutLogs as $log)
+                <div class="tl-mobile-record">
+                    <div class="d-flex justify-content-between gap-2 align-items-start">
+                        <div>
+                            <div class="tl-muted small">{{ $log->created_at->format('Y-m-d H:i') }}</div>
+                            <div class="fw-bold">{{ $log->session->title }}</div>
+                        </div>
+                        <span class="tl-badge {{ $log->status === 'completed' ? 'green' : 'gray' }}">{{ $log->status }}</span>
+                    </div>
+                    <div class="tl-mobile-record-grid mt-3">
+                        <div><span class="tl-muted small d-block">RPE</span><span>{{ $log->rpe ?: '-' }}</span></div>
+                        <div><span class="tl-muted small d-block">Duration</span><span>{{ $log->duration_minutes ? $log->duration_minutes.' min' : '-' }}</span></div>
+                    </div>
+                    @if($log->notes)
+                        <div class="tl-muted small mt-3">{{ $log->notes }}</div>
+                    @endif
+                </div>
+            @empty
+                <div class="tl-mobile-record tl-muted">No workout logs yet.</div>
+            @endforelse
+        </div>
+        <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
             <thead><tr><th>Logged</th><th>Session</th><th>Status</th><th>RPE</th><th>Duration</th><th>Notes</th></tr></thead>
             <tbody>
             @forelse($workoutLogs as $log)
@@ -83,7 +145,33 @@
 
     <div class="tl-panel">
         <h3 class="h5">Progress logs</h3>
-        <div class="tl-table-wrap"><table class="table tl-table align-middle">
+        <div class="d-md-none vstack gap-2">
+            @forelse($progressEntries as $entry)
+                <div class="tl-mobile-record">
+                    <div class="d-flex justify-content-between gap-2 align-items-start">
+                        <div>
+                            <div class="tl-muted small">Progress check-in</div>
+                            <div class="fw-bold">{{ $entry->logged_on->format('M j, Y') }}</div>
+                        </div>
+                        <span class="tl-badge gray">Energy {{ $entry->energy ?: '-' }}/10</span>
+                    </div>
+                    <div class="tl-mobile-record-grid mt-3">
+                        <div><span class="tl-muted small d-block">Weight</span><span>{{ $entry->weight ?: '-' }}</span></div>
+                        <div><span class="tl-muted small d-block">Calories</span><span>{{ $entry->calories ?: '-' }}</span></div>
+                        <div><span class="tl-muted small d-block">Protein</span><span>{{ $entry->protein ?: '-' }}</span></div>
+                        <div><span class="tl-muted small d-block">Hydration</span><span>{{ $entry->hydration ?: '-' }}</span></div>
+                        <div><span class="tl-muted small d-block">Sleep</span><span>{{ $entry->sleep_quality ?: '-' }}/10</span></div>
+                        <div><span class="tl-muted small d-block">Soreness</span><span>{{ $entry->soreness ?: '-' }}/10</span></div>
+                    </div>
+                    @if($entry->notes)
+                        <div class="tl-muted small mt-3">{{ $entry->notes }}</div>
+                    @endif
+                </div>
+            @empty
+                <div class="tl-mobile-record tl-muted">No progress logs yet.</div>
+            @endforelse
+        </div>
+        <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
             <thead><tr><th>Date</th><th>Weight</th><th>Calories</th><th>Protein</th><th>Hydration</th><th>Sleep</th><th>Soreness</th><th>Energy</th><th>Notes</th></tr></thead>
             <tbody>
             @forelse($progressEntries as $entry)

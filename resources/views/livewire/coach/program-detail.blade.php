@@ -27,7 +27,25 @@
                 <div class="col-md-3"><label class="form-label">Video/image URL</label><input class="form-control" wire:model="mediaUrl"></div>
             </div>
             <textarea class="form-control" rows="2" placeholder="Coach notes" wire:model="coachNotes"></textarea>
-            <div class="tl-table-wrap"><table class="table tl-table align-middle">
+            <div class="d-md-none vstack gap-2">
+                @foreach($exercises as $index => $exercise)
+                    <div class="tl-mobile-record">
+                        <div class="d-flex justify-content-between gap-2 align-items-center mb-3">
+                            <div class="fw-bold">Exercise {{ $index + 1 }}</div>
+                            <button class="btn btn-outline-danger btn-sm" type="button" wire:click="removeExercise({{ $index }})">Remove</button>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-12"><label class="form-label small">Exercise</label><input class="form-control" wire:model="exercises.{{ $index }}.name"></div>
+                            <div class="col-6"><label class="form-label small">Sets</label><input class="form-control" wire:model="exercises.{{ $index }}.sets"></div>
+                            <div class="col-6"><label class="form-label small">Reps/time</label><input class="form-control" wire:model="exercises.{{ $index }}.reps"></div>
+                            <div class="col-6"><label class="form-label small">Rest</label><input class="form-control" wire:model="exercises.{{ $index }}.rest"></div>
+                            <div class="col-6"><label class="form-label small">Load</label><input class="form-control" wire:model="exercises.{{ $index }}.load"></div>
+                            <div class="col-12"><label class="form-label small">Note</label><input class="form-control" wire:model="exercises.{{ $index }}.note"></div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+            <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
                 <thead><tr><th>Exercise</th><th>Sets</th><th>Reps/time</th><th>Rest</th><th>Load</th><th>Note</th><th></th></tr></thead>
                 <tbody>
                 @foreach($exercises as $index => $exercise)
@@ -43,7 +61,7 @@
                 @endforeach
                 </tbody>
             </table></div>
-            <div class="d-flex gap-2"><button class="btn btn-outline-tl" type="button" wire:click="addExercise">Add exercise</button><button class="btn btn-tl" type="submit">Save session</button></div>
+            <div class="d-flex gap-2 flex-wrap"><button class="btn btn-outline-tl" type="button" wire:click="addExercise">Add exercise</button><button class="btn btn-tl" type="submit">Save session</button></div>
         </form>
     </div>
     @if($editingSessionId)
@@ -63,7 +81,25 @@
                     <div class="col-md-3"><label class="form-label">Video/image URL</label><input class="form-control" wire:model="editMediaUrl"></div>
                 </div>
                 <textarea class="form-control" rows="2" placeholder="Coach notes" wire:model="editCoachNotes"></textarea>
-                <div class="tl-table-wrap"><table class="table tl-table align-middle">
+                <div class="d-md-none vstack gap-2">
+                    @foreach($editExercises as $index => $exercise)
+                        <div class="tl-mobile-record">
+                            <div class="d-flex justify-content-between gap-2 align-items-center mb-3">
+                                <div class="fw-bold">Exercise {{ $index + 1 }}</div>
+                                <button class="btn btn-outline-danger btn-sm" type="button" wire:click="removeEditExercise({{ $index }})">Remove</button>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-12"><label class="form-label small">Exercise</label><input class="form-control" wire:model="editExercises.{{ $index }}.name"></div>
+                                <div class="col-6"><label class="form-label small">Sets</label><input class="form-control" wire:model="editExercises.{{ $index }}.sets"></div>
+                                <div class="col-6"><label class="form-label small">Reps/time</label><input class="form-control" wire:model="editExercises.{{ $index }}.reps"></div>
+                                <div class="col-6"><label class="form-label small">Rest</label><input class="form-control" wire:model="editExercises.{{ $index }}.rest"></div>
+                                <div class="col-6"><label class="form-label small">Load</label><input class="form-control" wire:model="editExercises.{{ $index }}.load"></div>
+                                <div class="col-12"><label class="form-label small">Note</label><input class="form-control" wire:model="editExercises.{{ $index }}.note"></div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
                     <thead><tr><th>Exercise</th><th>Sets</th><th>Reps/time</th><th>Rest</th><th>Load</th><th>Note</th><th></th></tr></thead>
                     <tbody>
                     @foreach($editExercises as $index => $exercise)
@@ -79,13 +115,38 @@
                     @endforeach
                     </tbody>
                 </table></div>
-                <div class="d-flex gap-2"><button class="btn btn-outline-tl" type="button" wire:click="addEditExercise">Add exercise</button><button class="btn btn-tl" type="submit">Update session</button></div>
+                <div class="d-flex gap-2 flex-wrap"><button class="btn btn-outline-tl" type="button" wire:click="addEditExercise">Add exercise</button><button class="btn btn-tl" type="submit">Update session</button></div>
             </form>
         </div>
     @endif
     <div class="tl-panel">
         <h3 class="h5">Sessions</h3>
-        <div class="tl-table-wrap"><table class="table tl-table align-middle">
+        <div class="d-md-none vstack gap-2">
+            @forelse($sessions as $session)
+                <div class="tl-mobile-record">
+                    <div class="d-flex justify-content-between gap-2 align-items-start">
+                        <div>
+                            <div class="tl-muted small">{{ $session->scheduled_on->format('M j, Y') }}</div>
+                            <div class="fw-bold">{{ $session->title }}</div>
+                        </div>
+                        <span class="tl-badge {{ $session->status === 'cancelled' ? 'gray' : 'green' }}">{{ $session->status }}</span>
+                    </div>
+                    <div class="tl-mobile-record-grid mt-3">
+                        <div><span class="tl-muted small d-block">Focus</span><span>{{ $session->focus ?: '-' }}</span></div>
+                        <div><span class="tl-muted small d-block">Exercises</span><span>{{ $session->exerciseSummary() }}</span></div>
+                        <div><span class="tl-muted small d-block">Media</span><span>@if($session->media_url)<a href="{{ $session->media_url }}" target="_blank">Open</a>@else None @endif</span></div>
+                        <div><span class="tl-muted small d-block">Logs</span><span>{{ $session->logs->count() }}</span></div>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap mt-3">
+                        <button class="btn btn-outline-tl btn-sm" type="button" wire:click="startEditSession({{ $session->id }})">Edit</button>
+                        <button class="btn btn-outline-danger btn-sm" type="button" wire:click="deleteSession({{ $session->id }})" wire:confirm="Delete this empty session? If it has athlete logs it will be cancelled instead.">Delete</button>
+                    </div>
+                </div>
+            @empty
+                <div class="tl-mobile-record tl-muted">No sessions yet.</div>
+            @endforelse
+        </div>
+        <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
             <thead><tr><th>Date</th><th>Session</th><th>Status</th><th>Focus</th><th>Exercises</th><th>Media</th><th>Logs</th><th>Actions</th></tr></thead>
             <tbody>
             @forelse($sessions as $session)

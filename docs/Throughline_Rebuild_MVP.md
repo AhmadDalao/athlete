@@ -189,13 +189,15 @@ Current automated coverage:
 - Added mobile-first athlete workout cards for the selected daily schedule.
 - Added mobile-first athlete program session cards.
 - Added mobile-first athlete workout execution cards for exercises and set logging while keeping desktop tables intact.
+- Added mobile-first coach program builder exercise cards for creating and editing sessions.
+- Added mobile-first coach athlete profile cards for programs, schedule, workout logs, and progress logs.
 
 ## Next Build Slice
 
 Build next in this order:
 
-1. Tighten coach program builder and coach athlete profile mobile-width layouts.
-2. Add settings-driven contact and pricing polish where needed.
+1. Add settings-driven contact and pricing polish where needed.
+2. Add a final local browser smoke checklist for owner, coach, and athlete accounts.
 3. Deploy rebuild branch only after local smoke testing is accepted.
 
 Do not reintroduce native mobile, watch sync, Stripe, OAuth, or API complexity until the website MVP is stable.
