@@ -2,45 +2,30 @@
 
 namespace App\Providers;
 
-use App\Services\EmailDeliveryLogger;
-use Illuminate\Mail\Events\MessageSending;
-use Illuminate\Mail\Events\MessageSent;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\URL;
+use App\Models\PlatformSetting;
+use App\Models\User;
+use App\Support\PermissionCatalog;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
-use SocialiteProviders\Apple\Provider as AppleProvider;
-use SocialiteProviders\Manager\SocialiteWasCalled;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        Event::listen(function (SocialiteWasCalled $event): void {
-            $event->extendSocialite('apple', AppleProvider::class);
-        });
+        Gate::before(fn (User $user): ?bool => $user->isOwner() ? true : null);
 
-        Event::listen(MessageSending::class, [EmailDeliveryLogger::class, 'recordSending']);
-        Event::listen(MessageSent::class, [EmailDeliveryLogger::class, 'recordSent']);
-
-        $appUrl = config('app.url');
-
-        if (is_string($appUrl) && $appUrl !== '') {
-            URL::forceRootUrl(rtrim($appUrl, '/'));
-
-            if (str_starts_with($appUrl, 'https://')) {
-                URL::forceScheme('https');
-            }
+        foreach (PermissionCatalog::all() as $permission) {
+            Gate::define($permission, fn (User $user): bool => $user->hasPermission($permission));
         }
+
+        View::composer('*', function ($view): void {
+            $view->with('platformSettings', PlatformSetting::publicMap());
+        });
     }
 }

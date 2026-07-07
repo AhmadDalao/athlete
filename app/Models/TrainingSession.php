@@ -2,35 +2,28 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class TrainingSession extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'training_program_id',
         'title',
-        'scheduled_date',
         'focus',
-        'instructions',
-        'video_url',
-        'media_items',
+        'scheduled_on',
+        'status',
         'exercises',
-        'sort_order',
+        'coach_notes',
+        'media_url',
     ];
 
     protected function casts(): array
     {
         return [
-            'scheduled_date' => 'date',
-            'media_items' => 'array',
+            'scheduled_on' => 'date',
             'exercises' => 'array',
-            'sort_order' => 'integer',
         ];
     }
 
@@ -39,15 +32,24 @@ class TrainingSession extends Model
         return $this->belongsTo(TrainingProgram::class, 'training_program_id');
     }
 
-    public function workoutLog(): HasOne
+    public function logs(): HasMany
     {
-        return $this->hasOne(WorkoutLog::class);
+        return $this->hasMany(WorkoutLog::class);
     }
 
-    public function workoutSetLogs(): HasMany
+    public function exerciseSummary(): string
     {
-        return $this->hasMany(WorkoutSetLog::class)
-            ->orderBy('exercise_index')
-            ->orderBy('set_number');
+        $items = collect($this->exercises ?? []);
+
+        if ($items->isEmpty()) {
+            return 'No exercises yet';
+        }
+
+        return $items->take(2)->map(function (array $exercise): string {
+            $sets = $exercise['sets'] ?? '-';
+            $reps = $exercise['reps'] ?? '-';
+
+            return trim(($exercise['name'] ?? 'Exercise').' '.$sets.'x'.$reps);
+        })->implode(', ');
     }
 }

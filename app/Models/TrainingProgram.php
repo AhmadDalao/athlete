@@ -2,33 +2,19 @@
 
 namespace App\Models;
 
-use App\Enums\TrainingProgramStatus;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TrainingProgram extends Model
 {
-    use HasFactory;
-
-    protected $fillable = [
-        'coach_id',
-        'athlete_id',
-        'title',
-        'goal',
-        'status',
-        'start_date',
-        'end_date',
-        'notes',
-    ];
+    protected $fillable = ['coach_id', 'athlete_id', 'title', 'goal', 'status', 'starts_on', 'ends_on', 'notes'];
 
     protected function casts(): array
     {
         return [
-            'status' => TrainingProgramStatus::class,
-            'start_date' => 'date',
-            'end_date' => 'date',
+            'starts_on' => 'date',
+            'ends_on' => 'date',
         ];
     }
 
@@ -44,6 +30,6 @@ class TrainingProgram extends Model
 
     public function sessions(): HasMany
     {
-        return $this->hasMany(TrainingSession::class)->orderBy('scheduled_date')->orderBy('sort_order');
+        return $this->hasMany(TrainingSession::class)->orderBy('scheduled_on');
     }
 }

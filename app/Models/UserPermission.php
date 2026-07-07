@@ -7,19 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UserPermission extends Model
 {
-    protected $fillable = [
-        'user_id',
-        'permission_key',
-        'created_by_user_id',
-    ];
+    public $timestamps = false;
+
+    protected $fillable = ['user_id', 'permission'];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function createdBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'created_by_user_id');
     }
 }

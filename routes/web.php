@@ -1,147 +1,49 @@
 <?php
 
-use App\Http\Controllers\Admin\AuditLogIndexController;
-use App\Http\Controllers\Admin\AthleteFileIndexController;
-use App\Http\Controllers\Admin\ControlCenterController;
-use App\Http\Controllers\Admin\EmailLogIndexController;
-use App\Http\Controllers\Admin\SystemSettingsController;
-use App\Http\Controllers\Admin\UserIndexController;
-use App\Http\Controllers\Admin\UserShowController;
-use App\Http\Controllers\Admin\UserStoreController;
-use App\Http\Controllers\Admin\UserUpdateController;
-use App\Http\Controllers\ApiAccessController;
-use App\Http\Controllers\ApiAccessTokenDestroyController;
-use App\Http\Controllers\ApiAccessTokenStoreController;
-use App\Http\Controllers\AthleteCheckInStoreController;
-use App\Http\Controllers\AthleteCheckInUpdateController;
-use App\Http\Controllers\AthleteAppController;
-use App\Http\Controllers\Athlete\FileArchiveController as AthleteFileArchiveController;
-use App\Http\Controllers\Athlete\FileDownloadController as AthleteFileDownloadController;
-use App\Http\Controllers\Athlete\FilePreviewController as AthleteFilePreviewController;
-use App\Http\Controllers\Athlete\FileStoreController as AthleteFileStoreController;
-use App\Http\Controllers\Athlete\FileUpdateController as AthleteFileUpdateController;
-use App\Http\Controllers\Athlete\ProfileExportController as AthleteProfileExportController;
-use App\Http\Controllers\Athlete\ProfileShowController as AthleteProfileShowController;
-use App\Http\Controllers\AthleteWorkoutCompleteController;
-use App\Http\Controllers\AthleteWorkoutSetStoreController;
-use App\Http\Controllers\AthleteWorkoutShowController;
-use App\Http\Controllers\Billing\CheckoutSessionStoreController;
-use App\Http\Controllers\Billing\PortalSessionStoreController;
-use App\Http\Controllers\Billing\StripeWebhookController;
-use App\Http\Controllers\CoachDirectoryController;
-use App\Http\Controllers\ContactPageController;
-use App\Http\Controllers\ContactSubmissionStoreController;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardRedirectController;
-use App\Http\Controllers\Invitation\AcceptShowController as InvitationAcceptShowController;
-use App\Http\Controllers\Invitation\AcceptStoreController as InvitationAcceptStoreController;
-use App\Http\Controllers\MembershipIndexController;
-use App\Http\Controllers\MembershipUpdateController;
-use App\Http\Controllers\MessageIndexController;
-use App\Http\Controllers\MessageStoreController;
-use App\Http\Controllers\NotificationIndexController;
-use App\Http\Controllers\NotificationReadAllController;
-use App\Http\Controllers\NotificationReadController;
-use App\Http\Controllers\NotificationStoreController;
-use App\Http\Controllers\PaymentEventStoreController;
-use App\Http\Controllers\ProgressIndexController;
-use App\Http\Controllers\AthleteProgramShowController;
-use App\Http\Controllers\CoachAppController;
-use App\Http\Controllers\RosterAssignmentStoreController;
-use App\Http\Controllers\RosterAssignmentUpdateController;
-use App\Http\Controllers\Roster\InvitationCancelController as RosterInvitationCancelController;
-use App\Http\Controllers\Roster\InvitationIndexController as RosterInvitationIndexController;
-use App\Http\Controllers\Roster\InvitationResendController as RosterInvitationResendController;
-use App\Http\Controllers\Roster\InvitationStoreController as RosterInvitationStoreController;
-use App\Http\Controllers\SearchIndexController;
-use App\Http\Controllers\RosterIndexController;
-use App\Http\Controllers\TrainingIndexController;
-use App\Http\Controllers\TrainingProgramStoreController;
-use App\Http\Controllers\TrainingSessionStoreController;
-use App\Http\Controllers\WearableIndexController;
-use App\Http\Controllers\WebsiteHomeController;
-use App\Http\Controllers\WhoopCallbackController;
-use App\Http\Controllers\WhoopConnectController;
-use App\Http\Controllers\WhoopWebhookController;
-use App\Http\Controllers\WorkoutLogStoreController;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use App\Livewire\Admin;
+use App\Livewire\Athlete;
+use App\Livewire\Coach;
+use App\Livewire\Invite;
+use App\Livewire\Public\ContactForm;
 use Illuminate\Support\Facades\Route;
 
-Route::any('/', WebsiteHomeController::class)->name('home');
-Route::get('coaches', CoachDirectoryController::class)->name('coaches.index');
-Route::get('contact', ContactPageController::class)->name('contact.show');
-Route::post('contact', ContactSubmissionStoreController::class)
-    ->middleware('throttle:6,1')
-    ->name('contact.store');
-Route::post('webhooks/stripe', StripeWebhookController::class)
-    ->withoutMiddleware(ValidateCsrfToken::class)
-    ->name('billing.webhooks.stripe');
-Route::post('webhooks/whoop', WhoopWebhookController::class)
-    ->withoutMiddleware(ValidateCsrfToken::class)
-    ->name('wearables.whoop.webhook');
-Route::get('invites/{token}', InvitationAcceptShowController::class)->name('invitations.accept.show');
-Route::post('invites/{token}', InvitationAcceptStoreController::class)->name('invitations.accept.store');
+Route::view('/', 'public.home')->name('home');
+Route::get('/contact', ContactForm::class)->name('contact');
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('api-access', ApiAccessController::class)->name('api-access.index');
-    Route::post('api-access/tokens', ApiAccessTokenStoreController::class)->name('api-access.tokens.store');
-    Route::delete('api-access/tokens/{tokenId}', ApiAccessTokenDestroyController::class)->name('api-access.tokens.destroy');
-    Route::post('billing/checkout', CheckoutSessionStoreController::class)->name('billing.checkout.store');
-    Route::post('billing/portal', PortalSessionStoreController::class)->name('billing.portal.store');
-    Route::get('search', SearchIndexController::class)->name('search.index');
-    Route::get('app', AthleteAppController::class)->name('athlete.app.index');
-    Route::get('app/programs/{trainingProgram}', AthleteProgramShowController::class)->name('athlete.programs.show');
-    Route::get('app/workouts/{trainingSession}', AthleteWorkoutShowController::class)->name('athlete.workouts.show');
-    Route::post('app/workouts/{trainingSession}/sets', AthleteWorkoutSetStoreController::class)->name('athlete.workouts.sets.store');
-    Route::post('app/workouts/{trainingSession}/complete', AthleteWorkoutCompleteController::class)->name('athlete.workouts.complete');
-    Route::get('coach', CoachAppController::class)->name('coach.app.index');
-    Route::get('messages', MessageIndexController::class)->name('messages.index');
-    Route::post('messages', MessageStoreController::class)->name('messages.store');
-    Route::get('dashboard', DashboardRedirectController::class)->name('dashboard');
-    Route::get('notifications', NotificationIndexController::class)->name('notifications.index');
-    Route::post('notifications', NotificationStoreController::class)->name('notifications.store');
-    Route::post('notifications/read-all', NotificationReadAllController::class)->name('notifications.read-all');
-    Route::post('notifications/{notification}/read', NotificationReadController::class)->name('notifications.read');
-    Route::get('progress', ProgressIndexController::class)->name('progress.index');
-    Route::post('progress/check-ins', AthleteCheckInStoreController::class)->name('progress.check-ins.store');
-    Route::patch('progress/check-ins/{athleteCheckIn}', AthleteCheckInUpdateController::class)->name('progress.check-ins.update');
-    Route::get('roster', RosterIndexController::class)->name('roster.index');
-    Route::get('roster/invites', RosterInvitationIndexController::class)->name('roster.invitations.index');
-    Route::post('roster/invites', RosterInvitationStoreController::class)->name('roster.invitations.store');
-    Route::post('roster/invites/{invitation}/resend', RosterInvitationResendController::class)->name('roster.invitations.resend');
-    Route::post('roster/invites/{invitation}/cancel', RosterInvitationCancelController::class)->name('roster.invitations.cancel');
-    Route::post('roster/assignments', RosterAssignmentStoreController::class)->name('roster.assignments.store');
-    Route::patch('roster/assignments/{assignment}', RosterAssignmentUpdateController::class)->name('roster.assignments.update');
-    Route::get('athletes/{user}', AthleteProfileShowController::class)->name('athletes.show');
-    Route::get('athletes/{user}/exports/{section}', AthleteProfileExportController::class)->name('athletes.exports.show');
-    Route::post('athletes/{user}/files', AthleteFileStoreController::class)->name('athletes.files.store');
-    Route::patch('athlete-files/{athleteFile}', AthleteFileUpdateController::class)->name('athlete-files.update');
-    Route::post('athlete-files/{athleteFile}/archive', AthleteFileArchiveController::class)->name('athlete-files.archive');
-    Route::get('athlete-files/{athleteFile}/preview', AthleteFilePreviewController::class)->name('athlete-files.preview');
-    Route::get('athlete-files/{athleteFile}/download', AthleteFileDownloadController::class)->name('athlete-files.download');
-    Route::get('training', TrainingIndexController::class)->name('training.index');
-    Route::post('training/programs', TrainingProgramStoreController::class)->name('training.programs.store');
-    Route::post('training/programs/{trainingProgram}/sessions', TrainingSessionStoreController::class)->name('training.programs.sessions.store');
-    Route::post('training/sessions/{trainingSession}/log', WorkoutLogStoreController::class)->name('training.sessions.log.store');
-    Route::get('memberships', MembershipIndexController::class)->name('memberships.index');
-    Route::patch('memberships/{membership}', MembershipUpdateController::class)->name('memberships.update');
-    Route::post('memberships/{membership}/events', PaymentEventStoreController::class)->name('memberships.events.store');
-    Route::get('wearables', WearableIndexController::class)->name('wearables.index');
-    Route::get('wearables/whoop/connect', WhoopConnectController::class)->name('wearables.whoop.connect');
-    Route::get('wearables/whoop/callback', WhoopCallbackController::class)->name('wearables.whoop.callback');
-    Route::get('admin/dashboard', DashboardController::class)->name('admin.dashboard');
-    Route::get('admin/control-center', ControlCenterController::class)->name('admin.control-center');
-    Route::get('admin/invitations', RosterInvitationIndexController::class)->name('admin.invitations.index');
-    Route::get('admin/files', AthleteFileIndexController::class)->name('admin.files.index');
-    Route::get('admin/audit-log', AuditLogIndexController::class)->name('admin.audit-log.index');
-    Route::get('admin/email-logs', EmailLogIndexController::class)->name('admin.email-logs.index');
-    Route::get('admin/system-settings', [SystemSettingsController::class, 'index'])->name('admin.system-settings.index');
-    Route::patch('admin/system-settings', [SystemSettingsController::class, 'update'])->name('admin.system-settings.update');
-    Route::get('admin/users', UserIndexController::class)->name('admin.users.index');
-    Route::post('admin/users', UserStoreController::class)->name('admin.users.store');
-    Route::get('admin/users/{user}', UserShowController::class)->name('admin.users.show');
-    Route::patch('admin/users/{user}', UserUpdateController::class)->name('admin.users.update');
+Route::get('/login', [AuthController::class, 'create'])->name('login');
+Route::post('/login', [AuthController::class, 'store'])->name('login.store');
+Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
+Route::get('/dashboard', DashboardRedirectController::class)->name('dashboard');
+
+Route::middleware('auth')->group(function (): void {
+    Route::middleware('can:admin.access')->prefix('admin')->name('admin.')->group(function (): void {
+        Route::redirect('/', '/admin/dashboard')->name('root');
+        Route::get('/dashboard', Admin\Dashboard::class)->name('dashboard');
+        Route::get('/users', Admin\UsersTable::class)->name('users');
+        Route::get('/coaches', Admin\CoachesTable::class)->name('coaches');
+        Route::get('/athletes', Admin\AthletesTable::class)->name('athletes');
+        Route::get('/invitations', Admin\InvitationsTable::class)->name('invitations');
+        Route::get('/permissions', Admin\PermissionsPanel::class)->name('permissions');
+        Route::get('/settings', Admin\SettingsPanel::class)->name('settings');
+        Route::get('/audit-log', Admin\AuditLogTable::class)->name('audit');
+    });
+
+    Route::middleware('can:coach.access')->prefix('coach')->name('coach.')->group(function (): void {
+        Route::get('/', Coach\Home::class)->name('home');
+        Route::get('/athletes', Coach\AthletesTable::class)->name('athletes');
+        Route::get('/programs', Coach\ProgramsTable::class)->name('programs');
+        Route::get('/programs/{program}', Coach\ProgramDetail::class)->name('programs.show');
+        Route::get('/invitations', Coach\InvitationsPanel::class)->name('invitations');
+    });
+
+    Route::middleware('can:athlete.access')->prefix('app')->name('app.')->group(function (): void {
+        Route::get('/', Athlete\Home::class)->name('home');
+        Route::get('/programs/{program}', Athlete\ProgramDetail::class)->name('programs.show');
+        Route::get('/workouts/{session}', Athlete\WorkoutDetail::class)->name('workouts.show');
+        Route::get('/progress', Athlete\ProgressPanel::class)->name('progress');
+    });
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+Route::get('/invites/{token}', Invite\AcceptInvite::class)->name('invites.accept');
