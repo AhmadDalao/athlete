@@ -257,6 +257,9 @@ class RebuildSmokeTest extends TestCase
             ->set('settings.invite_expiry_days', '7')
             ->set('settings.homepage_headline', 'Train better')
             ->set('settings.homepage_subheadline', 'Simple coaching software')
+            ->set('settings.contact_headline', 'Start your setup')
+            ->set('settings.contact_subheadline', 'Tell us who you coach.')
+            ->set('settings.contact_button_label', 'Request setup')
             ->set('settings.invite_email_subject', 'Invite')
             ->set('settings.invite_email_body', 'Accept here: {invite_link}')
             ->set('settings.pricing_headline', 'Simple memberships')
@@ -290,6 +293,11 @@ class RebuildSmokeTest extends TestCase
             ->assertOk()
             ->assertSee('Simple memberships')
             ->assertSee('Coach Plus');
+
+        $this->get(route('contact'))
+            ->assertOk()
+            ->assertSee('Start your setup')
+            ->assertSee('Request setup');
     }
 
     public function test_admin_can_manage_contact_submissions(): void

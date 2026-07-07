@@ -9,6 +9,9 @@
                 <div class="col-md-6"><label class="form-label">Support email</label><input class="form-control" type="email" wire:model="settings.support_email"></div>
                 <div class="col-12"><label class="form-label">Homepage headline</label><input class="form-control" wire:model="settings.homepage_headline"></div>
                 <div class="col-12"><label class="form-label">Homepage subheadline</label><textarea class="form-control" rows="3" wire:model="settings.homepage_subheadline"></textarea></div>
+                <div class="col-md-5"><label class="form-label">Contact headline</label><input class="form-control" wire:model="settings.contact_headline"></div>
+                <div class="col-md-5"><label class="form-label">Contact subheadline</label><input class="form-control" wire:model="settings.contact_subheadline"></div>
+                <div class="col-md-2"><label class="form-label">Contact button</label><input class="form-control" wire:model="settings.contact_button_label"></div>
             </div>
         </div>
 

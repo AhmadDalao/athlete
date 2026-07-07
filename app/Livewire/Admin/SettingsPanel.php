@@ -16,6 +16,9 @@ class SettingsPanel extends Component
         'invite_expiry_days' => '7',
         'homepage_headline' => '',
         'homepage_subheadline' => '',
+        'contact_headline' => '',
+        'contact_subheadline' => '',
+        'contact_button_label' => '',
         'pricing_headline' => '',
         'pricing_subheadline' => '',
         'plan_one_name' => '',
@@ -52,6 +55,9 @@ class SettingsPanel extends Component
             'settings.invite_expiry_days' => ['required', 'integer', 'min:1', 'max:60'],
             'settings.homepage_headline' => ['required', 'string', 'max:180'],
             'settings.homepage_subheadline' => ['nullable', 'string', 'max:260'],
+            'settings.contact_headline' => ['required', 'string', 'max:160'],
+            'settings.contact_subheadline' => ['nullable', 'string', 'max:260'],
+            'settings.contact_button_label' => ['required', 'string', 'max:80'],
             'settings.pricing_headline' => ['required', 'string', 'max:160'],
             'settings.pricing_subheadline' => ['nullable', 'string', 'max:260'],
             'settings.plan_one_name' => ['required', 'string', 'max:80'],
@@ -76,6 +82,7 @@ class SettingsPanel extends Component
             $group = match (true) {
                 str_starts_with($key, 'mail_') => 'mail',
                 str_starts_with($key, 'invite_') => 'invitations',
+                str_starts_with($key, 'contact_') => 'contact',
                 str_starts_with($key, 'pricing_'), str_starts_with($key, 'plan_') => 'pricing',
                 default => 'site',
             };

@@ -22,6 +22,9 @@ class DatabaseSeeder extends Seeder
             'invite_expiry_days' => '7',
             'homepage_headline' => 'Training, coaching, and progress tracking without the mess.',
             'homepage_subheadline' => 'A direct platform for coaches to manage athletes, assign programs, and track real execution.',
+            'contact_headline' => 'Tell us what you need.',
+            'contact_subheadline' => 'Questions, coaching setup, or platform access. This saves directly into the admin database.',
+            'contact_button_label' => 'Send message',
             'pricing_headline' => 'Simple plans for real coaching.',
             'pricing_subheadline' => 'Start with the workflow you need now. Payments and automation can come after the coaching system is stable.',
             'plan_one_name' => 'Athlete',
@@ -41,6 +44,7 @@ class DatabaseSeeder extends Seeder
         ])->each(function (string $value, string $key): void {
             $group = match (true) {
                 str_starts_with($key, 'invite_') => 'invitations',
+                str_starts_with($key, 'contact_') => 'contact',
                 str_starts_with($key, 'pricing_'), str_starts_with($key, 'plan_') => 'pricing',
                 default => 'site',
             };

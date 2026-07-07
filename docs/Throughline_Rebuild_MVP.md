@@ -171,6 +171,7 @@ Current automated coverage:
 - Added email and audit logging for invitation actions.
 - Added invitation email subject/body settings with template tokens.
 - Added public pricing/membership settings for three editable plan cards.
+- Added public contact page headline, subheadline, and button label settings.
 - Added permissions defaults/clear shortcuts and audit logging.
 - Grouped settings into website identity, invitation control, and mail labels.
 - Added admin contact inbox with Livewire search, status filter, page size control, CSV export, and audit logging.
@@ -180,6 +181,7 @@ Current automated coverage:
 - Added audit/email log filters for action, entity, status, type, date range, search, page size, and CSV export.
 - Improved athlete progress with summary stats, compact trend charts, date filters, and the table as the source of truth.
 - Added Hostinger deployment checklist: `docs/Hostinger_Deployment_Checklist.md`.
+- Added browser smoke checklist: `docs/Rebuild_Smoke_Checklist.md`.
 
 ### Mobile Usability
 
@@ -196,8 +198,8 @@ Current automated coverage:
 
 Build next in this order:
 
-1. Add settings-driven contact and pricing polish where needed.
-2. Add a final local browser smoke checklist for owner, coach, and athlete accounts.
-3. Deploy rebuild branch only after local smoke testing is accepted.
+1. Run the local browser smoke checklist for owner, coach, and athlete accounts.
+2. Deploy rebuild branch only after local smoke testing is accepted.
+3. Start the first post-MVP slice only after production is stable.
 
 Do not reintroduce native mobile, watch sync, Stripe, OAuth, or API complexity until the website MVP is stable.
