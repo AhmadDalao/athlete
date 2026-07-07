@@ -300,6 +300,27 @@ a {
     width: min(100%, 1.1rem);
 }
 
+.tl-price-card {
+    background:
+        radial-gradient(circle at 80% 0%, rgba(183, 255, 60, 0.14), transparent 11rem),
+        var(--tl-panel);
+    border: 1px solid var(--tl-line);
+    border-radius: 1.35rem;
+    padding: 1.2rem;
+}
+
+.tl-price-card.featured {
+    border-color: rgba(183, 255, 60, 0.42);
+    box-shadow: 0 28px 80px rgba(183, 255, 60, 0.1);
+}
+
+.tl-price {
+    color: var(--tl-text);
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+}
+
 .pagination {
     --bs-pagination-bg: #0f1518;
     --bs-pagination-border-color: var(--tl-line);

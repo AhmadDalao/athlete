@@ -259,6 +259,20 @@ class RebuildSmokeTest extends TestCase
             ->set('settings.homepage_subheadline', 'Simple coaching software')
             ->set('settings.invite_email_subject', 'Invite')
             ->set('settings.invite_email_body', 'Accept here: {invite_link}')
+            ->set('settings.pricing_headline', 'Simple memberships')
+            ->set('settings.pricing_subheadline', 'Plans for athletes, coaches, and teams.')
+            ->set('settings.plan_one_name', 'Athlete')
+            ->set('settings.plan_one_price', '$29/mo')
+            ->set('settings.plan_one_description', 'Track your training.')
+            ->set('settings.plan_one_features', "Workout calendar\nProgress log")
+            ->set('settings.plan_two_name', 'Coach Plus')
+            ->set('settings.plan_two_price', '$79/mo')
+            ->set('settings.plan_two_description', 'Run a private roster.')
+            ->set('settings.plan_two_features', "Athlete invites\nProgram builder")
+            ->set('settings.plan_three_name', 'Team')
+            ->set('settings.plan_three_price', 'Custom')
+            ->set('settings.plan_three_description', 'Operate a whole training group.')
+            ->set('settings.plan_three_features', "Admin controls\nExports")
             ->call('save')
             ->assertHasNoErrors();
 
@@ -266,6 +280,16 @@ class RebuildSmokeTest extends TestCase
             'action' => 'settings.updated',
             'entity' => 'platform_settings',
         ]);
+
+        $this->assertDatabaseHas('platform_settings', [
+            'key' => 'pricing_headline',
+            'value' => 'Simple memberships',
+        ]);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Simple memberships')
+            ->assertSee('Coach Plus');
     }
 
     public function test_admin_can_manage_contact_submissions(): void

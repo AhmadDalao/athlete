@@ -26,6 +26,25 @@
         </div>
 
         <div class="tl-panel">
+            <div class="tl-eyebrow">Public pricing and memberships</div>
+            <div class="row g-3 mt-1">
+                <div class="col-md-5"><label class="form-label">Pricing headline</label><input class="form-control" wire:model="settings.pricing_headline"></div>
+                <div class="col-md-7"><label class="form-label">Pricing subheadline</label><input class="form-control" wire:model="settings.pricing_subheadline"></div>
+                @foreach(['one' => 'Plan 1', 'two' => 'Plan 2', 'three' => 'Plan 3'] as $key => $label)
+                    <div class="col-12"><hr class="border-secondary opacity-25"></div>
+                    <div class="col-md-3"><label class="form-label">{{ $label }} name</label><input class="form-control" wire:model="settings.plan_{{ $key }}_name"></div>
+                    <div class="col-md-3"><label class="form-label">{{ $label }} price</label><input class="form-control" wire:model="settings.plan_{{ $key }}_price"></div>
+                    <div class="col-md-6"><label class="form-label">{{ $label }} description</label><input class="form-control" wire:model="settings.plan_{{ $key }}_description"></div>
+                    <div class="col-12">
+                        <label class="form-label">{{ $label }} features</label>
+                        <textarea class="form-control" rows="3" wire:model="settings.plan_{{ $key }}_features"></textarea>
+                        <div class="tl-muted small mt-2">One feature per line. Keep this public-facing and simple.</div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="tl-panel">
             <div class="tl-eyebrow">Mail labels</div>
             <div class="row g-3 mt-1">
                 <div class="col-md-6"><label class="form-label">Mail from name</label><input class="form-control" wire:model="settings.mail_from_name"></div>

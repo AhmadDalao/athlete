@@ -22,10 +22,30 @@ class DatabaseSeeder extends Seeder
             'invite_expiry_days' => '7',
             'homepage_headline' => 'Training, coaching, and progress tracking without the mess.',
             'homepage_subheadline' => 'A direct platform for coaches to manage athletes, assign programs, and track real execution.',
+            'pricing_headline' => 'Simple plans for real coaching.',
+            'pricing_subheadline' => 'Start with the workflow you need now. Payments and automation can come after the coaching system is stable.',
+            'plan_one_name' => 'Athlete',
+            'plan_one_price' => 'Contact for pricing',
+            'plan_one_description' => 'For one athlete working directly with a coach.',
+            'plan_one_features' => "Assigned coach\nWorkout calendar\nProgress check-ins\nSession completion logs",
+            'plan_two_name' => 'Coach',
+            'plan_two_price' => 'Contact for pricing',
+            'plan_two_description' => 'For coaches managing their own roster.',
+            'plan_two_features' => "Athlete invitations\nPrograms and sessions\nRoster tracking\nCoach-scoped athlete profiles",
+            'plan_three_name' => 'Team',
+            'plan_three_price' => 'Custom',
+            'plan_three_description' => 'For businesses that need admin control and multiple coaches.',
+            'plan_three_features' => "Admin dashboard\nPermissions and settings\nAudit and email logs\nCSV exports",
             'invite_email_subject' => 'Your Throughline athlete invitation',
             'invite_email_body' => "Coach {coach_name} invited you to {app_name}.\n\nAccept here: {invite_link}\n\nThis invite expires on {expires_at}.",
         ])->each(function (string $value, string $key): void {
-            PlatformSetting::put($key, $value, str_starts_with($key, 'invite_') ? 'invitations' : 'site');
+            $group = match (true) {
+                str_starts_with($key, 'invite_') => 'invitations',
+                str_starts_with($key, 'pricing_'), str_starts_with($key, 'plan_') => 'pricing',
+                default => 'site',
+            };
+
+            PlatformSetting::put($key, $value, $group);
         });
 
         $owner = User::query()->create([

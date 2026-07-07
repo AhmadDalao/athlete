@@ -170,6 +170,7 @@ Current automated coverage:
 - Added coach/admin invite resend and cancel actions.
 - Added email and audit logging for invitation actions.
 - Added invitation email subject/body settings with template tokens.
+- Added public pricing/membership settings for three editable plan cards.
 - Added permissions defaults/clear shortcuts and audit logging.
 - Grouped settings into website identity, invitation control, and mail labels.
 - Added admin contact inbox with Livewire search, status filter, page size control, CSV export, and audit logging.
@@ -178,14 +179,14 @@ Current automated coverage:
 - Added coach session edit/delete controls. Empty sessions can be deleted; sessions with athlete logs are cancelled instead to protect history.
 - Added audit/email log filters for action, entity, status, type, date range, search, page size, and CSV export.
 - Improved athlete progress with summary stats, compact trend charts, date filters, and the table as the source of truth.
+- Added Hostinger deployment checklist: `docs/Hostinger_Deployment_Checklist.md`.
 
 ## Next Build Slice
 
 Build next in this order:
 
-1. Add settings-driven public pricing/membership copy.
-2. Add production deployment checklist for Hostinger.
-3. Tighten coach/athlete mobile-width layout passes.
-4. Deploy rebuild branch only after local smoke testing is accepted.
+1. Tighten coach/athlete mobile-width layout passes.
+2. Add settings-driven contact and pricing polish where needed.
+3. Deploy rebuild branch only after local smoke testing is accepted.
 
 Do not reintroduce native mobile, watch sync, Stripe, OAuth, or API complexity until the website MVP is stable.
