@@ -1,4 +1,4 @@
-<div class="tl-panel">
+<div class="tl-section-card">
     <div class="row g-3 align-items-end">
         <div class="col-md-7">
             <label class="form-label">Search</label>

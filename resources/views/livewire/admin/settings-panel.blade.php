@@ -1,8 +1,12 @@
 <div>
-    <div class="tl-hero"><div class="tl-eyebrow">System control</div><h2 class="h1 fw-bold">Settings</h2><p class="tl-muted mb-0">Control website copy, invite expiry, support email, and mail labels.</p></div>
+    <x-tl.page-hero
+        eyebrow="System control"
+        title="Settings"
+        subtitle="Control public copy, invite behavior, support contact details, mail labels, and membership text from one place."
+    />
+
     <form wire:submit.prevent="save">
-        <div class="tl-panel">
-            <div class="tl-eyebrow">Website identity</div>
+        <x-tl.section-card eyebrow="Website identity" title="Brand and contact copy" subtitle="These values power the public pages and shared app chrome.">
             <div class="row g-3 mt-1">
                 <div class="col-md-6"><label class="form-label">App name</label><input class="form-control" wire:model="settings.app_name"></div>
                 <div class="col-md-6"><label class="form-label">Tagline</label><input class="form-control" wire:model="settings.tagline"></div>
@@ -13,10 +17,9 @@
                 <div class="col-md-5"><label class="form-label">Contact subheadline</label><input class="form-control" wire:model="settings.contact_subheadline"></div>
                 <div class="col-md-2"><label class="form-label">Contact button</label><input class="form-control" wire:model="settings.contact_button_label"></div>
             </div>
-        </div>
+        </x-tl.section-card>
 
-        <div class="tl-panel">
-            <div class="tl-eyebrow">Invitation control</div>
+        <x-tl.section-card eyebrow="Invitation control" title="Athlete invite email" subtitle="Use tokens to keep coach-specific invites personal without editing each email manually.">
             <div class="row g-3 mt-1">
                 <div class="col-md-4"><label class="form-label">Invite expiry days</label><input class="form-control" type="number" wire:model="settings.invite_expiry_days"></div>
                 <div class="col-md-8"><label class="form-label">Invite email subject</label><input class="form-control" wire:model="settings.invite_email_subject"></div>
@@ -26,10 +29,9 @@
                     <div class="tl-muted small mt-2">Available tokens: {app_name}, {coach_name}, {athlete_name}, {invite_link}, {expires_at}</div>
                 </div>
             </div>
-        </div>
+        </x-tl.section-card>
 
-        <div class="tl-panel">
-            <div class="tl-eyebrow">Public pricing and memberships</div>
+        <x-tl.section-card eyebrow="Public pricing" title="Membership plans" subtitle="Keep the public offer clear. One feature per line renders cleaner than long paragraphs.">
             <div class="row g-3 mt-1">
                 <div class="col-md-5"><label class="form-label">Pricing headline</label><input class="form-control" wire:model="settings.pricing_headline"></div>
                 <div class="col-md-7"><label class="form-label">Pricing subheadline</label><input class="form-control" wire:model="settings.pricing_subheadline"></div>
@@ -45,15 +47,14 @@
                     </div>
                 @endforeach
             </div>
-        </div>
+        </x-tl.section-card>
 
-        <div class="tl-panel">
-            <div class="tl-eyebrow">Mail labels</div>
+        <x-tl.section-card eyebrow="Mail labels" title="Sender identity" subtitle="This is the name and address users see when the system sends operational email.">
             <div class="row g-3 mt-1">
                 <div class="col-md-6"><label class="form-label">Mail from name</label><input class="form-control" wire:model="settings.mail_from_name"></div>
                 <div class="col-md-6"><label class="form-label">Mail from address</label><input class="form-control" type="email" wire:model="settings.mail_from_address"></div>
             </div>
-        </div>
+        </x-tl.section-card>
 
         @if($errors->any())<div class="text-danger small mt-3">{{ $errors->first() }}</div>@endif
         <button class="btn btn-tl mt-3" type="submit">Save settings</button>

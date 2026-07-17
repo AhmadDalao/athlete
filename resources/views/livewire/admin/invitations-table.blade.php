@@ -1,6 +1,11 @@
 <div>
-    <div class="tl-hero"><div class="tl-eyebrow">Invitations</div><h2 class="h1 fw-bold">Athlete invites</h2><p class="tl-muted mb-0">Track every invite across every coach.</p></div>
-    <div class="tl-panel">
+    <x-tl.page-hero
+        eyebrow="Invitations"
+        title="Athlete invites"
+        subtitle="Track every invite across every coach, resend what matters, and cancel stale links before they create confusion."
+    />
+
+    <x-tl.section-card title="Filter invitations" subtitle="Search and status filters update instantly through Livewire.">
         <div class="row g-3 align-items-end">
             <div class="col-md-5">
                 <label class="form-label">Search</label>
@@ -27,8 +32,14 @@
                 <a class="btn btn-outline-tl w-100" href="{{ route('admin.invitations.export', ['search' => $search, 'status' => $status]) }}"><i class="fa-solid fa-download me-2"></i>Export CSV</a>
             </div>
         </div>
-    </div>
-    <div class="tl-panel">
+    </x-tl.section-card>
+
+    <x-tl.table-card
+        title="Invitation table"
+        subtitle="Every invitation is tracked here. Pending rows are actionable; accepted or cancelled rows stay as history."
+        :count="$invitations->total()"
+        icon="fa-solid fa-envelope-open-text"
+    >
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
             <thead><tr><th>Athlete</th><th>Coach</th><th>Status</th><th>Expires</th><th>Created</th><th>Actions</th></tr></thead>
             <tbody>
@@ -54,5 +65,5 @@
             </tbody>
         </table></div>
         <div class="mt-3">{{ $invitations->links() }}</div>
-    </div>
+    </x-tl.table-card>
 </div>

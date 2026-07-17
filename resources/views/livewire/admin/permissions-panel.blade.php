@@ -1,6 +1,11 @@
 <div>
-    <div class="tl-hero"><div class="tl-eyebrow">Access control</div><h2 class="h1 fw-bold">Permissions</h2><p class="tl-muted mb-0">Owner is locked. Everyone else gets explicit access.</p></div>
-    <div class="tl-panel">
+    <x-tl.page-hero
+        eyebrow="Access control"
+        title="Permissions"
+        subtitle="Owner access is locked. Everyone else gets explicit grouped permissions so control stays boring and safe."
+    />
+
+    <x-tl.section-card title="User access editor" subtitle="Pick a user, apply defaults if needed, then save only the permissions that should be active.">
         <label class="form-label">User</label>
         <select class="form-select mb-4" wire:model.live="selectedUserId">
             @foreach($users as $user)<option value="{{ $user->id }}">{{ $user->name }} · {{ $user->role }}</option>@endforeach
@@ -27,5 +32,5 @@
             </div>
             <button class="btn btn-tl mt-3" type="submit">Save permissions</button>
         </form>
-    </div>
+    </x-tl.section-card>
 </div>

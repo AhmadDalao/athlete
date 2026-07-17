@@ -1,6 +1,16 @@
 <div>
-    <div class="tl-hero"><div class="tl-eyebrow">Program</div><h2 class="h1 fw-bold">{{ $program->title }}</h2><p class="tl-muted mb-0">{{ $program->coach->name }} · {{ $program->goal }}</p></div>
-    <div class="tl-panel">
+    <x-tl.page-hero
+        eyebrow="Program"
+        :title="$program->title"
+        :subtitle="$program->coach->name.' · '.$program->goal"
+    />
+
+    <x-tl.table-card
+        title="Session table"
+        subtitle="Every assigned workout in this program. Open a session to view sets, reps, rest, media, and log completion."
+        :count="$sessions->total()"
+        icon="fa-solid fa-calendar-check"
+    >
         <div class="d-md-none vstack gap-2">
             @forelse($sessions as $session)
                 @php($log = $session->logs->firstWhere('athlete_id', auth()->id()))
@@ -34,5 +44,5 @@
             </tbody>
         </table></div>
         <div class="mt-3">{{ $sessions->links() }}</div>
-    </div>
+    </x-tl.table-card>
 </div>

@@ -1,13 +1,22 @@
 <div>
-    <div class="tl-hero">
-        <div class="tl-eyebrow">{{ $session->scheduled_on->format('M j, Y') }}</div>
-        <h2 class="h1 fw-bold">{{ $session->title }}</h2>
-        <p class="tl-muted mb-0">{{ $session->program->title }} · Coach {{ $session->program->coach->name }}</p>
-        @if($session->media_url)<a class="btn btn-tl mt-3" href="{{ $session->media_url }}" target="_blank"><i class="fa-solid fa-play"></i> Open media</a>@endif
-    </div>
+    <x-tl.page-hero
+        :eyebrow="$session->scheduled_on->format('M j, Y')"
+        :title="$session->title"
+        :subtitle="$session->program->title.' · Coach '.$session->program->coach->name"
+    >
+        @if($session->media_url)
+            <x-slot:actions>
+                <a class="btn btn-tl" href="{{ $session->media_url }}" target="_blank"><i class="fa-solid fa-play"></i> Open media</a>
+            </x-slot:actions>
+        @endif
+    </x-tl.page-hero>
 
-    <div class="tl-panel">
-        <h3 class="h5">Exercises</h3>
+    <x-tl.table-card
+        title="Exercise prescription"
+        subtitle="What your coach assigned: sets, reps/time, rest, load, and notes."
+        :count="count($session->exercises ?? [])"
+        icon="fa-solid fa-dumbbell"
+    >
         <div class="d-md-none vstack gap-2">
             @forelse($session->exercises ?? [] as $exercise)
                 <div class="tl-mobile-record">
@@ -37,14 +46,11 @@
             @endforelse
             </tbody>
         </table></div>
-    </div>
+    </x-tl.table-card>
 
-    <div class="tl-panel">
+    <x-tl.section-card title="Log workout" subtitle="Record what actually happened. Your coach sees this on your profile.">
         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
-            <div>
-                <h3 class="h5 mb-1">Log workout</h3>
-                <p class="tl-muted mb-0">Record what actually happened. Your coach sees this on your profile.</p>
-            </div>
+            <div></div>
             <span class="tl-badge {{ $log?->status === 'completed' ? 'green' : 'gray' }}">{{ $log?->status ?? 'not started' }}</span>
         </div>
 
@@ -110,5 +116,5 @@
             <button class="btn btn-outline-danger" wire:click="mark('missed')">Mark missed</button>
         </div>
         @if($errors->any())<div class="text-danger small mt-3">{{ $errors->first() }}</div>@endif
-    </div>
+    </x-tl.section-card>
 </div>

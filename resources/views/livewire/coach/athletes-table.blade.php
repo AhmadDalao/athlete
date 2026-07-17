@@ -1,7 +1,18 @@
 <div>
-    <div class="tl-hero"><div class="tl-eyebrow">Roster</div><h2 class="h1 fw-bold">My athletes</h2><p class="tl-muted mb-0">Coach-scoped table. You only see athletes assigned to you.</p></div>
+    <x-tl.page-hero
+        eyebrow="Roster"
+        title="My athletes"
+        subtitle="Coach-scoped roster. Open an athlete to review programs, sessions, workout logs, and progress in one place."
+    />
+
     @include('livewire.partials.table-toolbar', ['placeholder' => 'Search athlete, email, goal'])
-    <div class="tl-panel">
+
+    <x-tl.table-card
+        title="Athlete table"
+        subtitle="Click Open to manage this athlete's coaching record."
+        :count="$athletes->total()"
+        icon="fa-solid fa-users-line"
+    >
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
             <thead><tr><th>Athlete</th><th>Goal</th><th>Progress logs</th><th>Workout logs</th><th>Joined</th><th>Action</th></tr></thead>
             <tbody>
@@ -13,5 +24,5 @@
             </tbody>
         </table></div>
         <div class="mt-3">{{ $athletes->links() }}</div>
-    </div>
+    </x-tl.table-card>
 </div>

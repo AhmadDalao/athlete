@@ -1,11 +1,13 @@
 <div>
-    <div class="tl-hero"><div class="tl-eyebrow">Program builder</div><h2 class="h1 fw-bold">{{ $program->title }}</h2><p class="tl-muted mb-0">{{ $program->athlete->name }} · {{ $program->goal }}</p></div>
-    <div class="tl-panel">
+    <x-tl.page-hero
+        eyebrow="Program builder"
+        :title="$program->title"
+        :subtitle="$program->athlete->name.' · '.$program->goal"
+    />
+
+    <x-tl.section-card title="Program control" subtitle="Edit the program header without rebuilding every session.">
         <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
-            <div>
-                <h3 class="h5 mb-1">Program control</h3>
-                <p class="tl-muted mb-0">Edit the program header without rebuilding every session.</p>
-            </div>
+            <div></div>
             <button class="btn btn-outline-danger" type="button" wire:click="archiveProgram" wire:confirm="Archive this program? Existing athlete logs stay available.">Archive program</button>
         </div>
         <form wire:submit.prevent="updateProgram" class="row g-3 align-items-end">
@@ -16,9 +18,9 @@
             <div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" rows="2" wire:model="programNotes"></textarea></div>
             <div class="col-12"><button class="btn btn-tl" type="submit">Save program</button></div>
         </form>
-    </div>
-    <div class="tl-panel">
-        <h3 class="h5">Add session</h3>
+    </x-tl.section-card>
+
+    <x-tl.section-card title="Add session" subtitle="Build the assigned workout with clear exercise rows, targets, rest, load, notes, and media.">
         <form wire:submit.prevent="createSession" class="vstack gap-3">
             <div class="row g-3">
                 <div class="col-md-4"><label class="form-label">Session title</label><input class="form-control" wire:model="title"></div>
@@ -63,9 +65,10 @@
             </table></div>
             <div class="d-flex gap-2 flex-wrap"><button class="btn btn-outline-tl" type="button" wire:click="addExercise">Add exercise</button><button class="btn btn-tl" type="submit">Save session</button></div>
         </form>
-    </div>
+    </x-tl.section-card>
+
     @if($editingSessionId)
-        <div class="tl-panel border border-warning">
+        <x-tl.section-card title="Editing session" :subtitle="$editTitle" class="border border-warning">
             <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
                 <div>
                     <div class="tl-eyebrow">Editing session</div>
@@ -117,10 +120,10 @@
                 </table></div>
                 <div class="d-flex gap-2 flex-wrap"><button class="btn btn-outline-tl" type="button" wire:click="addEditExercise">Add exercise</button><button class="btn btn-tl" type="submit">Update session</button></div>
             </form>
-        </div>
+        </x-tl.section-card>
     @endif
-    <div class="tl-panel">
-        <h3 class="h5">Sessions</h3>
+
+    <x-tl.table-card title="Sessions" subtitle="All scheduled sessions inside this program." :count="$sessions->total()" icon="fa-solid fa-calendar-check">
         <div class="d-md-none vstack gap-2">
             @forelse($sessions as $session)
                 <div class="tl-mobile-record">
@@ -171,5 +174,5 @@
             </tbody>
         </table></div>
         <div class="mt-3">{{ $sessions->links() }}</div>
-    </div>
+    </x-tl.table-card>
 </div>

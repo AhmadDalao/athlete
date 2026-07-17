@@ -17,8 +17,7 @@
         </x-slot:visual>
     </x-tl.page-hero>
 
-    <div class="tl-panel">
-        <div class="tl-eyebrow">Create account</div>
+    <x-tl.section-card eyebrow="Create account" title="Add user" subtitle="Create admins, coaches, or athletes without leaving the control table.">
         <form class="row g-3 align-items-end" wire:submit.prevent="createUser">
             <div class="col-md-3"><label class="form-label">Name</label><input class="form-control" wire:model="name"></div>
             <div class="col-md-3"><label class="form-label">Email</label><input class="form-control" type="email" wire:model="email"></div>
@@ -28,11 +27,16 @@
             <div class="col-12"><button class="btn btn-tl" type="submit">Create user</button></div>
         </form>
         @if($errors->any())<div class="text-danger small mt-3">{{ $errors->first() }}</div>@endif
-    </div>
+    </x-tl.section-card>
 
     @include('livewire.partials.table-toolbar', ['placeholder' => 'Search name, email, phone, or goal'])
 
-    <div class="tl-panel">
+    <x-tl.table-card
+        title="User table"
+        subtitle="Search the current result, filter by role, export what is visible, and open full profiles."
+        :count="$users->total()"
+        icon="fa-solid fa-users"
+    >
         <div class="row g-3 align-items-end mb-3">
             <div class="col-md-3">
                 <label class="form-label">Role</label>
@@ -83,5 +87,5 @@
             </table>
         </div>
         <div class="mt-3">{{ $users->links() }}</div>
-    </div>
+    </x-tl.table-card>
 </div>

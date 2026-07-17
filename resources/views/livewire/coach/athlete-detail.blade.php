@@ -1,24 +1,22 @@
 <div>
-    <div class="tl-hero">
-        <div class="tl-eyebrow">Athlete profile</div>
-        <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
-            <div>
-                <h2 class="h1 fw-bold">{{ $athlete->name }}</h2>
-                <p class="tl-muted mb-0">{{ $athlete->email }} · {{ $athlete->primary_goal ?: 'No goal set' }}</p>
-            </div>
+    <x-tl.page-hero
+        eyebrow="Athlete profile"
+        :title="$athlete->name"
+        :subtitle="$athlete->email.' · '.($athlete->primary_goal ?: 'No goal set')"
+    >
+        <x-slot:actions>
             <a class="btn btn-outline-tl" href="{{ route('coach.athletes') }}"><i class="fa-solid fa-arrow-left"></i> Back to roster</a>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-tl.page-hero>
 
     <div class="row g-3 mb-3">
-        <div class="col-md-3"><div class="tl-stat"><span class="tl-muted">Programs</span><strong>{{ $programs->count() }}</strong></div></div>
-        <div class="col-md-3"><div class="tl-stat"><span class="tl-muted">Sessions</span><strong>{{ $sessions->count() }}</strong></div></div>
-        <div class="col-md-3"><div class="tl-stat"><span class="tl-muted">Workout logs</span><strong>{{ $workoutLogs->count() }}</strong></div></div>
-        <div class="col-md-3"><div class="tl-stat"><span class="tl-muted">Progress logs</span><strong>{{ $progressEntries->count() }}</strong></div></div>
+        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-dumbbell" label="Programs" :value="$programs->count()" tone="lime" /></div>
+        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-calendar-check" label="Sessions" :value="$sessions->count()" tone="emerald" /></div>
+        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-clipboard-check" label="Workout logs" :value="$workoutLogs->count()" tone="gold" /></div>
+        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-chart-line" label="Progress logs" :value="$progressEntries->count()" tone="blue" /></div>
     </div>
 
-    <div class="tl-panel">
-        <h3 class="h5">Assigned programs</h3>
+    <x-tl.table-card title="Assigned programs" subtitle="Programs this coach assigned to the athlete." :count="$programs->count()" icon="fa-solid fa-dumbbell">
         <div class="d-md-none vstack gap-2">
             @forelse($programs as $program)
                 <a class="tl-mobile-record" href="{{ route('coach.programs.show', $program) }}">
@@ -55,10 +53,9 @@
             @endforelse
             </tbody>
         </table></div>
-    </div>
+    </x-tl.table-card>
 
-    <div class="tl-panel">
-        <h3 class="h5">Schedule</h3>
+    <x-tl.table-card title="Schedule" subtitle="Upcoming and historical sessions for this athlete." :count="$sessions->count()" icon="fa-solid fa-calendar-days">
         <div class="d-md-none vstack gap-2">
             @forelse($sessions as $session)
                 @php($log = $session->logs->firstWhere('athlete_id', $athlete->id))
@@ -98,10 +95,9 @@
             @endforelse
             </tbody>
         </table></div>
-    </div>
+    </x-tl.table-card>
 
-    <div class="tl-panel">
-        <h3 class="h5">Workout logs</h3>
+    <x-tl.table-card title="Workout logs" subtitle="Execution history: completed, partial, missed, notes, RPE, and duration." :count="$workoutLogs->count()" icon="fa-solid fa-clipboard-check">
         <div class="d-md-none vstack gap-2">
             @forelse($workoutLogs as $log)
                 <div class="tl-mobile-record">
@@ -141,10 +137,9 @@
             @endforelse
             </tbody>
         </table></div>
-    </div>
+    </x-tl.table-card>
 
-    <div class="tl-panel">
-        <h3 class="h5">Progress logs</h3>
+    <x-tl.table-card title="Progress logs" subtitle="Athlete check-ins for food, body, hydration, sleep quality, soreness, and energy." :count="$progressEntries->count()" icon="fa-solid fa-chart-line">
         <div class="d-md-none vstack gap-2">
             @forelse($progressEntries as $entry)
                 <div class="tl-mobile-record">
@@ -191,5 +186,5 @@
             @endforelse
             </tbody>
         </table></div>
-    </div>
+    </x-tl.table-card>
 </div>

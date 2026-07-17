@@ -1,10 +1,11 @@
 <section class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-7">
-            <div class="tl-panel">
-                <div class="tl-eyebrow">Contact</div>
-                <h1 class="h2">{{ \App\Models\PlatformSetting::get('contact_headline', 'Tell us what you need.') }}</h1>
-                <p class="tl-muted">{{ \App\Models\PlatformSetting::get('contact_subheadline', 'Questions, coaching setup, or platform access. This saves directly into the admin database.') }}</p>
+            <x-tl.section-card
+                eyebrow="Contact"
+                :title="\App\Models\PlatformSetting::get('contact_headline', 'Tell us what you need.')"
+                :subtitle="\App\Models\PlatformSetting::get('contact_subheadline', 'Questions, coaching setup, or platform access. This saves directly into the admin database.')"
+            >
 
                 @if (session('status'))
                     <div class="alert alert-success border-0">{{ session('status') }}</div>
@@ -34,7 +35,7 @@
                         <button class="btn btn-tl btn-lg" type="submit">{{ \App\Models\PlatformSetting::get('contact_button_label', 'Send message') }}</button>
                     </div>
                 </form>
-            </div>
+            </x-tl.section-card>
         </div>
     </div>
 </section>

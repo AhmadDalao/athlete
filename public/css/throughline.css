@@ -310,7 +310,8 @@ a {
     color: #6d28d9;
 }
 
-.tl-section-card {
+.tl-section-card,
+.tl-table-card {
     background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
         rgba(16, 22, 26, 0.88);
@@ -329,16 +330,41 @@ a {
     margin-bottom: 1rem;
 }
 
-.tl-section-head h3 {
+.tl-section-head h3,
+.tl-table-card-head h3 {
     font-size: clamp(1.15rem, 2vw, 1.55rem);
     font-weight: 900;
     letter-spacing: -0.04em;
     margin: 0.25rem 0;
 }
 
-.tl-section-head p {
+.tl-section-head p,
+.tl-table-card-head p {
     color: var(--tl-muted);
     margin: 0;
+}
+
+.tl-table-card-head {
+    align-items: flex-start;
+    border-bottom: 1px solid var(--tl-line);
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin: -1rem -1rem 1rem;
+    padding: 1rem;
+}
+
+.tl-table-card-icon {
+    align-items: center;
+    background: rgba(183, 255, 60, 0.13);
+    border: 1px solid rgba(183, 255, 60, 0.22);
+    border-radius: 0.9rem;
+    color: var(--tl-lime);
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 40px;
+    justify-content: center;
+    width: 40px;
 }
 
 .tl-metric-card {

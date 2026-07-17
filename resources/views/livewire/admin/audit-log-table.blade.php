@@ -1,6 +1,11 @@
 <div>
-    <div class="tl-hero"><div class="tl-eyebrow">Accountability</div><h2 class="h1 fw-bold">Logs</h2><p class="tl-muted mb-0">Audit and email delivery records.</p></div>
-    <div class="tl-panel">
+    <x-tl.page-hero
+        eyebrow="Accountability"
+        title="Logs"
+        subtitle="Audit actions and email delivery records stay searchable, exportable, and easy to review."
+    />
+
+    <x-tl.section-card title="Log type" subtitle="Switch between system activity and email delivery without leaving the page.">
         <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
             <div class="d-flex gap-2 flex-wrap">
                 <button class="btn {{ $tab === 'audit' ? 'btn-tl' : 'btn-outline-tl' }}" type="button" wire:click="setTab('audit')">Audit</button>
@@ -8,8 +13,9 @@
             </div>
             <a class="btn btn-outline-tl" href="{{ route('admin.audit.export', ['tab' => $tab, 'search' => $search, 'audit_action' => $auditAction, 'audit_entity' => $auditEntity, 'email_status' => $emailStatus, 'email_type' => $emailType, 'from' => $from, 'to' => $to]) }}"><i class="fa-solid fa-download me-2"></i>Export CSV</a>
         </div>
-    </div>
-    <div class="tl-panel">
+    </x-tl.section-card>
+
+    <x-tl.section-card title="Filter logs" subtitle="Search, date range, and log-specific filters update in place.">
         <div class="row g-3 align-items-end">
             <div class="col-lg-4">
                 <label class="form-label">Search</label>
@@ -65,8 +71,14 @@
                 </select>
             </div>
         </div>
-    </div>
-    <div class="tl-panel">
+    </x-tl.section-card>
+
+    <x-tl.table-card
+        :title="$tab === 'audit' ? 'Audit table' : 'Email table'"
+        subtitle="This is the operational trail. Export the current filtered result when you need a handover."
+        :count="$tab === 'audit' ? $auditLogs->total() : $emailLogs->total()"
+        icon="fa-solid fa-clipboard-list"
+    >
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
             @if($tab === 'audit')
                 <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Entity</th><th>Summary</th><th>IP</th></tr></thead>
@@ -77,5 +89,5 @@
             @endif
         </table></div>
         <div class="mt-3">{{ $tab === 'audit' ? $auditLogs->links() : $emailLogs->links() }}</div>
-    </div>
+    </x-tl.table-card>
 </div>

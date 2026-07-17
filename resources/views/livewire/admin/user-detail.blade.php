@@ -1,24 +1,22 @@
 <div>
-    <div class="tl-hero">
-        <div class="tl-eyebrow">User profile</div>
-        <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
-            <div>
-                <h2 class="h1 fw-bold">{{ $user->name }}</h2>
-                <p class="tl-muted mb-0">{{ $user->email }} · {{ ucfirst($user->role) }} · {{ ucfirst($user->status) }}</p>
-            </div>
+    <x-tl.page-hero
+        eyebrow="User profile"
+        :title="$user->name"
+        :subtitle="$user->email.' · '.ucfirst($user->role).' · '.ucfirst($user->status)"
+    >
+        <x-slot:actions>
             <a class="btn btn-outline-tl" href="{{ route('admin.users') }}"><i class="fa-solid fa-arrow-left"></i> Back to users</a>
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-tl.page-hero>
 
     <div class="row g-3 mb-3">
-        <div class="col-md-3"><div class="tl-stat"><span class="tl-muted">Permissions</span><strong>{{ $user->permissions_count }}</strong></div></div>
-        <div class="col-md-3"><div class="tl-stat"><span class="tl-muted">Coach athletes</span><strong>{{ $user->coach_assignments_count }}</strong></div></div>
-        <div class="col-md-3"><div class="tl-stat"><span class="tl-muted">Programs</span><strong>{{ $user->coach_programs_count }}</strong></div></div>
-        <div class="col-md-3"><div class="tl-stat"><span class="tl-muted">Workout logs</span><strong>{{ $user->workout_logs_count }}</strong></div></div>
+        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-key" label="Permissions" :value="$user->permissions_count" tone="lime" /></div>
+        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-users-line" label="Coach athletes" :value="$user->coach_assignments_count" tone="emerald" /></div>
+        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-dumbbell" label="Programs" :value="$user->coach_programs_count" tone="gold" /></div>
+        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-clipboard-check" label="Workout logs" :value="$user->workout_logs_count" tone="blue" /></div>
     </div>
 
-    <div class="tl-panel">
-        <div class="tl-eyebrow">Account control</div>
+    <x-tl.section-card eyebrow="Account control" title="Edit profile and access" subtitle="Owner accounts stay protected; normal accounts can be updated here.">
         <form class="row g-3 align-items-end" wire:submit.prevent="updateUser">
             <div class="col-md-3"><label class="form-label">Name</label><input class="form-control" wire:model="name"></div>
             <div class="col-md-3"><label class="form-label">Email</label><input class="form-control" type="email" wire:model="email"></div>
@@ -45,10 +43,9 @@
             <div class="col-12"><label class="form-label">Bio / notes</label><textarea class="form-control" rows="3" wire:model="bio"></textarea></div>
         </form>
         @if($errors->any())<div class="text-danger small mt-3">{{ $errors->first() }}</div>@endif
-    </div>
+    </x-tl.section-card>
 
-    <div class="tl-panel">
-        <h3 class="h5">Coach assignments</h3>
+    <x-tl.table-card title="Coach assignments" subtitle="Roster links for this user, whether they are coach or athlete." :count="$athleteAssignments->count() + $coachAssignments->count()" icon="fa-solid fa-user-group">
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
             <thead><tr><th>Coach</th><th>Athlete</th><th>Status</th><th>Started</th><th>Ended</th></tr></thead>
             <tbody>
@@ -63,10 +60,9 @@
             @endforelse
             </tbody>
         </table></div>
-    </div>
+    </x-tl.table-card>
 
-    <div class="tl-panel">
-        <h3 class="h5">Programs</h3>
+    <x-tl.table-card title="Programs" subtitle="Programs this user owns as coach or receives as athlete." :count="$programsAsCoach->count() + $programsAsAthlete->count()" icon="fa-solid fa-dumbbell">
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
             <thead><tr><th>Program</th><th>Coach</th><th>Athlete</th><th>Status</th><th>Dates</th></tr></thead>
             <tbody>
@@ -83,10 +79,9 @@
             @endif
             </tbody>
         </table></div>
-    </div>
+    </x-tl.table-card>
 
-    <div class="tl-panel">
-        <h3 class="h5">Workout logs</h3>
+    <x-tl.table-card title="Workout logs" subtitle="Completed, partial, and missed session records tied to this user." :count="$workoutLogs->count()" icon="fa-solid fa-clipboard-check">
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
             <thead><tr><th>Date</th><th>Session</th><th>Coach</th><th>Status</th><th>RPE</th><th>Duration</th><th>Notes</th></tr></thead>
             <tbody>
@@ -97,10 +92,9 @@
             @endforelse
             </tbody>
         </table></div>
-    </div>
+    </x-tl.table-card>
 
-    <div class="tl-panel">
-        <h3 class="h5">Progress entries</h3>
+    <x-tl.table-card title="Progress entries" subtitle="Body, food, hydration, sleep quality, energy, and notes." :count="$progressEntries->count()" icon="fa-solid fa-chart-line">
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
             <thead><tr><th>Date</th><th>Weight</th><th>Calories</th><th>Protein</th><th>Hydration</th><th>Sleep</th><th>Energy</th><th>Notes</th></tr></thead>
             <tbody>
@@ -111,10 +105,9 @@
             @endforelse
             </tbody>
         </table></div>
-    </div>
+    </x-tl.table-card>
 
-    <div class="tl-panel">
-        <h3 class="h5">Audit trail</h3>
+    <x-tl.table-card title="Audit trail" subtitle="Recent recorded actions for this user." :count="$auditLogs->count()" icon="fa-solid fa-clipboard-list">
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
             <thead><tr><th>When</th><th>Action</th><th>Summary</th><th>IP</th></tr></thead>
             <tbody>
@@ -125,5 +118,5 @@
             @endforelse
             </tbody>
         </table></div>
-    </div>
+    </x-tl.table-card>
 </div>

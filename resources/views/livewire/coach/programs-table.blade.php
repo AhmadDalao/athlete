@@ -1,6 +1,11 @@
 <div>
-    <div class="tl-hero"><div class="tl-eyebrow">Training</div><h2 class="h1 fw-bold">Programs</h2><p class="tl-muted mb-0">Create athlete programs and open them to build sessions.</p></div>
-    <div class="tl-panel">
+    <x-tl.page-hero
+        eyebrow="Training"
+        title="Programs"
+        subtitle="Create athlete programs, then open each one to build the exact sessions, exercises, media, and schedule."
+    />
+
+    <x-tl.section-card title="Create program" subtitle="Start with the athlete, goal, and date range. Sessions are built after the program exists.">
         <form class="row g-3 align-items-end" wire:submit.prevent="createProgram">
             <div class="col-md-3"><label class="form-label">Athlete</label><select class="form-select" wire:model="athleteId"><option value="">Select athlete</option>@foreach($athletes as $athlete)<option value="{{ $athlete->id }}">{{ $athlete->name }}</option>@endforeach</select></div>
             <div class="col-md-3"><label class="form-label">Title</label><input class="form-control" wire:model="title"></div>
@@ -10,9 +15,16 @@
             <div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" rows="2" wire:model="notes"></textarea></div>
             <div class="col-12"><button class="btn btn-tl" type="submit">Create program</button></div>
         </form>
-    </div>
+    </x-tl.section-card>
+
     @include('livewire.partials.table-toolbar', ['placeholder' => 'Search program or athlete'])
-    <div class="tl-panel">
+
+    <x-tl.table-card
+        title="Program table"
+        subtitle="Open a program to add sessions, edit exercises, or archive completed work."
+        :count="$programs->total()"
+        icon="fa-solid fa-dumbbell"
+    >
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
             <thead><tr><th>Program</th><th>Athlete</th><th>Status</th><th>Dates</th><th>Sessions</th><th>Action</th></tr></thead>
             <tbody>
@@ -24,5 +36,5 @@
             </tbody>
         </table></div>
         <div class="mt-3">{{ $programs->links() }}</div>
-    </div>
+    </x-tl.table-card>
 </div>

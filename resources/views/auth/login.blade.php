@@ -4,9 +4,7 @@
 <section class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-7 col-lg-5">
-            <div class="tl-panel">
-                <div class="tl-eyebrow">Login</div>
-                <h1 class="h2 mb-3">Enter Throughline</h1>
+            <x-tl.section-card eyebrow="Login" title="Enter Throughline">
                 <form method="POST" action="{{ route('login.store') }}" class="vstack gap-3">
                     @csrf
                     <div>
@@ -24,14 +22,13 @@
                     </label>
                     <button class="btn btn-tl btn-lg" type="submit">Login</button>
                 </form>
-                <div class="tl-panel mt-4 mb-0">
-                    <div class="tl-eyebrow">Seed accounts</div>
+                <x-tl.section-card eyebrow="Seed accounts" class="mt-4 mb-0">
                     <p class="mb-1">Owner: <code>owner@throughline.test</code></p>
                     <p class="mb-1">Coach: <code>coach@throughline.test</code></p>
                     <p class="mb-0">Athlete: <code>athlete@throughline.test</code></p>
                     <small class="tl-muted">Password for seeded accounts: <code>password</code></small>
-                </div>
-            </div>
+                </x-tl.section-card>
+            </x-tl.section-card>
         </div>
     </div>
 </section>

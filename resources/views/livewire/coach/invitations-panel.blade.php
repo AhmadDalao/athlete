@@ -1,14 +1,26 @@
 <div>
-    <div class="tl-hero"><div class="tl-eyebrow">Invite athletes</div><h2 class="h1 fw-bold">Invitations</h2><p class="tl-muted mb-0">Invite athletes and track acceptance.</p></div>
-    <div class="tl-panel">
+    <x-tl.page-hero
+        eyebrow="Invite athletes"
+        title="Invitations"
+        subtitle="Invite athletes by email, resend pending links, and cancel stale invitations before they clutter the roster."
+    />
+
+    <x-tl.section-card title="Create invite" subtitle="The athlete receives a setup link and is automatically assigned to you after acceptance.">
         <form class="row g-3 align-items-end" wire:submit.prevent="invite">
             <div class="col-md-4"><label class="form-label">Name</label><input class="form-control" wire:model="name"></div>
             <div class="col-md-5"><label class="form-label">Email</label><input class="form-control" type="email" wire:model="email"></div>
             <div class="col-md-3"><button class="btn btn-tl w-100" type="submit">Create invite</button></div>
         </form>
-    </div>
+    </x-tl.section-card>
+
     @include('livewire.partials.table-toolbar', ['placeholder' => 'Search invite'])
-    <div class="tl-panel">
+
+    <x-tl.table-card
+        title="Invite table"
+        subtitle="Pending invites are actionable. Accepted and cancelled records stay visible for audit."
+        :count="$invitations->total()"
+        icon="fa-solid fa-paper-plane"
+    >
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
             <thead><tr><th>Athlete</th><th>Status</th><th>Expires</th><th>Accept link</th><th>Actions</th></tr></thead>
             <tbody>
@@ -33,5 +45,5 @@
             </tbody>
         </table></div>
         <div class="mt-3">{{ $invitations->links() }}</div>
-    </div>
+    </x-tl.table-card>
 </div>

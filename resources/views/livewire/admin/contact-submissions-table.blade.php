@@ -1,11 +1,11 @@
 <div>
-    <div class="tl-hero">
-        <div class="tl-eyebrow">Website inbox</div>
-        <h2 class="h1 fw-bold">Contact submissions</h2>
-        <p class="tl-muted mb-0">Public website leads and support requests land here.</p>
-    </div>
+    <x-tl.page-hero
+        eyebrow="Website inbox"
+        title="Contact submissions"
+        subtitle="Public website leads and support requests land here. Review them quickly, close noise, and keep real opportunities visible."
+    />
 
-    <div class="tl-panel">
+    <x-tl.section-card title="Filter inbox" subtitle="Search public leads by contact details or message text.">
         <div class="row g-3 align-items-end">
             <div class="col-md-5">
                 <label class="form-label">Search</label>
@@ -32,9 +32,14 @@
                 <a class="btn btn-outline-tl w-100" href="{{ route('admin.contact-submissions.export', ['search' => $search, 'status' => $status]) }}"><i class="fa-solid fa-download me-2"></i>Export CSV</a>
             </div>
         </div>
-    </div>
+    </x-tl.section-card>
 
-    <div class="tl-panel">
+    <x-tl.table-card
+        title="Submission table"
+        subtitle="Keep this table clean: new, reviewed, or closed."
+        :count="$submissions->total()"
+        icon="fa-solid fa-inbox"
+    >
         <div class="tl-table-wrap">
             <table class="table tl-table align-middle">
                 <thead><tr><th>Contact</th><th>Message</th><th>Status</th><th>Received</th><th>Actions</th></tr></thead>
@@ -63,5 +68,5 @@
             </table>
         </div>
         <div class="mt-3">{{ $submissions->links() }}</div>
-    </div>
+    </x-tl.table-card>
 </div>
