@@ -1,26 +1,43 @@
 <div>
-    <div class="tl-hero">
-        <div class="tl-eyebrow">Athlete app</div>
-        <h2 class="h1 fw-bold">Your training</h2>
-        <p class="tl-muted mb-0">Assigned programs, calendar, and today’s workouts. No admin dashboard noise.</p>
-    </div>
+    <x-tl.page-hero
+        eyebrow="Athlete app"
+        title="Your training"
+        subtitle="Assigned programs, calendar, and today’s workouts. No admin dashboard noise."
+    >
+        <x-slot:actions>
+            <a class="btn btn-tl" href="#schedule">Open schedule</a>
+            <a class="btn btn-outline-tl" href="{{ route('app.progress') }}">Log progress</a>
+        </x-slot:actions>
+        <x-slot:visual>
+            <div class="row g-3">
+                <div class="col-6">
+                    <x-tl.metric-card icon="fa-solid fa-dumbbell" label="Programs" :value="$programs->count()" tone="lime" />
+                </div>
+                <div class="col-6">
+                    <x-tl.metric-card icon="fa-solid fa-calendar-check" label="Selected day" :value="$selectedSessions->count()" detail="Workout(s)" tone="emerald" />
+                </div>
+                <div class="col-12">
+                    <x-tl.metric-card icon="fa-solid fa-video" label="Media ready" :value="$selectedSessions->filter(fn ($session) => filled($session->media_url))->count()" detail="Session(s) include video or image links." tone="blue" />
+                </div>
+            </div>
+        </x-slot:visual>
+    </x-tl.page-hero>
 
     <div class="row g-3 mb-3">
         <div class="col-lg-4">
-            <div class="tl-panel h-100">
-                <h3 class="h5">Active programs</h3>
+            <x-tl.section-card title="Active programs" subtitle="Open the assigned plan and review sessions.">
                 @forelse($programs as $program)
-                    <a class="tl-stat d-block mb-2" href="{{ route('app.programs.show', $program) }}">
-                        <strong class="fs-5">{{ $program->title }}</strong>
+                    <a class="tl-mobile-record mb-2" href="{{ route('app.programs.show', $program) }}">
+                        <strong>{{ $program->title }}</strong>
                         <span class="tl-muted d-block">{{ $program->coach->name }} · {{ $program->sessions->count() }} sessions</span>
                     </a>
                 @empty
                     <p class="tl-muted mb-0">No programs assigned yet.</p>
                 @endforelse
-            </div>
+            </x-tl.section-card>
         </div>
         <div class="col-lg-8">
-            <div class="tl-panel h-100">
+            <section class="tl-section-card h-100">
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                     <div>
                         <div class="tl-eyebrow">Calendar</div>
@@ -40,15 +57,16 @@
                         </button>
                     @endforeach
                 </div>
-            </div>
+            </section>
         </div>
     </div>
 
-    <div class="tl-panel">
-        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            <div><div class="tl-eyebrow">Selected day</div><h3 class="h5 mb-0">{{ \Illuminate\Support\Carbon::parse($selectedDate)->format('M j, Y') }}</h3></div>
-        </div>
-
+    <x-tl.section-card
+        id="schedule"
+        eyebrow="Selected day"
+        :title="\Illuminate\Support\Carbon::parse($selectedDate)->format('M j, Y')"
+        subtitle="Click a workout to open sets, reps, rest, media, and completion logging."
+    >
         <div class="d-md-none vstack gap-2">
             @forelse($selectedSessions as $session)
                 @php($log = $session->logs->firstWhere('athlete_id', auth()->id()))
@@ -93,5 +111,5 @@
             @endforelse
             </tbody>
         </table></div>
-    </div>
+    </x-tl.section-card>
 </div>

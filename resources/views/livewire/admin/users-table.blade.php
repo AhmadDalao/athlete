@@ -1,9 +1,21 @@
 <div>
-    <div class="tl-hero">
-        <div class="tl-eyebrow">People control</div>
-        <h2 class="h1 fw-bold">{{ $role === 'all' ? 'Users' : ucfirst($role).'s' }}</h2>
-        <p class="tl-muted mb-0">Create users, control roles, and keep access direct.</p>
-    </div>
+    <x-tl.page-hero
+        eyebrow="People control"
+        :title="$role === 'all' ? 'Users' : ucfirst($role).'s'"
+        subtitle="Create users, control roles, and keep access direct."
+    >
+        <x-slot:actions>
+            <a class="btn btn-outline-tl" href="{{ route('admin.users.export', ['role' => $role, 'search' => $search]) }}">
+                <i class="fa-solid fa-download"></i> Export CSV
+            </a>
+        </x-slot:actions>
+        <x-slot:visual>
+            <div class="row g-3">
+                <div class="col-6"><x-tl.metric-card icon="fa-solid fa-users" label="Visible rows" :value="$users->total()" tone="blue" /></div>
+                <div class="col-6"><x-tl.metric-card icon="fa-solid fa-filter" label="Filter" :value="str($role)->headline()" tone="lime" /></div>
+            </div>
+        </x-slot:visual>
+    </x-tl.page-hero>
 
     <div class="tl-panel">
         <div class="tl-eyebrow">Create account</div>
