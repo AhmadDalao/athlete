@@ -9,7 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-    <link href="{{ asset('css/throughline.css') }}" rel="stylesheet">
+    @php($throughlineCssVersion = file_exists(public_path('css/throughline.css')) ? filemtime(public_path('css/throughline.css')) : now()->timestamp)
+    <link href="{{ asset('css/throughline.css') }}?v={{ $throughlineCssVersion }}" rel="stylesheet">
     @livewireStyles
 </head>
 <body>
