@@ -53,12 +53,19 @@
                             <div class="col-6"><label class="form-label small">Rest</label><input class="form-control" wire:model="exercises.{{ $index }}.rest"></div>
                             <div class="col-6"><label class="form-label small">Load</label><input class="form-control" wire:model="exercises.{{ $index }}.load"></div>
                             <div class="col-12"><label class="form-label small">Note</label><input class="form-control" wire:model="exercises.{{ $index }}.note"></div>
+                            <div class="col-12">
+                                <label class="form-label small">Exercise demo URL</label>
+                                <input class="form-control" wire:model.blur="exercises.{{ $index }}.media_url" placeholder="Optional image, YouTube, Vimeo, or video URL">
+                                @if($exercise['media_url'] ?? null)
+                                    <a class="tl-form-help d-inline-flex mt-2" href="{{ $exercise['media_url'] }}" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> Preview exercise demo</a>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 @endforeach
             </div>
             <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
-                <thead><tr><th>Exercise</th><th>Sets</th><th>Reps/time</th><th>Rest</th><th>Load</th><th>Note</th><th></th></tr></thead>
+                <thead><tr><th>Exercise</th><th>Sets</th><th>Reps/time</th><th>Rest</th><th>Load</th><th>Note</th><th>Demo URL</th><th></th></tr></thead>
                 <tbody>
                 @foreach($exercises as $index => $exercise)
                     <tr>
@@ -68,6 +75,7 @@
                         <td><input class="form-control" wire:model="exercises.{{ $index }}.rest"></td>
                         <td><input class="form-control" wire:model="exercises.{{ $index }}.load"></td>
                         <td><input class="form-control" wire:model="exercises.{{ $index }}.note"></td>
+                        <td><input class="form-control tl-media-url-input" wire:model.blur="exercises.{{ $index }}.media_url" placeholder="Optional URL"></td>
                         <td><button class="btn btn-outline-danger btn-sm" type="button" wire:click="removeExercise({{ $index }})">Remove</button></td>
                     </tr>
                 @endforeach
@@ -118,12 +126,19 @@
                                 <div class="col-6"><label class="form-label small">Rest</label><input class="form-control" wire:model="editExercises.{{ $index }}.rest"></div>
                                 <div class="col-6"><label class="form-label small">Load</label><input class="form-control" wire:model="editExercises.{{ $index }}.load"></div>
                                 <div class="col-12"><label class="form-label small">Note</label><input class="form-control" wire:model="editExercises.{{ $index }}.note"></div>
+                                <div class="col-12">
+                                    <label class="form-label small">Exercise demo URL</label>
+                                    <input class="form-control" wire:model.blur="editExercises.{{ $index }}.media_url" placeholder="Optional image, YouTube, Vimeo, or video URL">
+                                    @if($exercise['media_url'] ?? null)
+                                        <a class="tl-form-help d-inline-flex mt-2" href="{{ $exercise['media_url'] }}" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> Preview exercise demo</a>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     @endforeach
                 </div>
                 <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
-                    <thead><tr><th>Exercise</th><th>Sets</th><th>Reps/time</th><th>Rest</th><th>Load</th><th>Note</th><th></th></tr></thead>
+                    <thead><tr><th>Exercise</th><th>Sets</th><th>Reps/time</th><th>Rest</th><th>Load</th><th>Note</th><th>Demo URL</th><th></th></tr></thead>
                     <tbody>
                     @foreach($editExercises as $index => $exercise)
                         <tr>
@@ -133,6 +148,7 @@
                             <td><input class="form-control" wire:model="editExercises.{{ $index }}.rest"></td>
                             <td><input class="form-control" wire:model="editExercises.{{ $index }}.load"></td>
                             <td><input class="form-control" wire:model="editExercises.{{ $index }}.note"></td>
+                            <td><input class="form-control tl-media-url-input" wire:model.blur="editExercises.{{ $index }}.media_url" placeholder="Optional URL"></td>
                             <td><button class="btn btn-outline-danger btn-sm" type="button" wire:click="removeEditExercise({{ $index }})">Remove</button></td>
                         </tr>
                     @endforeach
@@ -157,7 +173,7 @@
                     <div class="tl-mobile-record-grid mt-3">
                         <div><span class="tl-muted small d-block">Focus</span><span>{{ $session->focus ?: '-' }}</span></div>
                         <div><span class="tl-muted small d-block">Exercises</span><span>{{ $session->exerciseSummary() }}</span></div>
-                        <div><span class="tl-muted small d-block">Media</span><span>@if($session->media_url)<a href="{{ $session->media_url }}" target="_blank">Open</a>@else None @endif</span></div>
+                        <div><span class="tl-muted small d-block">Media</span><span>{{ $session->mediaCount() }} item(s)</span></div>
                         <div><span class="tl-muted small d-block">Logs</span><span>{{ $session->logs->count() }}</span></div>
                     </div>
                     <div class="d-flex gap-2 flex-wrap mt-3">
@@ -179,7 +195,7 @@
                     <td><span class="tl-badge {{ $session->status === 'cancelled' ? 'gray' : 'green' }}">{{ $session->status }}</span></td>
                     <td>{{ $session->focus }}</td>
                     <td>{{ $session->exerciseSummary() }}</td>
-                    <td>@if($session->media_url)<a href="{{ $session->media_url }}" target="_blank">Open</a>@else - @endif</td>
+                    <td>{{ $session->mediaCount() }} item(s)</td>
                     <td>{{ $session->logs->count() }}</td>
                     <td>
                         <div class="d-flex gap-2 flex-wrap">

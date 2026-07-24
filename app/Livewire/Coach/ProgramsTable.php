@@ -3,6 +3,7 @@
 namespace App\Livewire\Coach;
 
 use App\Livewire\Concerns\WithTableControls;
+use App\Models\AuditLog;
 use App\Models\TrainingProgram;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -28,7 +29,16 @@ class ProgramsTable extends Component
 
     public string $notes = '';
 
-    public function createProgram(): void
+    public function mount(): void
+    {
+        $requestedAthleteId = request()->integer('athlete');
+
+        if ($requestedAthleteId > 0 && $this->coachCanManageAthlete($requestedAthleteId)) {
+            $this->athleteId = $requestedAthleteId;
+        }
+    }
+
+    public function createProgram()
     {
         $data = $this->validate([
             'athleteId' => ['required', 'exists:users,id'],
@@ -40,10 +50,9 @@ class ProgramsTable extends Component
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $allowed = Auth::user()->coachAssignments()->where('athlete_id', $data['athleteId'])->where('status', 'active')->exists();
-        abort_unless($allowed, 403);
+        abort_unless($this->coachCanManageAthlete((int) $data['athleteId']), 403);
 
-        TrainingProgram::create([
+        $program = TrainingProgram::create([
             'coach_id' => Auth::id(),
             'athlete_id' => $data['athleteId'],
             'title' => $data['title'],
@@ -54,15 +63,24 @@ class ProgramsTable extends Component
             'notes' => $data['notes'] ?: null,
         ]);
 
-        $this->reset(['athleteId', 'title', 'goal', 'startsOn', 'endsOn', 'notes']);
-        $this->status = 'active';
+        AuditLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'program.created',
+            'entity' => 'training_program',
+            'entity_id' => $program->id,
+            'summary' => "Created program {$program->title}.",
+            'ip_address' => request()->ip(),
+        ]);
+
         session()->flash('status', 'Program created.');
+
+        return redirect()->route('coach.programs.show', $program);
     }
 
     public function render()
     {
         $coachId = Auth::id();
-        $query = TrainingProgram::with(['athlete', 'sessions'])
+        $query = TrainingProgram::with(['athlete', 'sessions.logs'])
             ->where('coach_id', $coachId)
             ->when($this->search, fn ($query) => $query->where(fn ($query) => $query
                 ->where('title', 'like', "%{$this->search}%")
@@ -77,5 +95,13 @@ class ProgramsTable extends Component
                 ->orderBy('name')
                 ->get(),
         ])->layout('layouts.app', ['title' => 'Programs']);
+    }
+
+    private function coachCanManageAthlete(int $athleteId): bool
+    {
+        return Auth::user()->coachAssignments()
+            ->where('athlete_id', $athleteId)
+            ->where('status', 'active')
+            ->exists();
     }
 }

@@ -26,12 +26,26 @@
         icon="fa-solid fa-dumbbell"
     >
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
-            <thead><tr><th>Program</th><th>Athlete</th><th>Status</th><th>Dates</th><th>Sessions</th><th>Action</th></tr></thead>
+            <thead><tr><th>Program</th><th>Athlete</th><th>Status</th><th>Dates</th><th>Sessions</th><th>Progress</th><th>Action</th></tr></thead>
             <tbody>
             @forelse($programs as $program)
-                <tr><td><strong>{{ $program->title }}</strong><br><span class="tl-muted">{{ $program->goal }}</span></td><td>{{ $program->athlete->name }}</td><td><span class="tl-badge green">{{ $program->status }}</span></td><td>{{ $program->starts_on?->format('Y-m-d') ?: '-' }} → {{ $program->ends_on?->format('Y-m-d') ?: '-' }}</td><td>{{ $program->sessions->count() }}</td><td><a class="btn btn-outline-tl btn-sm" href="{{ route('coach.programs.show', $program) }}">Open</a></td></tr>
+                @php($completion = $program->completionStats())
+                <tr>
+                    <td><strong>{{ $program->title }}</strong><br><span class="tl-muted">{{ $program->goal }}</span></td>
+                    <td><a href="{{ route('coach.athletes.show', $program->athlete) }}">{{ $program->athlete->name }}</a></td>
+                    <td><span class="tl-badge green">{{ $program->status }}</span></td>
+                    <td>{{ $program->starts_on?->format('Y-m-d') ?: '-' }} → {{ $program->ends_on?->format('Y-m-d') ?: '-' }}</td>
+                    <td>{{ $program->sessions->count() }}</td>
+                    <td>
+                        <div class="tl-progress-cell">
+                            <strong>{{ $completion['percent'] }}%</strong>
+                            <span>{{ $completion['completed'] }}/{{ $completion['total'] }} complete</span>
+                        </div>
+                    </td>
+                    <td><a class="btn btn-outline-tl btn-sm" href="{{ route('coach.programs.show', $program) }}">Open</a></td>
+                </tr>
             @empty
-                <tr><td colspan="6" class="tl-muted">No programs yet.</td></tr>
+                <tr><td colspan="7" class="tl-muted">No programs yet.</td></tr>
             @endforelse
             </tbody>
         </table></div>

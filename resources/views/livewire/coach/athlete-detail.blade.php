@@ -5,6 +5,7 @@
         :subtitle="$athlete->email.' · '.($athlete->primary_goal ?: 'No goal set')"
     >
         <x-slot:actions>
+            <a class="btn btn-tl" href="{{ route('coach.programs', ['athlete' => $athlete->id]) }}"><i class="fa-solid fa-plus"></i> Create program</a>
             <a class="btn btn-outline-tl" href="{{ route('coach.athletes') }}"><i class="fa-solid fa-arrow-left"></i> Back to roster</a>
         </x-slot:actions>
     </x-tl.page-hero>
@@ -28,8 +29,10 @@
                         <span class="tl-badge {{ $program->status === 'active' ? 'green' : 'gray' }}">{{ $program->status }}</span>
                     </div>
                     <div class="tl-mobile-record-grid mt-3">
+                        @php($completion = $program->completionStats())
                         <div><span class="tl-muted small d-block">Dates</span><span>{{ $program->starts_on?->format('Y-m-d') ?: '-' }} to {{ $program->ends_on?->format('Y-m-d') ?: '-' }}</span></div>
                         <div><span class="tl-muted small d-block">Sessions</span><span>{{ $program->sessions->count() }}</span></div>
+                        <div><span class="tl-muted small d-block">Progress</span><span>{{ $completion['completed'] }}/{{ $completion['total'] }} · {{ $completion['percent'] }}%</span></div>
                     </div>
                 </a>
             @empty
@@ -37,19 +40,21 @@
             @endforelse
         </div>
         <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
-            <thead><tr><th>Program</th><th>Goal</th><th>Status</th><th>Dates</th><th>Sessions</th><th>Action</th></tr></thead>
+            <thead><tr><th>Program</th><th>Goal</th><th>Status</th><th>Dates</th><th>Sessions</th><th>Progress</th><th>Action</th></tr></thead>
             <tbody>
             @forelse($programs as $program)
                 <tr>
+                    @php($completion = $program->completionStats())
                     <td><strong>{{ $program->title }}</strong></td>
                     <td>{{ $program->goal ?: '-' }}</td>
                     <td><span class="tl-badge {{ $program->status === 'active' ? 'green' : 'gray' }}">{{ $program->status }}</span></td>
                     <td>{{ $program->starts_on?->format('Y-m-d') ?: '-' }} to {{ $program->ends_on?->format('Y-m-d') ?: '-' }}</td>
                     <td>{{ $program->sessions->count() }}</td>
+                    <td>{{ $completion['completed'] }}/{{ $completion['total'] }} · {{ $completion['percent'] }}%</td>
                     <td><a class="btn btn-outline-tl btn-sm" href="{{ route('coach.programs.show', $program) }}">Open</a></td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="tl-muted">No programs assigned by you yet.</td></tr>
+                <tr><td colspan="7" class="tl-muted">No programs assigned by you yet.</td></tr>
             @endforelse
             </tbody>
         </table></div>

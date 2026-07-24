@@ -4,6 +4,7 @@ namespace App\Livewire\Athlete;
 
 use App\Models\TrainingSession;
 use App\Models\WorkoutLog;
+use App\Support\TrainingMedia;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -100,44 +101,10 @@ class WorkoutDetail extends Component
     {
         return view('livewire.athlete.workout-detail', [
             'log' => $this->session->logs()->where('athlete_id', Auth::id())->first(),
-            'media' => $this->mediaPayload(),
+            'sessionMedia' => TrainingMedia::fromUrl($this->session->media_url),
+            'exerciseMedia' => collect($this->session->exercises ?? [])
+                ->map(fn (array $exercise): array => TrainingMedia::fromUrl($exercise['media_url'] ?? null))
+                ->all(),
         ])->layout('layouts.app', ['title' => $this->session->title]);
-    }
-
-    private function mediaPayload(): array
-    {
-        $url = $this->session->media_url;
-
-        if (! filled($url)) {
-            return ['type' => 'none', 'url' => null, 'embedUrl' => null];
-        }
-
-        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
-        $path = strtolower((string) parse_url($url, PHP_URL_PATH));
-        $type = 'link';
-        $embedUrl = null;
-
-        if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/', $path)) {
-            $type = 'image';
-        } elseif (preg_match('/\.(mp4|webm|mov)$/', $path)) {
-            $type = 'video';
-        } elseif (str_contains($host, 'youtube.com') || str_contains($host, 'youtu.be')) {
-            $type = 'embed';
-            parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
-            $videoId = str_contains($host, 'youtu.be') ? trim($path, '/') : (string) ($query['v'] ?? '');
-
-            if (filled($videoId)) {
-                $embedUrl = 'https://www.youtube.com/embed/'.$videoId;
-            }
-        } elseif (str_contains($host, 'vimeo.com')) {
-            $type = 'embed';
-            $videoId = trim($path, '/');
-
-            if (filled($videoId)) {
-                $embedUrl = 'https://player.vimeo.com/video/'.$videoId;
-            }
-        }
-
-        return ['type' => $type, 'url' => $url, 'embedUrl' => $embedUrl];
     }
 }

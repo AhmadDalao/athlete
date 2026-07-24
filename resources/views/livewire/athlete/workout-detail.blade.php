@@ -11,65 +11,46 @@
         @endif
     </x-tl.page-hero>
 
-    @if($media['type'] !== 'none')
+    @if($sessionMedia['type'] !== 'none')
         <x-tl.section-card title="Workout media" subtitle="Video or image assigned by your coach for this session.">
-            <div class="tl-media-panel">
-                @if($media['type'] === 'image')
-                    <img src="{{ $media['url'] }}" alt="{{ $session->title }} media">
-                @elseif($media['type'] === 'video')
-                    <video src="{{ $media['url'] }}" controls playsinline></video>
-                @elseif($media['type'] === 'embed' && $media['embedUrl'])
-                    <iframe src="{{ $media['embedUrl'] }}" title="{{ $session->title }} media" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-                @else
-                    <div class="tl-media-link">
-                        <i class="fa-solid fa-up-right-from-square"></i>
-                        <div>
-                            <strong>Open coach media</strong>
-                            <p class="tl-muted mb-0">This source cannot be embedded safely, so open it in a new tab.</p>
-                        </div>
-                        <a class="btn btn-tl ms-auto" href="{{ $media['url'] }}" target="_blank">Open</a>
-                    </div>
-                @endif
-            </div>
+            <x-tl.training-media :media="$sessionMedia" :title="$session->title.' workout media'" />
         </x-tl.section-card>
     @endif
 
-    <x-tl.table-card
-        title="Exercise prescription"
-        subtitle="What your coach assigned: sets, reps/time, rest, load, and notes."
-        :count="count($session->exercises ?? [])"
-        icon="fa-solid fa-dumbbell"
-    >
-        <div class="d-md-none vstack gap-2">
-            @forelse($session->exercises ?? [] as $exercise)
-                <div class="tl-mobile-record">
-                    <div class="fw-bold">{{ $exercise['name'] ?? 'Exercise' }}</div>
-                    <div class="tl-mobile-record-grid mt-3">
-                        <div><span class="tl-muted small d-block">Sets</span><span>{{ $exercise['sets'] ?? '-' }}</span></div>
-                        <div><span class="tl-muted small d-block">Reps/time</span><span>{{ $exercise['reps'] ?? '-' }}</span></div>
-                        <div><span class="tl-muted small d-block">Rest</span><span>{{ $exercise['rest'] ?? '-' }}</span></div>
-                        <div><span class="tl-muted small d-block">Load</span><span>{{ $exercise['load'] ?? '-' }}</span></div>
+    <x-tl.section-card title="Exercise prescription" subtitle="Open each exercise to see its targets, coach cue, and demonstration.">
+        <div class="tl-exercise-list">
+            @forelse($session->exercises ?? [] as $index => $exercise)
+                @php($media = $exerciseMedia[$index] ?? ['type' => 'none', 'url' => null, 'embedUrl' => null])
+                <details class="tl-exercise-card" @if($loop->first) open @endif>
+                    <summary>
+                        <span class="tl-exercise-index">{{ $index + 1 }}</span>
+                        <span>
+                            <strong>{{ $exercise['name'] ?? 'Exercise' }}</strong>
+                            <small>{{ $exercise['sets'] ?? '-' }} sets · {{ $exercise['reps'] ?? '-' }} reps/time · {{ $exercise['rest'] ?? '-' }} rest</small>
+                        </span>
+                        @if($media['type'] !== 'none')
+                            <span class="tl-badge green"><i class="fa-solid fa-circle-play"></i> Demo</span>
+                        @endif
+                        <i class="fa-solid fa-chevron-down tl-exercise-chevron"></i>
+                    </summary>
+                    <div class="tl-exercise-body">
+                        <div class="tl-exercise-targets">
+                            <div><span>Sets</span><strong>{{ $exercise['sets'] ?? '-' }}</strong></div>
+                            <div><span>Reps / time</span><strong>{{ $exercise['reps'] ?? '-' }}</strong></div>
+                            <div><span>Rest</span><strong>{{ $exercise['rest'] ?? '-' }}</strong></div>
+                            <div><span>Load</span><strong>{{ $exercise['load'] ?? '-' }}</strong></div>
+                        </div>
+                        @if($exercise['note'] ?? null)
+                            <div class="tl-coach-cue"><i class="fa-solid fa-comment-dots"></i><span>{{ $exercise['note'] }}</span></div>
+                        @endif
+                        <x-tl.training-media :media="$media" :title="($exercise['name'] ?? 'Exercise').' demonstration'" :compact="true" />
                     </div>
-                    @if($exercise['note'] ?? null)
-                        <div class="tl-muted small mt-3">{{ $exercise['note'] }}</div>
-                    @endif
-                </div>
+                </details>
             @empty
                 <div class="tl-mobile-record tl-muted">No exercises listed.</div>
             @endforelse
         </div>
-
-        <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
-            <thead><tr><th>Exercise</th><th>Sets</th><th>Reps/time</th><th>Rest</th><th>Load</th><th>Note</th></tr></thead>
-            <tbody>
-            @forelse($session->exercises ?? [] as $exercise)
-                <tr><td><strong>{{ $exercise['name'] ?? 'Exercise' }}</strong></td><td>{{ $exercise['sets'] ?? '-' }}</td><td>{{ $exercise['reps'] ?? '-' }}</td><td>{{ $exercise['rest'] ?? '-' }}</td><td>{{ $exercise['load'] ?? '-' }}</td><td>{{ $exercise['note'] ?? '-' }}</td></tr>
-            @empty
-                <tr><td colspan="6" class="tl-muted">No exercises listed.</td></tr>
-            @endforelse
-            </tbody>
-        </table></div>
-    </x-tl.table-card>
+    </x-tl.section-card>
 
     <x-tl.section-card title="Log workout" subtitle="Record what actually happened. Your coach sees this on your profile.">
         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">

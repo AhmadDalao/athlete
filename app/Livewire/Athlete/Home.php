@@ -69,9 +69,9 @@ class Home extends Component
             $completedSessions = $program->sessions
                 ->filter(fn (TrainingSession $session): bool => $session->logs->firstWhere('athlete_id', $athleteId)?->status === 'completed')
                 ->count();
-            $mediaSessions = $program->sessions
-                ->filter(fn (TrainingSession $session): bool => filled($session->media_url))
-                ->count();
+            $mediaItems = $program->sessions->sum(
+                fn (TrainingSession $session): int => $session->mediaCount()
+            );
             $nextSession = $program->sessions
                 ->first(fn (TrainingSession $session): bool => $session->scheduled_on->greaterThanOrEqualTo(today()));
 
@@ -79,7 +79,7 @@ class Home extends Component
                 'program' => $program,
                 'total' => $totalSessions,
                 'completed' => $completedSessions,
-                'media' => $mediaSessions,
+                'media' => $mediaItems,
                 'progress' => $totalSessions > 0 ? (int) round(($completedSessions / $totalSessions) * 100) : 0,
                 'nextSession' => $nextSession,
             ];

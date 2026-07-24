@@ -40,7 +40,7 @@
                     <div class="tl-session-focus mb-3">
                         <span><i class="fa-solid fa-bullseye"></i> {{ $primarySession->focus ?: 'Training session' }}</span>
                         <span><i class="fa-solid fa-list-check"></i> {{ $primarySession->exerciseSummary() }}</span>
-                        <span><i class="fa-solid {{ $primarySession->media_url ? 'fa-circle-play' : 'fa-image' }}"></i> {{ $primarySession->media_url ? 'Media attached' : 'No media attached' }}</span>
+                        <span><i class="fa-solid {{ $primarySession->hasMedia() ? 'fa-circle-play' : 'fa-image' }}"></i> {{ $primarySession->hasMedia() ? $primarySession->mediaCount().' demo item(s)' : 'No media attached' }}</span>
                     </div>
                     <a class="btn btn-tl w-100" href="{{ route('app.workouts.show', $primarySession) }}">Open workout</a>
                 @else
@@ -91,7 +91,7 @@
                         <div class="tl-program-meter mt-3"><span style="width: {{ $summary['progress'] }}%"></span></div>
                         <div class="tl-mobile-record-grid mt-3">
                             <div><span class="tl-muted small d-block">Done</span><span>{{ $summary['completed'] }}/{{ $summary['total'] }}</span></div>
-                            <div><span class="tl-muted small d-block">Media</span><span>{{ $summary['media'] }} session(s)</span></div>
+                            <div><span class="tl-muted small d-block">Media</span><span>{{ $summary['media'] }} demo item(s)</span></div>
                         </div>
                         <div class="tl-muted small mt-3">
                             Next: {{ $summary['nextSession'] ? $summary['nextSession']->scheduled_on->format('M j').' · '.$summary['nextSession']->title : 'No upcoming session' }}
@@ -152,7 +152,7 @@
                         <div><span class="tl-muted small d-block">Exercises</span><span>{{ $session->exerciseSummary() }}</span></div>
                     </div>
                     <div class="mt-3 d-flex justify-content-between align-items-center">
-                        <span class="{{ $session->media_url ? 'tl-badge green' : 'tl-muted small' }}">{{ $session->media_url ? 'Media attached' : 'No media' }}</span>
+                        <span class="{{ $session->hasMedia() ? 'tl-badge green' : 'tl-muted small' }}">{{ $session->hasMedia() ? $session->mediaCount().' demo item(s)' : 'No media' }}</span>
                         <span class="btn btn-tl btn-sm">Open</span>
                     </div>
                 </a>
@@ -171,7 +171,7 @@
                     <td>{{ $session->program->coach->name }}</td>
                     <td>{{ $session->program->title }}</td>
                     <td>{{ $session->exerciseSummary() }}</td>
-                    <td>{!! $session->media_url ? '<span class="tl-badge green">Media</span>' : '<span class="tl-muted">None</span>' !!}</td>
+                    <td>@if($session->hasMedia())<span class="tl-badge green">{{ $session->mediaCount() }} demo item(s)</span>@else<span class="tl-muted">None</span>@endif</td>
                     <td><span class="tl-badge {{ $log?->status === 'completed' ? 'green' : 'gray' }}">{{ $log?->status ?? 'not started' }}</span></td>
                     <td><a class="btn btn-tl btn-sm" href="{{ route('app.workouts.show', $session) }}">Open</a></td>
                 </tr>

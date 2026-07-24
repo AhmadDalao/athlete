@@ -40,7 +40,7 @@ class ProgramDetail extends Component
     public string $mediaUrl = '';
 
     public array $exercises = [
-        ['name' => '', 'sets' => '', 'reps' => '', 'rest' => '', 'load' => '', 'note' => ''],
+        ['name' => '', 'sets' => '', 'reps' => '', 'rest' => '', 'load' => '', 'note' => '', 'media_url' => ''],
     ];
 
     public ?int $editingSessionId = null;
@@ -56,7 +56,7 @@ class ProgramDetail extends Component
     public string $editMediaUrl = '';
 
     public array $editExercises = [
-        ['name' => '', 'sets' => '', 'reps' => '', 'rest' => '', 'load' => '', 'note' => ''],
+        ['name' => '', 'sets' => '', 'reps' => '', 'rest' => '', 'load' => '', 'note' => '', 'media_url' => ''],
     ];
 
     public function mount(TrainingProgram $program): void
@@ -74,7 +74,7 @@ class ProgramDetail extends Component
 
     public function addExercise(): void
     {
-        $this->exercises[] = ['name' => '', 'sets' => '', 'reps' => '', 'rest' => '', 'load' => '', 'note' => ''];
+        $this->exercises[] = $this->emptyExercise();
     }
 
     public function removeExercise(int $index): void
@@ -133,9 +133,10 @@ class ProgramDetail extends Component
             'exercises.*.rest' => ['nullable', 'string', 'max:40'],
             'exercises.*.load' => ['nullable', 'string', 'max:80'],
             'exercises.*.note' => ['nullable', 'string', 'max:200'],
+            'exercises.*.media_url' => ['nullable', 'url', 'max:255'],
         ]);
 
-        TrainingSession::create([
+        $session = TrainingSession::create([
             'training_program_id' => $this->program->id,
             'title' => $this->title,
             'focus' => $this->focus ?: null,
@@ -143,12 +144,13 @@ class ProgramDetail extends Component
             'status' => 'scheduled',
             'coach_notes' => $this->coachNotes ?: null,
             'media_url' => $this->mediaUrl ?: null,
-            'exercises' => collect($this->exercises)->filter(fn (array $exercise) => filled($exercise['name'] ?? null))->values()->all(),
+            'exercises' => $this->normalizeExercises($this->exercises),
         ]);
 
         $this->reset(['title', 'focus', 'coachNotes', 'mediaUrl']);
         $this->scheduledOn = today()->toDateString();
-        $this->exercises = [['name' => '', 'sets' => '', 'reps' => '', 'rest' => '', 'load' => '', 'note' => '']];
+        $this->exercises = [$this->emptyExercise()];
+        $this->writeAudit('session.created', $session->id, "Created session {$session->title}.");
         session()->flash('status', 'Session added.');
     }
 
@@ -170,9 +172,10 @@ class ProgramDetail extends Component
                 'rest' => (string) ($exercise['rest'] ?? ''),
                 'load' => (string) ($exercise['load'] ?? ''),
                 'note' => (string) ($exercise['note'] ?? ''),
+                'media_url' => (string) ($exercise['media_url'] ?? ''),
             ])
             ->values()
-            ->all() ?: [['name' => '', 'sets' => '', 'reps' => '', 'rest' => '', 'load' => '', 'note' => '']];
+            ->all() ?: [$this->emptyExercise()];
     }
 
     public function cancelEditSession(): void
@@ -183,12 +186,12 @@ class ProgramDetail extends Component
         $this->editScheduledOn = '';
         $this->editCoachNotes = '';
         $this->editMediaUrl = '';
-        $this->editExercises = [['name' => '', 'sets' => '', 'reps' => '', 'rest' => '', 'load' => '', 'note' => '']];
+        $this->editExercises = [$this->emptyExercise()];
     }
 
     public function addEditExercise(): void
     {
-        $this->editExercises[] = ['name' => '', 'sets' => '', 'reps' => '', 'rest' => '', 'load' => '', 'note' => ''];
+        $this->editExercises[] = $this->emptyExercise();
     }
 
     public function removeEditExercise(int $index): void
@@ -212,6 +215,7 @@ class ProgramDetail extends Component
             'editExercises.*.rest' => ['nullable', 'string', 'max:40'],
             'editExercises.*.load' => ['nullable', 'string', 'max:80'],
             'editExercises.*.note' => ['nullable', 'string', 'max:200'],
+            'editExercises.*.media_url' => ['nullable', 'url', 'max:255'],
         ]);
 
         $session = $this->program->sessions()->whereKey($data['editingSessionId'])->firstOrFail();
@@ -221,7 +225,7 @@ class ProgramDetail extends Component
             'scheduled_on' => $data['editScheduledOn'],
             'coach_notes' => $data['editCoachNotes'] ?: null,
             'media_url' => $data['editMediaUrl'] ?: null,
-            'exercises' => collect($this->editExercises)->filter(fn (array $exercise) => filled($exercise['name'] ?? null))->values()->all(),
+            'exercises' => $this->normalizeExercises($this->editExercises),
         ]);
 
         $this->writeAudit('session.updated', $session->id, "Updated session {$session->title}.");
@@ -264,5 +268,42 @@ class ProgramDetail extends Component
             'summary' => $summary,
             'ip_address' => request()->ip(),
         ]);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $exercises
+     * @return array<int, array<string, string>>
+     */
+    private function normalizeExercises(array $exercises): array
+    {
+        return collect($exercises)
+            ->filter(fn (array $exercise): bool => filled($exercise['name'] ?? null))
+            ->map(fn (array $exercise): array => [
+                'name' => trim((string) ($exercise['name'] ?? '')),
+                'sets' => trim((string) ($exercise['sets'] ?? '')),
+                'reps' => trim((string) ($exercise['reps'] ?? '')),
+                'rest' => trim((string) ($exercise['rest'] ?? '')),
+                'load' => trim((string) ($exercise['load'] ?? '')),
+                'note' => trim((string) ($exercise['note'] ?? '')),
+                'media_url' => trim((string) ($exercise['media_url'] ?? '')),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{name: string, sets: string, reps: string, rest: string, load: string, note: string, media_url: string}
+     */
+    private function emptyExercise(): array
+    {
+        return [
+            'name' => '',
+            'sets' => '',
+            'reps' => '',
+            'rest' => '',
+            'load' => '',
+            'note' => '',
+            'media_url' => '',
+        ];
     }
 }

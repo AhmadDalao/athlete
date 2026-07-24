@@ -32,4 +32,24 @@ class TrainingProgram extends Model
     {
         return $this->hasMany(TrainingSession::class)->orderBy('scheduled_on');
     }
+
+    /**
+     * @return array{completed: int, total: int, percent: int}
+     */
+    public function completionStats(): array
+    {
+        $sessions = $this->sessions->where('status', '!=', 'cancelled');
+        $total = $sessions->count();
+        $completed = $sessions->filter(
+            fn (TrainingSession $session): bool => $session->logs
+                ->where('athlete_id', $this->athlete_id)
+                ->contains('status', 'completed')
+        )->count();
+
+        return [
+            'completed' => $completed,
+            'total' => $total,
+            'percent' => $total > 0 ? (int) round(($completed / $total) * 100) : 0,
+        ];
+    }
 }

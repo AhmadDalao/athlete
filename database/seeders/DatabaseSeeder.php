@@ -128,8 +128,24 @@ class DatabaseSeeder extends Seeder
                 'media_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
                 'coach_notes' => 'Log honest reps and stop two reps before form breaks.',
                 'exercises' => [
-                    ['name' => 'Trap Bar Deadlift', 'sets' => 4, 'reps' => '5', 'rest' => '90 sec', 'load' => 'moderate', 'note' => 'Smooth reps'],
-                    ['name' => 'Goblet Squat', 'sets' => 3, 'reps' => '8', 'rest' => '75 sec', 'load' => 'light', 'note' => 'Control depth'],
+                    [
+                        'name' => 'Trap Bar Deadlift',
+                        'sets' => 4,
+                        'reps' => '5',
+                        'rest' => '90 sec',
+                        'load' => 'moderate',
+                        'note' => 'Smooth reps',
+                        'media_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                    ],
+                    [
+                        'name' => 'Goblet Squat',
+                        'sets' => 3,
+                        'reps' => '8',
+                        'rest' => '75 sec',
+                        'load' => 'light',
+                        'note' => 'Control depth',
+                        'media_url' => null,
+                    ],
                     ['name' => 'Core Carry', 'sets' => 3, 'reps' => '30m', 'rest' => '60 sec', 'load' => 'steady', 'note' => 'Tall posture'],
                 ],
             ]);

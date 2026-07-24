@@ -9,6 +9,7 @@ use App\Livewire\Admin\SettingsPanel;
 use App\Livewire\Athlete\ProgressPanel;
 use App\Livewire\Athlete\WorkoutDetail;
 use App\Livewire\Coach\ProgramDetail;
+use App\Livewire\Coach\ProgramsTable;
 use App\Models\AthleteInvitation;
 use App\Models\AuditLog;
 use App\Models\CoachAthleteAssignment;
@@ -90,13 +91,23 @@ class RebuildSmokeTest extends TestCase
             'scheduled_on' => now()->toDateString(),
             'status' => 'scheduled',
             'media_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-            'exercises' => [['name' => 'Squat', 'sets' => 3, 'reps' => 5, 'rest' => '90 sec']],
+            'exercises' => [[
+                'name' => 'Squat',
+                'sets' => 3,
+                'reps' => 5,
+                'rest' => '90 sec',
+                'media_url' => 'https://youtu.be/abc123XYZ_0',
+            ]],
         ]);
 
         $this->actingAs($athlete)
             ->get(route('app.workouts.show', $session))
             ->assertOk()
-            ->assertSee('Workout media');
+            ->assertSee('Workout media')
+            ->assertSee('Exercise prescription')
+            ->assertSee('https://www.youtube.com/embed/abc123XYZ_0', false);
+
+        $this->assertSame(2, $session->mediaCount());
 
         Livewire::test(WorkoutDetail::class, ['session' => $session])
             ->set('notes', 'Felt controlled.')
@@ -195,6 +206,41 @@ class RebuildSmokeTest extends TestCase
         $this->actingAs($coach)
             ->get(route('coach.athletes.show', $otherAthlete))
             ->assertForbidden();
+    }
+
+    public function test_coach_can_create_program_directly_for_assigned_athlete(): void
+    {
+        $coach = User::factory()->create(['role' => 'coach']);
+        $athlete = User::factory()->create(['role' => 'athlete']);
+
+        CoachAthleteAssignment::create([
+            'coach_id' => $coach->id,
+            'athlete_id' => $athlete->id,
+            'status' => 'active',
+            'started_at' => now()->toDateString(),
+        ]);
+
+        $component = Livewire::actingAs($coach)
+            ->withQueryParams(['athlete' => $athlete->id])
+            ->test(ProgramsTable::class)
+            ->assertSet('athleteId', $athlete->id)
+            ->set('title', 'Speed Foundation')
+            ->set('goal', 'Build repeat sprint capacity')
+            ->set('startsOn', today()->toDateString())
+            ->set('endsOn', today()->addWeeks(6)->toDateString())
+            ->call('createProgram')
+            ->assertHasNoErrors();
+
+        $program = TrainingProgram::where('title', 'Speed Foundation')->firstOrFail();
+
+        $component->assertRedirect(route('coach.programs.show', $program));
+        $this->assertSame($coach->id, $program->coach_id);
+        $this->assertSame($athlete->id, $program->athlete_id);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'program.created',
+            'entity' => 'training_program',
+            'entity_id' => $program->id,
+        ]);
     }
 
     public function test_admin_can_resend_invitation_and_log_email(): void
@@ -358,7 +404,7 @@ class RebuildSmokeTest extends TestCase
             'exercises' => [['name' => 'Squat', 'sets' => 3, 'reps' => 5]],
         ]);
 
-        Livewire::actingAs($coach)
+        $component = Livewire::actingAs($coach)
             ->test(ProgramDetail::class, ['program' => $program])
             ->set('programTitle', 'Updated Plan')
             ->set('programGoal', 'Return to sprinting')
@@ -371,9 +417,16 @@ class RebuildSmokeTest extends TestCase
             ->set('editExercises.0.name', 'Trap bar deadlift')
             ->set('editExercises.0.sets', '4')
             ->set('editExercises.0.reps', '5')
+            ->set('editExercises.0.media_url', 'https://example.com/trap-bar-demo.mp4')
             ->call('updateSession')
-            ->call('deleteSession', $session->id)
             ->assertHasNoErrors();
+
+        $this->assertSame(
+            'https://example.com/trap-bar-demo.mp4',
+            $session->refresh()->exercises[0]['media_url']
+        );
+
+        $component->call('deleteSession', $session->id)->assertHasNoErrors();
 
         $this->assertDatabaseHas('training_programs', [
             'id' => $program->id,

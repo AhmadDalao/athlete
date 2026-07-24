@@ -52,4 +52,17 @@ class TrainingSession extends Model
             return trim(($exercise['name'] ?? 'Exercise').' '.$sets.'x'.$reps);
         })->implode(', ');
     }
+
+    public function mediaCount(): int
+    {
+        return (filled($this->media_url) ? 1 : 0)
+            + collect($this->exercises ?? [])->filter(
+                fn (array $exercise): bool => filled($exercise['media_url'] ?? null)
+            )->count();
+    }
+
+    public function hasMedia(): bool
+    {
+        return $this->mediaCount() > 0;
+    }
 }

@@ -25,6 +25,7 @@
                     <div class="tl-mobile-record-grid mt-3">
                         <div><span class="tl-muted small d-block">Focus</span><span>{{ $session->focus ?: '-' }}</span></div>
                         <div><span class="tl-muted small d-block">Exercises</span><span>{{ $session->exerciseSummary() }}</span></div>
+                        <div><span class="tl-muted small d-block">Media</span><span>{{ $session->hasMedia() ? $session->mediaCount().' demo item(s)' : 'None' }}</span></div>
                     </div>
                 </a>
             @empty
@@ -33,13 +34,13 @@
         </div>
 
         <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
-            <thead><tr><th>Date</th><th>Session</th><th>Focus</th><th>Exercises</th><th>Status</th><th>Action</th></tr></thead>
+            <thead><tr><th>Date</th><th>Session</th><th>Focus</th><th>Exercises</th><th>Media</th><th>Status</th><th>Action</th></tr></thead>
             <tbody>
             @forelse($sessions as $session)
                 @php($log = $session->logs->firstWhere('athlete_id', auth()->id()))
-                <tr><td>{{ $session->scheduled_on->format('Y-m-d') }}</td><td>{{ $session->title }}</td><td>{{ $session->focus }}</td><td>{{ $session->exerciseSummary() }}</td><td><span class="tl-badge {{ $log?->status === 'completed' ? 'green' : 'gray' }}">{{ $log?->status ?? 'not started' }}</span></td><td><a class="btn btn-outline-tl btn-sm" href="{{ route('app.workouts.show', $session) }}">Open</a></td></tr>
+                <tr><td>{{ $session->scheduled_on->format('Y-m-d') }}</td><td>{{ $session->title }}</td><td>{{ $session->focus }}</td><td>{{ $session->exerciseSummary() }}</td><td>{{ $session->hasMedia() ? $session->mediaCount().' item(s)' : '-' }}</td><td><span class="tl-badge {{ $log?->status === 'completed' ? 'green' : 'gray' }}">{{ $log?->status ?? 'not started' }}</span></td><td><a class="btn btn-outline-tl btn-sm" href="{{ route('app.workouts.show', $session) }}">Open</a></td></tr>
             @empty
-                <tr><td colspan="6" class="tl-muted">No sessions yet.</td></tr>
+                <tr><td colspan="7" class="tl-muted">No sessions yet.</td></tr>
             @endforelse
             </tbody>
         </table></div>
