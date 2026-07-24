@@ -1,6 +1,6 @@
 # Throughline Clean Rebuild MVP
 
-Last updated: 2026-07-07
+Last updated: 2026-07-24
 
 ## Decision
 
@@ -193,13 +193,28 @@ Current automated coverage:
 - Added mobile-first athlete workout execution cards for exercises and set logging while keeping desktop tables intact.
 - Added mobile-first coach program builder exercise cards for creating and editing sessions.
 - Added mobile-first coach athlete profile cards for programs, schedule, workout logs, and progress logs.
+- Added direct coach program creation from an athlete context.
+- Added program completion visibility for coach and athlete views.
+- Added validated session and exercise media URLs with inline image, YouTube, Vimeo, and direct-video rendering.
+- Added mobile exercise prescriptions with targets, coaching cues, media actions, and compact execution controls.
+
+## Production Release
+
+The clean rebuild is live at `https://athlete.ahmaddalao.com`.
+
+- Branch: `codex/throughline-clean-rebuild`
+- Release commit: `aa923a67f5005ab285745b90464d2c442e871e1c`
+- Runtime: PHP 8.2.30 and Laravel 12.62.0
+- Public routes, role redirects, admin controls, coach workflows, athlete programs, progress, workout execution, media, Livewire refresh, and mobile overflow checks passed.
+- Coaches and athletes receive `403` from the admin workspace.
+- Production backups and the previous application release remain available for rollback.
 
 ## Next Build Slice
 
 Build next in this order:
 
-1. Run the local browser smoke checklist for owner, coach, and athlete accounts.
-2. Deploy rebuild branch only after local smoke testing is accepted.
-3. Start the first post-MVP slice only after production is stable.
+1. Replace or deactivate all production seed credentials and create the permanent owner account.
+2. Run user acceptance testing with real coach and athlete workflows.
+3. Add memberships and payments only after coaching acceptance is signed off.
 
 Do not reintroduce native mobile, watch sync, Stripe, OAuth, or API complexity until the website MVP is stable.

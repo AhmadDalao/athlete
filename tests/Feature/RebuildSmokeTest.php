@@ -29,6 +29,15 @@ class RebuildSmokeTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_login_does_not_expose_seed_credentials_outside_local_environment(): void
+    {
+        $this->get('/login')
+            ->assertOk()
+            ->assertDontSee('Seed accounts')
+            ->assertDontSee('owner@throughline.test')
+            ->assertDontSee('Password for seeded accounts');
+    }
+
     public function test_dashboard_redirects_by_role(): void
     {
         $owner = User::factory()->create(['role' => 'owner']);

@@ -1,6 +1,6 @@
 # Hostinger Deployment Checklist
 
-Last updated: 2026-07-07
+Last updated: 2026-07-24
 
 ## Scope
 
@@ -20,6 +20,7 @@ This checklist is for deploying the clean website-first Throughline rebuild to H
 Confirm these before upload:
 
 - PHP: 8.2 or newer.
+- Hostinger CLI: use `/opt/alt/php82/usr/bin/php`; the account default may still point to PHP 7.4.
 - Database: production MySQL database name, username, password, host, and port.
 - App URL: `https://athlete.ahmaddalao.com`.
 - Public document root points to Laravel `public/`.
@@ -90,7 +91,8 @@ MAIL_MAILER=smtp
 Generate an app key only if production does not already have one:
 
 ```bash
-php artisan key:generate --force
+PHP_BIN=/opt/alt/php82/usr/bin/php
+$PHP_BIN artisan key:generate --force
 ```
 
 ## Install Dependencies
@@ -111,24 +113,26 @@ If Composer is not available:
 After backup and `.env` verification:
 
 ```bash
-php artisan migrate --force
+PHP_BIN=/opt/alt/php82/usr/bin/php
+$PHP_BIN artisan migrate --force
 ```
 
 For first-time clean MVP setup only:
 
 ```bash
-php artisan db:seed --force
+$PHP_BIN artisan db:seed --force
 ```
 
-Do not seed over real production users after launch unless you know exactly why.
+Do not seed over real production users after launch. Seeded credentials are local QA credentials and must never remain unchanged on the public server.
 
 ## Cache Production
 
 ```bash
-php artisan optimize:clear
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+PHP_BIN=/opt/alt/php82/usr/bin/php
+$PHP_BIN artisan optimize:clear
+$PHP_BIN artisan config:cache
+$PHP_BIN artisan route:cache
+$PHP_BIN artisan view:cache
 ```
 
 ## Smoke Test
@@ -169,7 +173,8 @@ If production breaks:
 1. Put the app in maintenance mode if possible:
 
 ```bash
-php artisan down
+PHP_BIN=/opt/alt/php82/usr/bin/php
+$PHP_BIN artisan down
 ```
 
 2. Restore the previous production files or previous git commit.
@@ -177,13 +182,13 @@ php artisan down
 4. Clear caches:
 
 ```bash
-php artisan optimize:clear
+$PHP_BIN artisan optimize:clear
 ```
 
 5. Bring app back:
 
 ```bash
-php artisan up
+$PHP_BIN artisan up
 ```
 
 ## Post-Deploy Notes
@@ -193,3 +198,14 @@ After deployment is accepted, update:
 - `docs/Throughline_Rebuild_MVP.md`
 - Any production credentials checklist kept outside git
 - The current GitHub branch/commit deployed
+
+## Verified Release
+
+- Date: 2026-07-24
+- Branch: `codex/throughline-clean-rebuild`
+- Commit: `aa923a67f5005ab285745b90464d2c442e871e1c`
+- Runtime: PHP 8.2.30, Laravel 12.62.0, MySQL
+- Database backup: `/home/u867436826/backups/throughline/database-20260724-211901.sql.gz`
+- Code backup: `/home/u867436826/backups/throughline/code-20260724-211901.tar.gz`
+- Previous release: `/home/u867436826/domains/ahmaddalao.com/throughline-athlete-app.pre-aa923a6.20260724-212557`
+- Live smoke: public, owner, coach, athlete, permissions, settings, programs, progress, workout media, Livewire calendar, and role denials passed.

@@ -22,12 +22,14 @@
                     </label>
                     <button class="btn btn-tl btn-lg" type="submit">Login</button>
                 </form>
-                <x-tl.section-card eyebrow="Seed accounts" class="mt-4 mb-0">
-                    <p class="mb-1">Owner: <code>owner@throughline.test</code></p>
-                    <p class="mb-1">Coach: <code>coach@throughline.test</code></p>
-                    <p class="mb-0">Athlete: <code>athlete@throughline.test</code></p>
-                    <small class="tl-muted">Password for seeded accounts: <code>password</code></small>
-                </x-tl.section-card>
+                @if (app()->isLocal())
+                    <x-tl.section-card eyebrow="Seed accounts" class="mt-4 mb-0">
+                        <p class="mb-1">Owner: <code>owner@throughline.test</code></p>
+                        <p class="mb-1">Coach: <code>coach@throughline.test</code></p>
+                        <p class="mb-0">Athlete: <code>athlete@throughline.test</code></p>
+                        <small class="tl-muted">Password for seeded accounts: <code>password</code></small>
+                    </x-tl.section-card>
+                @endif
             </x-tl.section-card>
         </div>
     </div>
