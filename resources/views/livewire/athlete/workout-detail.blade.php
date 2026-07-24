@@ -11,6 +11,29 @@
         @endif
     </x-tl.page-hero>
 
+    @if($media['type'] !== 'none')
+        <x-tl.section-card title="Workout media" subtitle="Video or image assigned by your coach for this session.">
+            <div class="tl-media-panel">
+                @if($media['type'] === 'image')
+                    <img src="{{ $media['url'] }}" alt="{{ $session->title }} media">
+                @elseif($media['type'] === 'video')
+                    <video src="{{ $media['url'] }}" controls playsinline></video>
+                @elseif($media['type'] === 'embed' && $media['embedUrl'])
+                    <iframe src="{{ $media['embedUrl'] }}" title="{{ $session->title }} media" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                @else
+                    <div class="tl-media-link">
+                        <i class="fa-solid fa-up-right-from-square"></i>
+                        <div>
+                            <strong>Open coach media</strong>
+                            <p class="tl-muted mb-0">This source cannot be embedded safely, so open it in a new tab.</p>
+                        </div>
+                        <a class="btn btn-tl ms-auto" href="{{ $media['url'] }}" target="_blank">Open</a>
+                    </div>
+                @endif
+            </div>
+        </x-tl.section-card>
+    @endif
+
     <x-tl.table-card
         title="Exercise prescription"
         subtitle="What your coach assigned: sets, reps/time, rest, load, and notes."
@@ -66,7 +89,7 @@
                     <div class="d-flex justify-content-between gap-2 align-items-start">
                         <div>
                             <div class="fw-bold">{{ $row['exercise'] }}</div>
-                            <div class="tl-muted small">Set {{ $row['set'] }} · Target {{ $row['target_reps'] ?: '-' }} reps · {{ $row['target_load'] ?: 'bodyweight' }}</div>
+                            <div class="tl-muted small">Set {{ $row['set'] }} · Target {{ $row['target_reps'] ?: '-' }} reps · {{ $row['target_load'] ?: 'bodyweight' }} · Rest {{ $row['target_rest'] ?? '-' }}</div>
                         </div>
                         <input class="form-check-input mt-1" type="checkbox" wire:model="setLogs.{{ $index }}.completed" aria-label="Complete set {{ $row['set'] }}">
                     </div>
@@ -91,7 +114,7 @@
         </div>
 
         <div class="tl-table-wrap d-none d-md-block mb-3"><table class="table tl-table align-middle">
-            <thead><tr><th>Done</th><th>Exercise</th><th>Set</th><th>Target reps</th><th>Target load</th><th>Actual reps</th><th>Actual load</th><th>Set RPE</th></tr></thead>
+            <thead><tr><th>Done</th><th>Exercise</th><th>Set</th><th>Target reps</th><th>Target load</th><th>Rest</th><th>Actual reps</th><th>Actual load</th><th>Set RPE</th></tr></thead>
             <tbody>
             @forelse($setLogs as $index => $row)
                 <tr>
@@ -100,12 +123,13 @@
                     <td>{{ $row['set'] }}</td>
                     <td>{{ $row['target_reps'] ?: '-' }}</td>
                     <td>{{ $row['target_load'] ?: '-' }}</td>
+                    <td>{{ $row['target_rest'] ?? '-' }}</td>
                     <td><input class="form-control" wire:model="setLogs.{{ $index }}.actual_reps"></td>
                     <td><input class="form-control" wire:model="setLogs.{{ $index }}.actual_load"></td>
                     <td><input class="form-control" type="number" min="1" max="10" wire:model="setLogs.{{ $index }}.rpe"></td>
                 </tr>
             @empty
-                <tr><td colspan="8" class="tl-muted">No set rows were generated for this workout.</td></tr>
+                <tr><td colspan="9" class="tl-muted">No set rows were generated for this workout.</td></tr>
             @endforelse
             </tbody>
         </table></div>

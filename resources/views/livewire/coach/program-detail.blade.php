@@ -26,7 +26,17 @@
                 <div class="col-md-4"><label class="form-label">Session title</label><input class="form-control" wire:model="title"></div>
                 <div class="col-md-3"><label class="form-label">Focus</label><input class="form-control" wire:model="focus"></div>
                 <div class="col-md-2"><label class="form-label">Date</label><input class="form-control" type="date" wire:model="scheduledOn"></div>
-                <div class="col-md-3"><label class="form-label">Video/image URL</label><input class="form-control" wire:model="mediaUrl"></div>
+                <div class="col-md-3">
+                    <label class="form-label">Video/image URL</label>
+                    <input class="form-control" wire:model.live.debounce.500ms="mediaUrl" placeholder="YouTube, Vimeo, image, or video URL">
+                    <div class="tl-form-help mt-2">
+                        @if($mediaUrl)
+                            <a href="{{ $mediaUrl }}" target="_blank"><i class="fa-solid fa-eye"></i> Preview media</a>
+                        @else
+                            This appears at the top of the athlete workout.
+                        @endif
+                    </div>
+                </div>
             </div>
             <textarea class="form-control" rows="2" placeholder="Coach notes" wire:model="coachNotes"></textarea>
             <div class="d-md-none vstack gap-2">
@@ -81,7 +91,17 @@
                     <div class="col-md-4"><label class="form-label">Session title</label><input class="form-control" wire:model="editTitle"></div>
                     <div class="col-md-3"><label class="form-label">Focus</label><input class="form-control" wire:model="editFocus"></div>
                     <div class="col-md-2"><label class="form-label">Date</label><input class="form-control" type="date" wire:model="editScheduledOn"></div>
-                    <div class="col-md-3"><label class="form-label">Video/image URL</label><input class="form-control" wire:model="editMediaUrl"></div>
+                    <div class="col-md-3">
+                        <label class="form-label">Video/image URL</label>
+                        <input class="form-control" wire:model.live.debounce.500ms="editMediaUrl" placeholder="YouTube, Vimeo, image, or video URL">
+                        <div class="tl-form-help mt-2">
+                            @if($editMediaUrl)
+                                <a href="{{ $editMediaUrl }}" target="_blank"><i class="fa-solid fa-eye"></i> Preview media</a>
+                            @else
+                                This appears at the top of the athlete workout.
+                            @endif
+                        </div>
+                    </div>
                 </div>
                 <textarea class="form-control" rows="2" placeholder="Coach notes" wire:model="editCoachNotes"></textarea>
                 <div class="d-md-none vstack gap-2">

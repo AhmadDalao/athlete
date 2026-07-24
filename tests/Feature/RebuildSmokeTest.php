@@ -18,6 +18,7 @@ use App\Models\ProgressEntry;
 use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use App\Models\User;
+use App\Models\WorkoutLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
@@ -88,12 +89,14 @@ class RebuildSmokeTest extends TestCase
             'title' => 'Lower Strength',
             'scheduled_on' => now()->toDateString(),
             'status' => 'scheduled',
-            'exercises' => [['name' => 'Squat', 'sets' => 3, 'reps' => 5]],
+            'media_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            'exercises' => [['name' => 'Squat', 'sets' => 3, 'reps' => 5, 'rest' => '90 sec']],
         ]);
 
         $this->actingAs($athlete)
             ->get(route('app.workouts.show', $session))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee('Workout media');
 
         Livewire::test(WorkoutDetail::class, ['session' => $session])
             ->set('notes', 'Felt controlled.')
@@ -113,6 +116,8 @@ class RebuildSmokeTest extends TestCase
             'rpe' => 7,
             'notes' => 'Felt controlled.',
         ]);
+
+        $this->assertSame('90 sec', WorkoutLog::firstOrFail()->set_logs[0]['target_rest']);
     }
 
     public function test_athlete_can_save_and_filter_progress_entries(): void

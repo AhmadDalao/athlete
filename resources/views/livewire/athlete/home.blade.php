@@ -1,42 +1,111 @@
 <div>
-    <x-tl.page-hero
-        eyebrow="Athlete app"
-        title="Your training"
-        subtitle="Assigned programs, calendar, and today’s workouts. No admin dashboard noise."
-    >
-        <x-slot:actions>
-            <a class="btn btn-tl" href="#schedule">Open schedule</a>
-            <a class="btn btn-outline-tl" href="{{ route('app.progress') }}">Log progress</a>
-        </x-slot:actions>
-        <x-slot:visual>
-            <div class="row g-3">
-                <div class="col-6">
-                    <x-tl.metric-card icon="fa-solid fa-dumbbell" label="Programs" :value="$programs->count()" tone="lime" />
-                </div>
-                <div class="col-6">
-                    <x-tl.metric-card icon="fa-solid fa-calendar-check" label="Selected day" :value="$selectedSessions->count()" detail="Workout(s)" tone="emerald" />
-                </div>
-                <div class="col-12">
-                    <x-tl.metric-card icon="fa-solid fa-video" label="Media ready" :value="$selectedSessions->filter(fn ($session) => filled($session->media_url))->count()" detail="Session(s) include video or image links." tone="blue" />
-                </div>
+    @php
+        $primarySession = $todaySessions->first();
+        $primaryLog = $primarySession?->logs->firstWhere('athlete_id', auth()->id());
+        $todayTotal = $todaySessions->count();
+        $todayCompleted = $todaySessions->filter(fn ($session) => $session->logs->firstWhere('athlete_id', auth()->id())?->status === 'completed')->count();
+        $todayPercent = $todayTotal > 0 ? (int) round(($todayCompleted / $todayTotal) * 100) : 0;
+        $coachNames = $programs->pluck('coach.name')->filter()->unique()->join(', ');
+    @endphp
+
+    <section class="tl-app-hero-card mb-3">
+        <div>
+            <div class="tl-eyebrow">Athlete app</div>
+            <h2>Your training cockpit</h2>
+            <p>{{ $coachNames ? 'Coach: '.$coachNames : 'No coach assigned yet.' }} · {{ $programs->count() }} active program(s)</p>
+            <div class="d-flex gap-2 flex-wrap mt-3">
+                <a class="btn btn-tl" href="#schedule">Today schedule</a>
+                <a class="btn btn-outline-tl" href="{{ route('app.progress') }}">Log progress</a>
             </div>
-        </x-slot:visual>
-    </x-tl.page-hero>
+        </div>
+        <div class="tl-app-ring" style="--value: {{ $todayPercent }};">
+            <span>{{ $todayPercent }}%</span>
+            <small>Today complete</small>
+        </div>
+    </section>
 
     <div class="row g-3 mb-3">
-        <div class="col-lg-4">
-            <x-tl.section-card title="Active programs" subtitle="Open the assigned plan and review sessions.">
-                @forelse($programs as $program)
-                    <a class="tl-mobile-record mb-2" href="{{ route('app.programs.show', $program) }}">
-                        <strong>{{ $program->title }}</strong>
-                        <span class="tl-muted d-block">{{ $program->coach->name }} · {{ $program->sessions->count() }} sessions</span>
-                    </a>
-                @empty
-                    <p class="tl-muted mb-0">No programs assigned yet.</p>
-                @endforelse
-            </x-tl.section-card>
+        <div class="col-xl-5">
+            <section class="tl-app-today-card h-100">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div>
+                        <div class="tl-eyebrow">Today</div>
+                        <h3>{{ $primarySession ? $primarySession->title : 'No workout today' }}</h3>
+                    </div>
+                    <span class="tl-badge {{ $primaryLog?->status === 'completed' ? 'green' : 'gold' }}">{{ $primaryLog?->status ?? ($primarySession ? 'open' : 'rest') }}</span>
+                </div>
+
+                @if($primarySession)
+                    <p class="tl-muted mb-3">{{ $primarySession->program->title }} · {{ $primarySession->program->coach->name }}</p>
+                    <div class="tl-session-focus mb-3">
+                        <span><i class="fa-solid fa-bullseye"></i> {{ $primarySession->focus ?: 'Training session' }}</span>
+                        <span><i class="fa-solid fa-list-check"></i> {{ $primarySession->exerciseSummary() }}</span>
+                        <span><i class="fa-solid {{ $primarySession->media_url ? 'fa-circle-play' : 'fa-image' }}"></i> {{ $primarySession->media_url ? 'Media attached' : 'No media attached' }}</span>
+                    </div>
+                    <a class="btn btn-tl w-100" href="{{ route('app.workouts.show', $primarySession) }}">Open workout</a>
+                @else
+                    <p class="tl-muted mb-3">Nothing is scheduled for today. Pick another day below or wait for your coach to assign a session.</p>
+                    <a class="btn btn-outline-tl w-100" href="#schedule">Open calendar</a>
+                @endif
+            </section>
         </div>
-        <div class="col-lg-8">
+        <div class="col-xl-7">
+            <section class="tl-app-progress-card h-100">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                    <div>
+                        <div class="tl-eyebrow">Latest check-in</div>
+                        <h3>{{ $latestProgress ? $latestProgress->logged_on->format('M j') : 'Not logged yet' }}</h3>
+                    </div>
+                    <a class="btn btn-outline-tl btn-sm" href="{{ route('app.progress') }}">Update</a>
+                </div>
+
+                @if($latestProgress)
+                    <div class="tl-health-grid">
+                        <div><span>Weight</span><strong>{{ $latestProgress->weight ? $latestProgress->weight.' kg' : '-' }}</strong></div>
+                        <div><span>Calories</span><strong>{{ $latestProgress->calories ?: '-' }}</strong></div>
+                        <div><span>Protein</span><strong>{{ $latestProgress->protein ? $latestProgress->protein.' g' : '-' }}</strong></div>
+                        <div><span>Hydration</span><strong>{{ $latestProgress->hydration ? $latestProgress->hydration.' ml' : '-' }}</strong></div>
+                        <div><span>Sleep</span><strong>{{ $latestProgress->sleep_quality ? $latestProgress->sleep_quality.'/10' : '-' }}</strong></div>
+                        <div><span>Energy</span><strong>{{ $latestProgress->energy ? $latestProgress->energy.'/10' : '-' }}</strong></div>
+                    </div>
+                @else
+                    <p class="tl-muted mb-0">Log weight, food, hydration, sleep quality, soreness, and energy so the coach has something real to work with.</p>
+                @endif
+            </section>
+        </div>
+    </div>
+
+    <x-tl.section-card title="Active programs" subtitle="Completion, next session, and media readiness for each assigned program.">
+        <div class="row g-3">
+            @forelse($programSummaries as $summary)
+                @php($program = $summary['program'])
+                <div class="col-lg-4">
+                    <a class="tl-program-card h-100" href="{{ route('app.programs.show', $program) }}">
+                        <div class="d-flex justify-content-between align-items-start gap-3">
+                            <div>
+                                <div class="tl-muted small">{{ $program->coach->name }}</div>
+                                <strong>{{ $program->title }}</strong>
+                            </div>
+                            <span class="tl-badge green">{{ $summary['progress'] }}%</span>
+                        </div>
+                        <div class="tl-program-meter mt-3"><span style="width: {{ $summary['progress'] }}%"></span></div>
+                        <div class="tl-mobile-record-grid mt-3">
+                            <div><span class="tl-muted small d-block">Done</span><span>{{ $summary['completed'] }}/{{ $summary['total'] }}</span></div>
+                            <div><span class="tl-muted small d-block">Media</span><span>{{ $summary['media'] }} session(s)</span></div>
+                        </div>
+                        <div class="tl-muted small mt-3">
+                            Next: {{ $summary['nextSession'] ? $summary['nextSession']->scheduled_on->format('M j').' · '.$summary['nextSession']->title : 'No upcoming session' }}
+                        </div>
+                    </a>
+                </div>
+            @empty
+                <div class="col-12"><p class="tl-muted mb-0">No programs assigned yet.</p></div>
+            @endforelse
+        </div>
+    </x-tl.section-card>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12">
             <section class="tl-section-card h-100">
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                     <div>

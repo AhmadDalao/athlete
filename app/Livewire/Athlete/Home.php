@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Athlete;
 
+use App\Models\ProgressEntry;
 use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use Illuminate\Support\Carbon;
@@ -28,12 +29,16 @@ class Home extends Component
 
     public function previousMonth(): void
     {
-        $this->month = Carbon::parse($this->month.'-01')->subMonth()->format('Y-m');
+        $month = Carbon::parse($this->month.'-01')->subMonth();
+        $this->month = $month->format('Y-m');
+        $this->selectedDate = $month->toDateString();
     }
 
     public function nextMonth(): void
     {
-        $this->month = Carbon::parse($this->month.'-01')->addMonth()->format('Y-m');
+        $month = Carbon::parse($this->month.'-01')->addMonth();
+        $this->month = $month->format('Y-m');
+        $this->selectedDate = $month->toDateString();
     }
 
     public function render()
@@ -51,9 +56,40 @@ class Home extends Component
             ->whereHas('program', fn ($query) => $query->where('athlete_id', $athleteId))
             ->whereBetween('scheduled_on', [$start->toDateString(), $end->toDateString()])
             ->get();
+        $todaySessions = TrainingSession::with('program.coach', 'logs')
+            ->whereHas('program', fn ($query) => $query->where('athlete_id', $athleteId))
+            ->whereDate('scheduled_on', today()->toDateString())
+            ->orderBy('scheduled_on')
+            ->get();
+        $latestProgress = ProgressEntry::where('athlete_id', $athleteId)
+            ->latest('logged_on')
+            ->first();
+        $programSummaries = $programs->map(function (TrainingProgram $program) use ($athleteId): array {
+            $totalSessions = $program->sessions->count();
+            $completedSessions = $program->sessions
+                ->filter(fn (TrainingSession $session): bool => $session->logs->firstWhere('athlete_id', $athleteId)?->status === 'completed')
+                ->count();
+            $mediaSessions = $program->sessions
+                ->filter(fn (TrainingSession $session): bool => filled($session->media_url))
+                ->count();
+            $nextSession = $program->sessions
+                ->first(fn (TrainingSession $session): bool => $session->scheduled_on->greaterThanOrEqualTo(today()));
+
+            return [
+                'program' => $program,
+                'total' => $totalSessions,
+                'completed' => $completedSessions,
+                'media' => $mediaSessions,
+                'progress' => $totalSessions > 0 ? (int) round(($completedSessions / $totalSessions) * 100) : 0,
+                'nextSession' => $nextSession,
+            ];
+        });
 
         return view('livewire.athlete.home', [
             'programs' => $programs,
+            'programSummaries' => $programSummaries,
+            'todaySessions' => $todaySessions,
+            'latestProgress' => $latestProgress,
             'days' => collect(range(1, $end->day))->map(function (int $day) use ($start, $sessions): array {
                 $date = $start->copy()->day($day)->toDateString();
 

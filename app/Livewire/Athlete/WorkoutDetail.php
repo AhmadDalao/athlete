@@ -45,6 +45,7 @@ class WorkoutDetail extends Component
             'setLogs.*.set' => ['required', 'integer', 'min:1'],
             'setLogs.*.target_reps' => ['nullable', 'string', 'max:60'],
             'setLogs.*.target_load' => ['nullable', 'string', 'max:80'],
+            'setLogs.*.target_rest' => ['nullable', 'string', 'max:40'],
             'setLogs.*.actual_reps' => ['nullable', 'string', 'max:60'],
             'setLogs.*.actual_load' => ['nullable', 'string', 'max:80'],
             'setLogs.*.rpe' => ['nullable', 'integer', 'min:1', 'max:10'],
@@ -62,6 +63,7 @@ class WorkoutDetail extends Component
                     'set' => (int) $row['set'],
                     'target_reps' => $row['target_reps'] ?? null,
                     'target_load' => $row['target_load'] ?? null,
+                    'target_rest' => $row['target_rest'] ?? null,
                     'actual_reps' => $row['actual_reps'] ?? null,
                     'actual_load' => $row['actual_load'] ?? null,
                     'rpe' => $row['rpe'] ?? null,
@@ -85,6 +87,7 @@ class WorkoutDetail extends Component
                 'set' => $set,
                 'target_reps' => (string) ($exercise['reps'] ?? ''),
                 'target_load' => (string) ($exercise['load'] ?? ''),
+                'target_rest' => (string) ($exercise['rest'] ?? ''),
                 'actual_reps' => '',
                 'actual_load' => '',
                 'rpe' => '',
@@ -97,6 +100,44 @@ class WorkoutDetail extends Component
     {
         return view('livewire.athlete.workout-detail', [
             'log' => $this->session->logs()->where('athlete_id', Auth::id())->first(),
+            'media' => $this->mediaPayload(),
         ])->layout('layouts.app', ['title' => $this->session->title]);
+    }
+
+    private function mediaPayload(): array
+    {
+        $url = $this->session->media_url;
+
+        if (! filled($url)) {
+            return ['type' => 'none', 'url' => null, 'embedUrl' => null];
+        }
+
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        $path = strtolower((string) parse_url($url, PHP_URL_PATH));
+        $type = 'link';
+        $embedUrl = null;
+
+        if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/', $path)) {
+            $type = 'image';
+        } elseif (preg_match('/\.(mp4|webm|mov)$/', $path)) {
+            $type = 'video';
+        } elseif (str_contains($host, 'youtube.com') || str_contains($host, 'youtu.be')) {
+            $type = 'embed';
+            parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+            $videoId = str_contains($host, 'youtu.be') ? trim($path, '/') : (string) ($query['v'] ?? '');
+
+            if (filled($videoId)) {
+                $embedUrl = 'https://www.youtube.com/embed/'.$videoId;
+            }
+        } elseif (str_contains($host, 'vimeo.com')) {
+            $type = 'embed';
+            $videoId = trim($path, '/');
+
+            if (filled($videoId)) {
+                $embedUrl = 'https://player.vimeo.com/video/'.$videoId;
+            }
+        }
+
+        return ['type' => $type, 'url' => $url, 'embedUrl' => $embedUrl];
     }
 }
