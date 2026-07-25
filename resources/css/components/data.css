@@ -1,0 +1,106 @@
+.tl-table-wrap {
+    overflow-x: auto;
+    border-radius: 1rem;
+    border: 1px solid var(--tl-line);
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table.tl-table {
+    --bs-table-bg: #0d1215;
+    --bs-table-color: var(--tl-text);
+    --bs-table-border-color: var(--tl-line);
+    margin-bottom: 0;
+    min-width: 850px;
+}
+
+.tl-table td,
+.tl-table th {
+    vertical-align: top;
+}
+
+.tl-table thead th {
+    background: #151b20;
+    color: #9ba69f;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.tl-badge {
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.tl-badge.green {
+    background: rgba(0, 179, 122, 0.14);
+    color: #3effbd;
+}
+
+.tl-badge.gold {
+    background: rgba(232, 184, 74, 0.16);
+    color: #ffd36e;
+}
+
+.tl-badge.gray {
+    background: rgba(255, 255, 255, 0.08);
+    color: #c7d1ca;
+}
+
+.tl-mini-chart {
+    background:
+        linear-gradient(180deg, rgba(183, 255, 60, 0.08), transparent),
+        var(--tl-panel-2);
+    border: 1px solid var(--tl-line);
+    border-radius: 1.1rem;
+    height: 100%;
+    padding: 1rem;
+}
+
+.tl-bars {
+    align-items: end;
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    min-height: 170px;
+}
+
+.tl-bar-item {
+    align-items: center;
+    display: grid;
+    gap: 0.4rem;
+    grid-template-rows: auto 1fr auto;
+    height: 170px;
+    justify-items: center;
+    min-width: 0;
+}
+
+.tl-bar-value,
+.tl-bar-date {
+    color: var(--tl-muted);
+    font-size: 0.72rem;
+    line-height: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+    text-align: center;
+}
+
+.tl-bar {
+    align-self: end;
+    background: linear-gradient(180deg, var(--tl-lime), var(--tl-emerald));
+    border-radius: 999px 999px 0.35rem 0.35rem;
+    box-shadow: 0 12px 30px rgba(183, 255, 60, 0.16);
+    display: block;
+    min-height: 0.45rem;
+    width: min(100%, 1.1rem);
+}

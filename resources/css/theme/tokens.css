@@ -1,0 +1,17 @@
+:root {
+    --tl-bg: #070a0d;
+    --tl-panel: #10161a;
+    --tl-panel-2: #151d22;
+    --tl-elevated: #1b252b;
+    --tl-line: rgba(255, 255, 255, 0.1);
+    --tl-text: #f7fff7;
+    --tl-muted: #a8b3ad;
+    --tl-lime: #b7ff3c;
+    --tl-emerald: #00b37a;
+    --tl-gold: #e8b84a;
+    --tl-cyan: #39d7ff;
+    --tl-violet: #8b5cf6;
+    --tl-blue: #5d7cff;
+    --tl-cream: #fbf7ee;
+    --tl-danger: #ff5c5c;
+}

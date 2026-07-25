@@ -1,0 +1,21 @@
+.tl-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.55rem;
+}
+
+.tl-day {
+    border: 1px solid var(--tl-line);
+    background: var(--tl-panel-2);
+    border-radius: 0.9rem;
+    min-height: 78px;
+    padding: 0.65rem;
+    color: var(--tl-text);
+    text-align: left;
+    width: 100%;
+}
+
+.tl-day.active {
+    background: linear-gradient(135deg, var(--tl-lime), var(--tl-emerald));
+    color: #061007;
+}

@@ -1,0 +1,209 @@
+@media (max-width: 992px) {
+    .tl-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .tl-sidebar.offcanvas-lg {
+        background: #090d10;
+        color: var(--tl-text);
+        height: 100dvh;
+        left: 0;
+        max-width: 100%;
+        padding: 1rem;
+        position: fixed;
+        top: 0;
+        width: min(88vw, 330px);
+        z-index: 1045;
+    }
+
+    .tl-sidebar.offcanvas-lg .tl-sidebar-inner {
+        overflow-y: auto;
+    }
+
+    .tl-main {
+        padding: 0.85rem 0.85rem 6rem;
+    }
+
+    .tl-topbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .tl-page-hero {
+        grid-template-columns: 1fr;
+    }
+
+    .tl-page-hero-visual {
+        order: -1;
+    }
+
+    .tl-preview-shell {
+        grid-template-columns: 110px minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    body {
+        background:
+            radial-gradient(circle at 18% 0%, rgba(183, 255, 60, 0.13), transparent 18rem),
+            var(--tl-bg);
+    }
+
+    .tl-main {
+        padding-left: 0.7rem;
+        padding-right: 0.7rem;
+    }
+
+    .tl-topbar,
+    .tl-panel,
+    .tl-card {
+        border-radius: 1.05rem;
+    }
+
+    .tl-topbar {
+        display: none;
+    }
+
+    .tl-hero {
+        border-radius: 1.2rem;
+        padding: 1rem;
+    }
+
+    .tl-hero .h1,
+    .tl-hero h2,
+    .tl-page-hero h2 {
+        font-size: clamp(1.75rem, 10vw, 2.35rem);
+        letter-spacing: -0.05em;
+    }
+
+    .tl-page-hero {
+        border-radius: 1.2rem;
+        padding: 1rem;
+    }
+
+    .tl-app-hero-card,
+    .tl-app-today-card,
+    .tl-app-progress-card,
+    .tl-program-card {
+        border-radius: 1.15rem;
+        padding: 0.95rem;
+    }
+
+    .tl-app-hero-card {
+        align-items: flex-start;
+        display: grid;
+    }
+
+    .tl-app-ring {
+        height: 7.25rem;
+        justify-self: end;
+        margin-top: -1.5rem;
+        width: 7.25rem;
+    }
+
+    .tl-health-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tl-media-link {
+        align-items: stretch;
+        display: grid;
+    }
+
+    .tl-exercise-card summary {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+
+    .tl-exercise-card summary .tl-badge {
+        display: none;
+    }
+
+    .tl-exercise-targets {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tl-media-panel.is-compact iframe {
+        height: 52vw;
+    }
+
+    .tl-page-hero-visual {
+        display: none;
+    }
+
+    .tl-section-head {
+        display: grid;
+    }
+
+    .tl-metric-card {
+        border-radius: 1rem;
+        padding: 0.85rem;
+    }
+
+    .tl-metric-icon {
+        border-radius: 0.8rem;
+        height: 38px;
+        width: 38px;
+    }
+
+    .tl-panel {
+        padding: 0.85rem;
+    }
+
+    .tl-stat {
+        border-radius: 0.95rem;
+        padding: 0.85rem;
+    }
+
+    .tl-stat strong {
+        font-size: clamp(1.35rem, 8vw, 1.9rem);
+    }
+
+    .tl-calendar {
+        gap: 0.35rem;
+    }
+
+    .tl-day {
+        border-radius: 0.75rem;
+        min-height: 58px;
+        padding: 0.45rem;
+    }
+
+    .tl-day strong {
+        font-size: 1.05rem !important;
+    }
+
+    .tl-day span {
+        font-size: 0.64rem !important;
+        line-height: 1.1;
+    }
+
+    .table.tl-table {
+        font-size: 0.88rem;
+        min-width: 720px;
+    }
+
+    .tl-table td,
+    .tl-table th {
+        padding: 0.75rem;
+    }
+
+    .tl-bars {
+        gap: 0.35rem;
+        min-height: 130px;
+    }
+
+    .tl-bar-item {
+        height: 130px;
+    }
+
+    .tl-mobile-menu span,
+    .tl-bottom-nav span {
+        line-height: 1;
+    }
+
+    .btn,
+    .form-control,
+    .form-select {
+        min-height: 42px;
+    }
+}

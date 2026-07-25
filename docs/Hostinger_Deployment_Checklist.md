@@ -1,6 +1,6 @@
 # Hostinger Deployment Checklist
 
-Last updated: 2026-07-24
+Last updated: 2026-07-25
 
 ## Scope
 
@@ -30,6 +30,10 @@ Confirm these before upload:
 Run locally before pushing/deploying:
 
 ```bash
+composer install
+npm ci
+npm audit
+npm run build
 composer validate --strict
 ./vendor/bin/pint --test
 php artisan test
@@ -38,6 +42,8 @@ php artisan route:cache
 php artisan view:cache
 php artisan optimize:clear
 ```
+
+Confirm `public/build/manifest.json` exists after the build. Production does not run Vite and does not load Bootstrap or Font Awesome from a CDN.
 
 ## Production Backup
 
@@ -55,13 +61,14 @@ Preferred flow if SSH/git is available:
 ```bash
 cd /path/to/athlete
 git fetch origin
-git checkout codex/throughline-clean-rebuild
-git pull origin codex/throughline-clean-rebuild
+git checkout main
+git pull origin main
 ```
 
 If using FTP:
 
 - Upload app files except `.env`, `storage/backups`, `.git`, `node_modules`, and local database files.
+- Upload the locally generated `public/build/` directory.
 - Ensure `storage/` and `bootstrap/cache/` are writable.
 - Ensure the domain points to the `public/` folder.
 
@@ -107,6 +114,8 @@ If Composer is not available:
 
 - Build vendor locally using the same PHP major version.
 - Upload `vendor/` with the app.
+
+Node is not required on Hostinger. Frontend dependencies are compiled locally; upload `public/build` from the verified local release.
 
 ## Database Migration
 
@@ -201,9 +210,9 @@ After deployment is accepted, update:
 
 ## Verified Release
 
-- Date: 2026-07-24
-- Branch: `codex/throughline-clean-rebuild`
-- Commit: `aa923a67f5005ab285745b90464d2c442e871e1c`
+- Date: 2026-07-25
+- Branch: `main`
+- Commit: track the current deployed `origin/main`
 - Runtime: PHP 8.2.30, Laravel 12.62.0, MySQL
 - Database backup: `/home/u867436826/backups/throughline/database-20260724-211901.sql.gz`
 - Code backup: `/home/u867436826/backups/throughline/code-20260724-211901.tar.gz`

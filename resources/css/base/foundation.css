@@ -1,0 +1,24 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background:
+        radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.2), transparent 25rem),
+        radial-gradient(circle at 100% 9%, rgba(93, 124, 255, 0.14), transparent 32rem),
+        radial-gradient(circle at 60% 100%, rgba(183, 255, 60, 0.1), transparent 32rem),
+        var(--tl-bg);
+    color: var(--tl-text);
+    font-family: "Space Grotesk", "Segoe UI", sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.fw-black {
+    font-weight: 900;
+}

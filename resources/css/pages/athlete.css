@@ -1,0 +1,135 @@
+.tl-app-hero-card,
+.tl-app-today-card,
+.tl-app-progress-card,
+.tl-program-card {
+    background:
+        radial-gradient(circle at 8% 0%, rgba(183, 255, 60, 0.18), transparent 15rem),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent),
+        rgba(16, 22, 26, 0.92);
+    border: 1px solid var(--tl-line);
+    border-radius: 1.35rem;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+    color: var(--tl-text);
+    display: block;
+    min-width: 0;
+    padding: 1.1rem;
+}
+
+.tl-app-hero-card {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.tl-app-hero-card h2,
+.tl-app-today-card h3,
+.tl-app-progress-card h3 {
+    font-weight: 900;
+    letter-spacing: -0.055em;
+    margin: 0.35rem 0 0.45rem;
+}
+
+.tl-app-hero-card h2 {
+    font-size: clamp(2rem, 7vw, 3.7rem);
+    line-height: 0.95;
+}
+
+.tl-app-hero-card p {
+    color: var(--tl-muted);
+    margin: 0;
+}
+
+.tl-app-ring {
+    background:
+        radial-gradient(circle at center, #10161a 0 52%, transparent 53%),
+        conic-gradient(var(--tl-lime) calc(var(--value) * 1%), rgba(255, 255, 255, 0.11) 0);
+    border-radius: 999px;
+    display: grid;
+    flex: 0 0 auto;
+    height: clamp(7rem, 18vw, 10rem);
+    place-items: center;
+    text-align: center;
+    width: clamp(7rem, 18vw, 10rem);
+}
+
+.tl-app-ring span {
+    display: block;
+    font-size: clamp(1.55rem, 5vw, 2.3rem);
+    font-weight: 900;
+    letter-spacing: -0.05em;
+}
+
+.tl-app-ring small {
+    color: var(--tl-muted);
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.tl-session-focus,
+.tl-health-grid {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.tl-session-focus span,
+.tl-health-grid div {
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid var(--tl-line);
+    border-radius: 1rem;
+    padding: 0.85rem;
+}
+
+.tl-session-focus i {
+    color: var(--tl-lime);
+    margin-right: 0.35rem;
+}
+
+.tl-health-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tl-health-grid span {
+    color: var(--tl-muted);
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.tl-health-grid strong {
+    display: block;
+    font-size: clamp(1rem, 4vw, 1.45rem);
+    font-weight: 900;
+    margin-top: 0.2rem;
+}
+
+.tl-program-card:hover {
+    border-color: rgba(183, 255, 60, 0.38);
+    color: var(--tl-text);
+}
+
+.tl-program-card strong {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 900;
+    line-height: 1.05;
+}
+
+.tl-program-meter {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    height: 0.55rem;
+    overflow: hidden;
+}
+
+.tl-program-meter span {
+    background: linear-gradient(90deg, var(--tl-lime), var(--tl-emerald));
+    border-radius: inherit;
+    display: block;
+    height: 100%;
+}

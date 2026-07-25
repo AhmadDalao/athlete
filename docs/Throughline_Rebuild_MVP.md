@@ -1,6 +1,6 @@
 # Throughline Clean Rebuild MVP
 
-Last updated: 2026-07-24
+Last updated: 2026-07-25
 
 ## Decision
 
@@ -13,6 +13,7 @@ The overloaded React/Inertia/mobile/watch stack was archived. The active product
 - FontAwesome
 - MySQL/SQLite compatible schema
 - Custom Throughline dark theme
+- Vite-compiled local Bootstrap and Font Awesome assets
 - No Redis
 - No native mobile
 - No watch/WHOOP/Stripe/OAuth in this slice
@@ -122,6 +123,58 @@ This keeps the MVP direct. Memberships, files, payments, watch sync, and native 
 - Normal users do not see an admin dashboard path.
 - `/dashboard` is only a role-aware redirect.
 
+## Modular Architecture
+
+The rebuild is separated by responsibility instead of putting an entire feature into one screen file.
+
+### PHP
+
+- `app/Livewire/Admin`, `Coach`, and `Athlete` contain role-specific screen controllers.
+- `app/Livewire/Concerns` contains shared Livewire table behavior.
+- `app/Livewire/Forms` owns reusable form state, validation, normalization, and payload mapping.
+- `app/Services` owns domain writes, transactions, delivery, and audit recording.
+- `app/Support` contains permission catalogs and training-media parsing.
+- Eloquent models own relationships, casts, and compact record-level calculations.
+
+The coach program editor is the reference implementation: the Livewire component coordinates the screen, form objects validate program/session data, `TrainingProgramManager` performs transactional writes, and `AuditLogger` records the operation.
+
+### Blade
+
+- `resources/views/layouts` owns the guest and authenticated shells.
+- `resources/views/components/tl` contains reusable Throughline cards, tables, media, hero, and training form components.
+- `resources/views/livewire` contains role-specific screen composition, not business persistence.
+
+### CSS
+
+- `resources/css/theme`: design tokens.
+- `resources/css/base`: global foundation.
+- `resources/css/layout`: shell and navigation.
+- `resources/css/components`: reusable surfaces, forms, tables, records, calendar, and training UI.
+- `resources/css/pages`: public and athlete-specific rules.
+- `resources/css/utilities`: responsive behavior.
+
+`resources/css/app.css` defines the explicit cascade order. Avoid adding another monolithic stylesheet.
+
+### JavaScript
+
+- `resources/js/app.js` is the single Vite entry point.
+- `resources/js/modules/alerts.js` manages dismissible status messages.
+- `resources/js/modules/mobile-navigation.js` manages offcanvas navigation behavior.
+- `resources/js/modules/observer.js` reconnects browser behavior after Livewire DOM updates.
+
+Livewire owns data refresh and AJAX interactions. Custom JavaScript is reserved for browser-only behavior.
+
+### Asset Build
+
+Bootstrap, Font Awesome, custom CSS, and JavaScript are bundled locally:
+
+```bash
+npm ci
+npm run build
+```
+
+The generated `public/build` directory must be included in every production release. The app no longer depends on Bootstrap or Font Awesome CDNs.
+
 ## Verification
 
 Current checks run clean:
@@ -129,6 +182,8 @@ Current checks run clean:
 ```bash
 composer validate --strict
 ./vendor/bin/pint --test
+npm audit
+npm run build
 php artisan test
 php artisan optimize:clear
 php artisan route:cache
@@ -202,8 +257,8 @@ Current automated coverage:
 
 The clean rebuild is live at `https://athlete.ahmaddalao.com`.
 
-- Branch: `codex/throughline-clean-rebuild`
-- Release commit: `aa923a67f5005ab285745b90464d2c442e871e1c`
+- Branch: `main`
+- Release commit: track the current deployed `origin/main`
 - Runtime: PHP 8.2.30 and Laravel 12.62.0
 - Public routes, role redirects, admin controls, coach workflows, athlete programs, progress, workout execution, media, Livewire refresh, and mobile overflow checks passed.
 - Coaches and athletes receive `403` from the admin workspace.

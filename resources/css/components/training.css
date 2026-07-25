@@ -1,0 +1,194 @@
+.tl-media-panel {
+    background: #050708;
+    border: 1px solid var(--tl-line);
+    border-radius: 1.2rem;
+    overflow: hidden;
+}
+
+.tl-media-panel img,
+.tl-media-panel video,
+.tl-media-panel iframe {
+    aspect-ratio: 16 / 9;
+    border: 0;
+    display: block;
+    height: auto;
+    max-height: min(70vh, 34rem);
+    object-fit: cover;
+    width: 100%;
+}
+
+.tl-media-panel iframe {
+    height: min(70vh, 34rem);
+}
+
+.tl-media-panel.is-compact img,
+.tl-media-panel.is-compact video,
+.tl-media-panel.is-compact iframe {
+    max-height: 24rem;
+}
+
+.tl-media-panel.is-compact iframe {
+    height: min(52vw, 24rem);
+}
+
+.tl-media-link {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.tl-media-link > i {
+    align-items: center;
+    background: rgba(183, 255, 60, 0.14);
+    border-radius: 1rem;
+    color: var(--tl-lime);
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 3rem;
+    justify-content: center;
+    width: 3rem;
+}
+
+.tl-form-help {
+    color: var(--tl-muted);
+    font-size: 0.76rem;
+}
+
+.tl-form-help a {
+    color: var(--tl-lime);
+    font-weight: 900;
+}
+
+.tl-media-url-input {
+    min-width: 14rem;
+}
+
+.tl-exercise-list {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.tl-exercise-card {
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid var(--tl-line);
+    border-radius: 1.2rem;
+    overflow: hidden;
+}
+
+.tl-exercise-card[open] {
+    border-color: rgba(183, 255, 60, 0.28);
+    box-shadow: 0 20px 50px -42px rgba(183, 255, 60, 0.65);
+}
+
+.tl-exercise-card summary {
+    align-items: center;
+    cursor: pointer;
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    list-style: none;
+    padding: 1rem;
+}
+
+.tl-exercise-card summary::-webkit-details-marker {
+    display: none;
+}
+
+.tl-exercise-card summary strong,
+.tl-exercise-card summary small {
+    display: block;
+}
+
+.tl-exercise-card summary strong {
+    color: var(--tl-text);
+    font-size: 1.05rem;
+    font-weight: 900;
+}
+
+.tl-exercise-card summary small {
+    color: var(--tl-muted);
+    margin-top: 0.2rem;
+}
+
+.tl-exercise-index {
+    align-items: center;
+    background: linear-gradient(145deg, var(--tl-lime), var(--tl-emerald));
+    border-radius: 0.9rem;
+    color: #061007;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-weight: 950;
+    height: 2.75rem;
+    justify-content: center;
+    width: 2.75rem;
+}
+
+.tl-exercise-chevron {
+    color: var(--tl-muted);
+    transition: transform 180ms ease;
+}
+
+.tl-exercise-card[open] .tl-exercise-chevron {
+    transform: rotate(180deg);
+}
+
+.tl-exercise-body {
+    border-top: 1px solid var(--tl-line);
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.tl-exercise-targets {
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.tl-exercise-targets > div {
+    background: rgba(255, 255, 255, 0.045);
+    border-radius: 0.85rem;
+    padding: 0.75rem;
+}
+
+.tl-exercise-targets span,
+.tl-progress-cell span {
+    color: var(--tl-muted);
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.tl-exercise-targets strong {
+    display: block;
+    margin-top: 0.2rem;
+}
+
+.tl-coach-cue {
+    align-items: flex-start;
+    background: rgba(183, 255, 60, 0.08);
+    border: 1px solid rgba(183, 255, 60, 0.16);
+    border-radius: 0.9rem;
+    color: var(--tl-text);
+    display: flex;
+    gap: 0.65rem;
+    padding: 0.8rem;
+}
+
+.tl-coach-cue i {
+    color: var(--tl-lime);
+    margin-top: 0.2rem;
+}
+
+.tl-progress-cell {
+    min-width: 7rem;
+}
+
+.tl-progress-cell strong {
+    color: var(--tl-lime);
+    display: block;
+    font-size: 1rem;
+}

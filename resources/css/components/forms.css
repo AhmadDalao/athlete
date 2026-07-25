@@ -1,0 +1,43 @@
+.btn-tl {
+    background: var(--tl-lime);
+    border-color: var(--tl-lime);
+    color: #061007;
+    font-weight: 900;
+}
+
+.btn-tl:hover {
+    background: #d2ff69;
+    border-color: #d2ff69;
+    color: #061007;
+}
+
+.btn-outline-tl {
+    border-color: rgba(183, 255, 60, 0.45);
+    color: var(--tl-lime);
+}
+
+.btn-outline-tl:hover {
+    background: rgba(183, 255, 60, 0.12);
+    border-color: var(--tl-lime);
+    color: var(--tl-lime);
+}
+
+.form-control,
+.form-select,
+.form-check-input {
+    background-color: #0c1114;
+    border-color: var(--tl-line);
+    color: var(--tl-text);
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: #0c1114;
+    border-color: rgba(183, 255, 60, 0.75);
+    box-shadow: 0 0 0 0.2rem rgba(183, 255, 60, 0.14);
+    color: var(--tl-text);
+}
+
+.form-control::placeholder {
+    color: #768079;
+}

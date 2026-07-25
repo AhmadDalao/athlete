@@ -1,0 +1,19 @@
+@import "@fontsource/space-grotesk/400.css";
+@import "@fontsource/space-grotesk/600.css";
+@import "@fontsource/space-grotesk/700.css";
+
+@import "bootstrap/dist/css/bootstrap.min.css";
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+@import "./theme/tokens.css";
+@import "./base/foundation.css";
+@import "./layout/shell.css";
+@import "./components/surfaces.css";
+@import "./components/product-preview.css";
+@import "./components/records.css";
+@import "./pages/athlete.css";
+@import "./components/training.css";
+@import "./components/forms.css";
+@import "./components/data.css";
+@import "./pages/public.css";
+@import "./components/calendar.css";
+@import "./utilities/responsive.css";
