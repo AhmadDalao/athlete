@@ -4,6 +4,7 @@
         'admin' => [
             'Overview' => [
                 ['route' => 'admin.dashboard', 'active' => 'admin.dashboard', 'icon' => 'fa-table-cells-large', 'label' => 'Dashboard'],
+                ['route' => 'admin.organizations', 'active' => 'admin.organizations*', 'icon' => 'fa-building-shield', 'label' => 'Organizations', 'permission' => 'organizations.manage'],
             ],
             'People' => [
                 ['route' => 'admin.users', 'active' => 'admin.users*', 'icon' => 'fa-users', 'label' => 'All users'],
@@ -40,6 +41,7 @@
     <div class="tl-nav-title">{{ $group }}</div>
     <nav class="tl-nav-group" aria-label="{{ $group }}">
         @foreach($items as $item)
+            @continue(isset($item['permission']) && ! $user->can($item['permission']))
             <a class="tl-nav-link {{ request()->routeIs($item['active']) ? 'active' : '' }}" href="{{ route($item['route']).(isset($item['fragment']) ? '#'.$item['fragment'] : '') }}">
                 <span class="tl-nav-icon"><i class="fa-solid {{ $item['icon'] }}"></i></span>
                 <span>{{ $item['label'] }}</span>

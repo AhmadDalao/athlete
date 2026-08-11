@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\ContactSubmissionExportController;
 use App\Http\Controllers\Admin\InvitationExportController;
 use App\Http\Controllers\Admin\LogExportController;
+use App\Http\Controllers\Admin\OrganizationExportController;
+use App\Http\Controllers\Admin\OrganizationMemberExportController;
 use App\Http\Controllers\Admin\UserExportController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardRedirectController;
@@ -31,6 +33,10 @@ Route::middleware(['auth', 'organization'])->group(function (): void {
     Route::middleware('can:admin.access')->prefix('admin')->name('admin.')->group(function (): void {
         Route::redirect('/', '/admin/dashboard')->name('root');
         Route::get('/dashboard', Admin\Dashboard::class)->name('dashboard');
+        Route::get('/organizations/export', OrganizationExportController::class)->middleware('can:organizations.manage')->name('organizations.export');
+        Route::get('/organizations', Admin\OrganizationsTable::class)->middleware('can:organizations.manage')->name('organizations');
+        Route::get('/organizations/{organization}/members/export', OrganizationMemberExportController::class)->middleware('can:organizations.manage')->name('organizations.members.export');
+        Route::get('/organizations/{organization}', Admin\OrganizationDetail::class)->middleware('can:organizations.manage')->name('organizations.show');
         Route::get('/users', Admin\UsersTable::class)->name('users');
         Route::get('/users/export', UserExportController::class)->name('users.export');
         Route::get('/users/{user}', Admin\UserDetail::class)->name('users.show');

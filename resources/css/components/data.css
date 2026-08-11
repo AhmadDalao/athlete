@@ -36,6 +36,32 @@
     white-space: nowrap;
 }
 
+.tl-sort-button {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+}
+
+.tl-sort-button:hover,
+.tl-sort-button:focus-visible,
+.tl-table-primary-link:hover,
+.tl-table-primary-link:focus-visible {
+    color: var(--tl-lime);
+}
+
+.tl-table-primary-link {
+    color: var(--tl-text);
+    font-weight: 700;
+    text-decoration: none;
+}
+
 .tl-table tbody tr {
     cursor: default;
 }

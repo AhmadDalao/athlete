@@ -128,6 +128,13 @@
         padding: 0.75rem;
     }
 
+    .tl-metric-card strong {
+        font-size: 1.05rem;
+        letter-spacing: -0.035em;
+        line-height: 1.08;
+        overflow-wrap: anywhere;
+    }
+
     .tl-metric-icon,
     .tl-table-card-icon {
         border-radius: 0.7rem;
