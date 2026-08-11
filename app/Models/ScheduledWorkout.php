@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ScheduledWorkout extends Model
 {
@@ -41,5 +42,10 @@ class ScheduledWorkout extends Model
     public function logs(): HasMany
     {
         return $this->hasMany(WorkoutLog::class);
+    }
+
+    public function executionLog(): HasOne
+    {
+        return $this->hasOne(WorkoutLog::class)->latestOfMany();
     }
 }

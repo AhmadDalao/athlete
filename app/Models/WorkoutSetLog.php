@@ -21,4 +21,9 @@ class WorkoutSetLog extends Model
     {
         return $this->belongsTo(WorkoutLog::class);
     }
+
+    public function sessionExercise(): BelongsTo
+    {
+        return $this->belongsTo(TrainingSessionExercise::class, 'training_session_exercise_id');
+    }
 }

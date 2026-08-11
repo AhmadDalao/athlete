@@ -132,3 +132,193 @@
     display: block;
     height: 100%;
 }
+
+.tl-calendar-weekdays {
+    color: var(--tl-muted);
+    display: grid;
+    font-size: 0.7rem;
+    font-weight: 800;
+    gap: 0.55rem;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    letter-spacing: 0.08em;
+    margin-bottom: 0.45rem;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.tl-calendar-weekdays span {
+    min-width: 0;
+}
+
+.tl-day {
+    position: relative;
+}
+
+.tl-day.is-empty {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.tl-day-dot {
+    background: var(--tl-lime);
+    border-radius: 999px;
+    bottom: 0.58rem;
+    height: 0.38rem;
+    left: 0.65rem;
+    position: absolute;
+    width: 0.38rem;
+}
+
+.tl-day.active .tl-day-dot {
+    background: #11190d;
+}
+
+.tl-day small {
+    bottom: 0.35rem;
+    font-size: 0.65rem;
+    position: absolute;
+    right: 0.55rem;
+}
+
+.tl-set-input-grid {
+    display: grid;
+    gap: 0.7rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tl-set-input-grid label span {
+    color: var(--tl-muted);
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 800;
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+}
+
+.tl-workout-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    justify-content: flex-end;
+}
+
+.tl-range-tabs {
+    background: var(--tl-panel);
+    border: 1px solid var(--tl-line);
+    border-radius: 999px;
+    display: grid;
+    gap: 0.25rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 0.3rem;
+}
+
+.tl-range-tabs button {
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    color: var(--tl-muted);
+    font-weight: 800;
+    min-height: 2.7rem;
+}
+
+.tl-range-tabs button.active {
+    background: var(--tl-lime);
+    color: #11190d;
+}
+
+.tl-photo-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tl-photo-card {
+    background: var(--tl-panel-2);
+    border: 1px solid var(--tl-line);
+    border-radius: 1rem;
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+    overflow: hidden;
+    padding: 0.55rem;
+}
+
+.tl-photo-card img {
+    aspect-ratio: 1;
+    border-radius: 0.7rem;
+    height: 4.5rem;
+    object-fit: cover;
+    width: 4.5rem;
+}
+
+.tl-photo-card div {
+    align-self: center;
+    min-width: 0;
+}
+
+.tl-photo-card strong,
+.tl-photo-card span {
+    display: block;
+}
+
+.tl-photo-card span {
+    color: var(--tl-muted);
+    font-size: 0.75rem;
+}
+
+.tl-photo-card button {
+    align-self: center;
+}
+
+@media (max-width: 575.98px) {
+    .tl-app-hero-card {
+        align-items: flex-start;
+    }
+
+    .tl-app-ring {
+        height: 5.7rem;
+        width: 5.7rem;
+    }
+
+    .tl-app-ring small {
+        display: none;
+    }
+
+    .tl-health-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tl-calendar,
+    .tl-calendar-weekdays {
+        gap: 0.3rem;
+    }
+
+    .tl-day {
+        border-radius: 0.65rem;
+        min-height: 3.25rem;
+        padding: 0.45rem;
+        text-align: center;
+    }
+
+    .tl-day strong {
+        font-size: 0.95rem;
+    }
+
+    .tl-day-dot {
+        bottom: 0.32rem;
+        left: calc(50% - 0.18rem);
+    }
+
+    .tl-day small {
+        display: none;
+    }
+
+    .tl-workout-actions .btn {
+        flex: 1 1 calc(50% - 0.65rem);
+    }
+
+    .tl-photo-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -62,8 +62,11 @@ class TrainingSession extends Model
 
     public function exerciseSummary(): string
     {
-        $items = $this->relationLoaded('prescribedExercises') && $this->prescribedExercises->isNotEmpty()
-            ? $this->prescribedExercises->map(fn (TrainingSessionExercise $exercise): array => [
+        $prescribed = $this->relationLoaded('prescribedExercises')
+            ? $this->prescribedExercises
+            : $this->prescribedExercises()->get();
+        $items = $prescribed->isNotEmpty()
+            ? $prescribed->map(fn (TrainingSessionExercise $exercise): array => [
                 'name' => $exercise->name,
                 'sets' => $exercise->target_sets,
                 'reps' => $exercise->target_reps,
@@ -84,8 +87,11 @@ class TrainingSession extends Model
 
     public function mediaCount(): int
     {
-        $exerciseMedia = $this->relationLoaded('prescribedExercises')
-            ? $this->prescribedExercises->whereNotNull('media_url')->count()
+        $prescribed = $this->relationLoaded('prescribedExercises')
+            ? $this->prescribedExercises
+            : $this->prescribedExercises()->get();
+        $exerciseMedia = $prescribed->isNotEmpty()
+            ? $prescribed->whereNotNull('media_url')->count()
             : collect($this->exercises ?? [])->filter(
                 fn (array $exercise): bool => filled($exercise['media_url'] ?? null)
             )->count();

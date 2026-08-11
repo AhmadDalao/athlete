@@ -157,7 +157,7 @@
             <a href="{{ route('app.home') }}#calendar"><i class="fa-regular fa-calendar"></i><span>Calendar</span></a>
             <a class="tl-bottom-action {{ request()->routeIs('app.workouts*') ? 'active' : '' }}" href="{{ route('app.home') }}#today"><i class="fa-solid fa-play"></i><span>Train</span></a>
             <a class="{{ request()->routeIs('app.messages*') ? 'active' : '' }}" href="{{ route('app.messages') }}"><i class="fa-solid fa-comments"></i><span>Messages</span></a>
-            <button type="button" data-bs-toggle="offcanvas" data-bs-target="#tlSidebar"><i class="fa-solid fa-user"></i><span>More</span></button>
+            <a class="{{ request()->routeIs('app.profile*') ? 'active' : '' }}" href="{{ route('app.profile') }}"><i class="fa-solid fa-user"></i><span>Profile</span></a>
         @endif
     </nav>
 

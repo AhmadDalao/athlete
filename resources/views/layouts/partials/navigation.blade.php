@@ -37,6 +37,7 @@
                 ['route' => 'app.home', 'active' => 'never', 'icon' => 'fa-calendar-days', 'label' => 'Calendar', 'fragment' => 'calendar'],
                 ['route' => 'app.progress', 'active' => 'app.progress*', 'icon' => 'fa-chart-line', 'label' => 'Progress'],
                 ['route' => 'app.messages', 'active' => 'app.messages*', 'icon' => 'fa-comments', 'label' => 'Messages', 'permission' => 'messages.read'],
+                ['route' => 'app.profile', 'active' => 'app.profile*', 'icon' => 'fa-user-gear', 'label' => 'Profile'],
             ],
         ],
     };

@@ -1,49 +1,31 @@
 <div>
-    <x-tl.page-hero
-        eyebrow="Program"
-        :title="$program->title"
-        :subtitle="$program->coach->name.' · '.$program->goal"
-    />
+    <x-tl.page-hero eyebrow="Assigned program" :title="$assignment->program->title" :subtitle="'Coach '.$assignment->program->coach->name.' · '.($assignment->program->goal ?: 'Structured training plan')">
+        <x-slot:actions><a class="btn btn-outline-tl" href="{{ route('app.home') }}#programs"><i class="fa-solid fa-arrow-left"></i> Programs</a></x-slot:actions>
+    </x-tl.page-hero>
 
-    <x-tl.table-card
-        title="Session table"
-        subtitle="Every assigned workout in this program. Open a session to view sets, reps, rest, media, and log completion."
-        :count="$sessions->total()"
-        icon="fa-solid fa-calendar-check"
-    >
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-chart-pie" label="Completion" :value="$stats['percent'].'%'" :detail="$stats['completed'].' of '.$stats['total'].' workouts'" tone="lime" /></div>
+        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-calendar-day" label="Starts" :value="$assignment->starts_on->format('M j')" :detail="$assignment->timezone" tone="emerald" /></div>
+        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-flag-checkered" label="Ends" :value="$assignment->ends_on?->format('M j') ?? '-'" detail="Planned finish" tone="gold" /></div>
+        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-signal" label="Status" :value="str($assignment->status)->headline()" detail="Assignment state" tone="blue" /></div>
+    </div>
+
+    @if($assignment->notes)
+        <x-tl.section-card title="Coach note" subtitle="Context attached to this assignment."><p class="mb-0">{{ $assignment->notes }}</p></x-tl.section-card>
+    @endif
+
+    <x-tl.table-card title="Workout schedule" subtitle="Every dated workout generated from this program assignment." :count="$workouts->total()" icon="fa-solid fa-calendar-check">
         <div class="d-md-none vstack gap-2">
-            @forelse($sessions as $session)
-                @php($log = $session->logs->firstWhere('athlete_id', auth()->id()))
-                <a class="tl-mobile-record" href="{{ route('app.workouts.show', $session) }}">
-                    <div class="d-flex justify-content-between gap-2 align-items-start">
-                        <div>
-                            <div class="tl-muted small">{{ $session->scheduled_on->format('M j, Y') }}</div>
-                            <div class="fw-bold">{{ $session->title }}</div>
-                        </div>
-                        <span class="tl-badge {{ $log?->status === 'completed' ? 'green' : 'gray' }}">{{ $log?->status ?? 'open' }}</span>
-                    </div>
-                    <div class="tl-mobile-record-grid mt-3">
-                        <div><span class="tl-muted small d-block">Focus</span><span>{{ $session->focus ?: '-' }}</span></div>
-                        <div><span class="tl-muted small d-block">Exercises</span><span>{{ $session->exerciseSummary() }}</span></div>
-                        <div><span class="tl-muted small d-block">Media</span><span>{{ $session->hasMedia() ? $session->mediaCount().' demo item(s)' : 'None' }}</span></div>
-                    </div>
+            @forelse($workouts as $workout)
+                <a class="tl-mobile-record" href="{{ route('app.workouts.show', $workout) }}">
+                    <div class="d-flex justify-content-between gap-2"><div><div class="tl-muted small">{{ $workout->scheduled_for->timezone($assignment->timezone)->format('M j, Y') }}</div><strong>{{ $workout->session->title }}</strong></div><span class="tl-badge {{ $workout->status === 'completed' ? 'green' : 'gray' }}">{{ $workout->status }}</span></div>
+                    <div class="tl-mobile-record-grid mt-3"><div><span class="tl-muted small d-block">Focus</span>{{ $workout->session->focus ?: '-' }}</div><div><span class="tl-muted small d-block">Prescription</span>{{ $workout->session->exerciseSummary() }}</div><div><span class="tl-muted small d-block">Media</span>{{ $workout->session->mediaCount() ?: 'None' }}</div></div>
                 </a>
-            @empty
-                <div class="tl-mobile-record tl-muted">No sessions yet.</div>
-            @endforelse
+            @empty<div class="tl-empty-state compact"><span>No workouts have been scheduled.</span></div>@endforelse
         </div>
-
-        <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
-            <thead><tr><th>Date</th><th>Session</th><th>Focus</th><th>Exercises</th><th>Media</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody>
-            @forelse($sessions as $session)
-                @php($log = $session->logs->firstWhere('athlete_id', auth()->id()))
-                <tr><td>{{ $session->scheduled_on->format('Y-m-d') }}</td><td>{{ $session->title }}</td><td>{{ $session->focus }}</td><td>{{ $session->exerciseSummary() }}</td><td>{{ $session->hasMedia() ? $session->mediaCount().' item(s)' : '-' }}</td><td><span class="tl-badge {{ $log?->status === 'completed' ? 'green' : 'gray' }}">{{ $log?->status ?? 'not started' }}</span></td><td><a class="btn btn-outline-tl btn-sm" href="{{ route('app.workouts.show', $session) }}">Open</a></td></tr>
-            @empty
-                <tr><td colspan="7" class="tl-muted">No sessions yet.</td></tr>
-            @endforelse
-            </tbody>
-        </table></div>
-        <div class="mt-3">{{ $sessions->links() }}</div>
+        <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle"><thead><tr><th>Date</th><th>Workout</th><th>Focus</th><th>Prescription</th><th>Media</th><th>Status</th><th></th></tr></thead><tbody>
+            @forelse($workouts as $workout)<tr><td>{{ $workout->scheduled_for->timezone($assignment->timezone)->format('Y-m-d') }}</td><td><strong>{{ $workout->session->title }}</strong></td><td>{{ $workout->session->focus ?: '-' }}</td><td>{{ $workout->session->exerciseSummary() }}</td><td>{{ $workout->session->mediaCount() ?: '-' }}</td><td><span class="tl-badge {{ $workout->status === 'completed' ? 'green' : 'gray' }}">{{ $workout->status }}</span></td><td><a class="btn btn-outline-tl btn-sm" href="{{ route('app.workouts.show', $workout) }}">Open</a></td></tr>@empty<tr><td colspan="7" class="tl-muted">No workouts have been scheduled.</td></tr>@endforelse
+        </tbody></table></div>
+        <div class="mt-3">{{ $workouts->links() }}</div>
     </x-tl.table-card>
 </div>

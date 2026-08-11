@@ -2,7 +2,8 @@
 
 namespace App\Livewire\Athlete;
 
-use App\Models\TrainingProgram;
+use App\Models\ProgramAssignment;
+use App\Queries\Athlete\AthleteWorkspaceQuery;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -13,18 +14,23 @@ class ProgramDetail extends Component
 
     protected string $paginationTheme = 'bootstrap';
 
-    public TrainingProgram $program;
+    public ProgramAssignment $assignment;
 
-    public function mount(TrainingProgram $program): void
+    public function mount(ProgramAssignment $assignment): void
     {
-        abort_unless($program->athlete_id === Auth::id(), 403);
-        $this->program = $program;
+        abort_unless(AthleteWorkspaceQuery::canOpenAssignment($assignment, (int) Auth::id()), 403);
+        $this->assignment = $assignment;
     }
 
     public function render()
     {
+        $this->assignment->load(['program.coach', 'program.phases']);
+
         return view('livewire.athlete.program-detail', [
-            'sessions' => $this->program->sessions()->with('logs')->paginate(12),
-        ])->layout('layouts.app', ['title' => $this->program->title]);
+            'workouts' => $this->assignment->scheduledWorkouts()
+                ->with(['session.prescribedExercises', 'executionLog'])
+                ->paginate(12),
+            'stats' => $this->assignment->completionStats(),
+        ])->layout('layouts.app', ['title' => $this->assignment->program->title]);
     }
 }

@@ -22,6 +22,7 @@ use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use App\Models\User;
 use App\Models\WorkoutLog;
+use App\Services\ProgramScheduleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
@@ -65,68 +66,99 @@ class RebuildSmokeTest extends TestCase
         $coach = User::factory()->create(['role' => 'coach']);
         $athlete = User::factory()->create(['role' => 'athlete']);
         $otherAthlete = User::factory()->create(['role' => 'athlete']);
+        $organization = Organization::create(['name' => 'Athlete Access Team', 'slug' => 'athlete-access-team', 'status' => 'active']);
+        foreach ([[$coach, 'coach'], [$athlete, 'athlete'], [$otherAthlete, 'athlete']] as [$user, $role]) {
+            OrganizationMembership::create(['organization_id' => $organization->id, 'user_id' => $user->id, 'role' => $role, 'status' => 'active', 'joined_at' => now()]);
+            $user->forceFill(['current_organization_id' => $organization->id])->saveQuietly();
+        }
 
         $program = TrainingProgram::create([
+            'organization_id' => $organization->id,
             'coach_id' => $coach->id,
-            'athlete_id' => $athlete->id,
             'title' => 'Assigned Plan',
             'status' => 'active',
+            'is_template' => true,
         ]);
+        $program->sessions()->create(['organization_id' => $organization->id, 'title' => 'Assigned Session', 'status' => 'scheduled', 'day_offset' => 0]);
 
         $otherProgram = TrainingProgram::create([
+            'organization_id' => $organization->id,
             'coach_id' => $coach->id,
-            'athlete_id' => $otherAthlete->id,
             'title' => 'Other Plan',
             'status' => 'active',
+            'is_template' => true,
         ]);
+        $otherProgram->sessions()->create(['organization_id' => $organization->id, 'title' => 'Other Session', 'status' => 'scheduled', 'day_offset' => 0]);
+        $assignment = app(ProgramScheduleService::class)->assign($program, $athlete, $coach, today()->toDateString());
+        $otherAssignment = app(ProgramScheduleService::class)->assign($otherProgram, $otherAthlete, $coach, today()->toDateString());
 
-        $this->actingAs($athlete)->get(route('app.programs.show', $program))->assertOk();
-        $this->actingAs($athlete)->get(route('app.programs.show', $otherProgram))->assertForbidden();
+        $this->actingAs($athlete)->get(route('app.programs.show', $assignment))->assertOk();
+        $this->actingAs($athlete)->get(route('app.programs.show', $otherAssignment))->assertForbidden();
     }
 
     public function test_athlete_can_mark_workout_complete(): void
     {
         $coach = User::factory()->create(['role' => 'coach']);
         $athlete = User::factory()->create(['role' => 'athlete']);
+        $organization = Organization::create(['name' => 'Workout Test Team', 'slug' => 'workout-test-team', 'status' => 'active']);
+        foreach ([[$coach, 'coach'], [$athlete, 'athlete']] as [$user, $role]) {
+            OrganizationMembership::create(['organization_id' => $organization->id, 'user_id' => $user->id, 'role' => $role, 'status' => 'active', 'joined_at' => now()]);
+            $user->forceFill(['current_organization_id' => $organization->id])->saveQuietly();
+        }
 
         $program = TrainingProgram::create([
+            'organization_id' => $organization->id,
             'coach_id' => $coach->id,
-            'athlete_id' => $athlete->id,
             'title' => 'Assigned Plan',
             'status' => 'active',
+            'is_template' => true,
         ]);
 
         $session = TrainingSession::create([
+            'organization_id' => $organization->id,
             'training_program_id' => $program->id,
             'title' => 'Lower Strength',
-            'scheduled_on' => now()->toDateString(),
+            'day_offset' => 0,
             'status' => 'scheduled',
             'media_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-            'exercises' => [[
-                'name' => 'Squat',
-                'sets' => 3,
-                'reps' => 5,
-                'rest' => '90 sec',
-                'media_url' => 'https://youtu.be/abc123XYZ_0',
-            ]],
         ]);
+        $session->prescribedExercises()->create([
+            'organization_id' => $organization->id,
+            'sort_order' => 0,
+            'section' => 'Main work',
+            'name' => 'Squat',
+            'target_sets' => 3,
+            'target_reps' => '5',
+            'target_load' => '80',
+            'unit' => 'kg',
+            'rest_seconds' => 90,
+            'media_url' => 'https://youtu.be/abc123XYZ_0',
+        ]);
+        $assignment = app(ProgramScheduleService::class)->assign($program, $athlete, $coach, today()->toDateString());
+        $workout = $assignment->scheduledWorkouts()->firstOrFail();
 
         $this->actingAs($athlete)
-            ->get(route('app.workouts.show', $session))
+            ->get(route('app.workouts.show', $workout))
             ->assertOk()
             ->assertSee('Workout media')
-            ->assertSee('Exercise prescription')
+            ->assertSee('Prescription')
             ->assertSee('https://www.youtube.com/embed/abc123XYZ_0', false);
 
         $this->assertSame(2, $session->mediaCount());
 
-        Livewire::test(WorkoutDetail::class, ['session' => $session])
+        Livewire::actingAs($athlete)->test(WorkoutDetail::class, ['workout' => $workout])
             ->set('notes', 'Felt controlled.')
             ->set('durationMinutes', '48')
             ->set('rpe', '7')
             ->set('setLogs.0.completed', true)
             ->set('setLogs.0.actual_reps', '5')
-            ->set('setLogs.0.actual_load', '80kg')
+            ->set('setLogs.0.actual_load', '80')
+            ->set('setLogs.1.completed', true)
+            ->set('setLogs.1.actual_reps', '5')
+            ->set('setLogs.1.actual_load', '80')
+            ->set('setLogs.2.completed', true)
+            ->set('setLogs.2.actual_reps', '5')
+            ->set('setLogs.2.actual_load', '80')
             ->call('mark', 'completed')
             ->assertHasNoErrors();
 
@@ -139,7 +171,10 @@ class RebuildSmokeTest extends TestCase
             'notes' => 'Felt controlled.',
         ]);
 
-        $this->assertSame('90 sec', WorkoutLog::firstOrFail()->set_logs[0]['target_rest']);
+        $this->assertDatabaseCount('workout_set_logs', 3);
+        $this->assertDatabaseHas('scheduled_workouts', ['id' => $workout->id, 'status' => 'completed']);
+        $this->assertDatabaseHas('personal_records', ['athlete_id' => $athlete->id, 'exercise_name' => 'Squat', 'value' => 80, 'unit' => 'kg']);
+        $this->assertSame(90, WorkoutLog::firstOrFail()->set_logs[0]['target_rest']);
     }
 
     public function test_athlete_can_save_and_filter_progress_entries(): void

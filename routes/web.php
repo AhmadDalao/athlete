@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\LogExportController;
 use App\Http\Controllers\Admin\OrganizationExportController;
 use App\Http\Controllers\Admin\OrganizationMemberExportController;
 use App\Http\Controllers\Admin\UserExportController;
+use App\Http\Controllers\Athlete\ProgressPhotoController as AthleteProgressPhotoController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Coach\AthleteProfileExportController;
 use App\Http\Controllers\Coach\CoachReportExportController;
@@ -81,10 +82,12 @@ Route::middleware(['auth', 'organization'])->group(function (): void {
 
     Route::middleware('can:athlete.access')->prefix('app')->name('app.')->group(function (): void {
         Route::get('/', Athlete\Home::class)->name('home');
-        Route::get('/programs/{program}', Athlete\ProgramDetail::class)->name('programs.show');
-        Route::get('/workouts/{session}', Athlete\WorkoutDetail::class)->name('workouts.show');
+        Route::get('/programs/{assignment}', Athlete\ProgramDetail::class)->name('programs.show');
+        Route::get('/workouts/{workout}', Athlete\WorkoutDetail::class)->name('workouts.show');
         Route::get('/progress', Athlete\ProgressPanel::class)->name('progress');
+        Route::get('/progress/photos/{photo}', AthleteProgressPhotoController::class)->name('progress.photos.view');
         Route::get('/messages', Inbox::class)->middleware('can:messages.read')->name('messages');
+        Route::get('/profile', Athlete\Profile::class)->name('profile');
     });
 
     Route::get('/messages/attachments/{media}', MessageAttachmentController::class)->middleware('can:messages.read')->name('messages.attachments');
