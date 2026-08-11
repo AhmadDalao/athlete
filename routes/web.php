@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\LogExportController;
 use App\Http\Controllers\Admin\UserExportController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardRedirectController;
+use App\Http\Controllers\OrganizationSelectionController;
+use App\Http\Controllers\ThemePreferenceController;
 use App\Livewire\Admin;
 use App\Livewire\Athlete;
 use App\Livewire\Coach;
@@ -14,6 +16,8 @@ use App\Livewire\Public\ContactForm;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'public.home')->name('home');
+Route::view('/features', 'public.features')->name('features');
+Route::view('/pricing', 'public.pricing')->name('pricing');
 Route::get('/contact', ContactForm::class)->name('contact');
 
 Route::get('/login', [AuthController::class, 'create'])->name('login');
@@ -22,6 +26,8 @@ Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 Route::get('/dashboard', DashboardRedirectController::class)->name('dashboard');
 
 Route::middleware(['auth', 'organization'])->group(function (): void {
+    Route::post('/appearance', ThemePreferenceController::class)->name('appearance.update');
+    Route::post('/organizations/{organization}/select', OrganizationSelectionController::class)->name('organizations.select');
     Route::middleware('can:admin.access')->prefix('admin')->name('admin.')->group(function (): void {
         Route::redirect('/', '/admin/dashboard')->name('root');
         Route::get('/dashboard', Admin\Dashboard::class)->name('dashboard');

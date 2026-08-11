@@ -111,6 +111,68 @@ class PlatformFoundationTest extends TestCase
         $this->assertFalse($owner->fresh()->hasPermission('admin.settings'));
     }
 
+    public function test_user_can_persist_theme_preference(): void
+    {
+        [, $athlete] = $this->athleteInOrganization('Theme Team');
+
+        $this->actingAs($athlete)
+            ->postJson(route('appearance.update'), ['theme' => 'dark'])
+            ->assertOk()
+            ->assertJsonPath('data.theme_preference', 'dark');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $athlete->id,
+            'theme_preference' => 'dark',
+        ]);
+    }
+
+    public function test_user_can_switch_to_an_active_organization_membership(): void
+    {
+        [$north, $athlete] = $this->athleteInOrganization('North Team');
+        $south = Organization::create([
+            'name' => 'South Team',
+            'slug' => 'south-team',
+            'status' => 'active',
+        ]);
+        OrganizationMembership::create([
+            'organization_id' => $south->id,
+            'user_id' => $athlete->id,
+            'role' => 'athlete',
+            'status' => 'active',
+            'joined_at' => now(),
+        ]);
+
+        $this->actingAs($athlete)
+            ->post(route('organizations.select', $south))
+            ->assertRedirect(route('app.home'))
+            ->assertSessionHas('active_organization_id', $south->id);
+
+        $this->assertNotSame($north->id, $south->id);
+        $this->assertSame($south->id, $athlete->fresh()->current_organization_id);
+    }
+
+    public function test_demo_seed_data_is_attached_to_the_default_organization(): void
+    {
+        $this->seed();
+
+        $coach = User::query()->where('email', 'coach@throughline.test')->firstOrFail();
+        $athlete = User::query()->where('email', 'athlete@throughline.test')->firstOrFail();
+
+        $this->assertNotNull($coach->current_organization_id);
+        $this->assertSame($coach->current_organization_id, $athlete->current_organization_id);
+        $this->assertDatabaseHas('organization_memberships', [
+            'organization_id' => $coach->current_organization_id,
+            'user_id' => $coach->id,
+            'role' => 'coach',
+            'status' => 'active',
+        ]);
+        $this->assertDatabaseHas('training_programs', [
+            'organization_id' => $coach->current_organization_id,
+            'coach_id' => $coach->id,
+            'athlete_id' => $athlete->id,
+        ]);
+    }
+
     /** @return array{Organization, User} */
     private function athleteInOrganization(string $name): array
     {

@@ -2,7 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\AthleteProfile;
 use App\Models\CoachAthleteAssignment;
+use App\Models\CoachProfile;
+use App\Models\Organization;
+use App\Models\OrganizationMembership;
 use App\Models\PlatformSetting;
 use App\Models\ProgressEntry;
 use App\Models\TrainingProgram;
@@ -100,7 +104,44 @@ class DatabaseSeeder extends Seeder
         ]);
         $athlete->syncDefaultPermissions();
 
+        $organization = Organization::query()->firstOrCreate(
+            ['slug' => 'throughline'],
+            [
+                'name' => 'Throughline',
+                'status' => 'active',
+                'timezone' => 'Asia/Riyadh',
+                'default_theme' => 'system',
+                'plan_key' => 'team',
+            ]
+        );
+        $organization->forceFill(['owner_id' => $owner->id])->save();
+
+        collect([
+            [$owner, 'organization_owner'],
+            [$admin, 'organization_admin'],
+            [$coach, 'coach'],
+            [$athlete, 'athlete'],
+        ])->each(function (array $member) use ($organization): void {
+            [$user, $role] = $member;
+
+            OrganizationMembership::query()->updateOrCreate(
+                ['organization_id' => $organization->id, 'user_id' => $user->id],
+                ['role' => $role, 'status' => 'active', 'joined_at' => now()]
+            );
+            $user->forceFill(['current_organization_id' => $organization->id])->save();
+        });
+
+        CoachProfile::query()->firstOrCreate([
+            'organization_id' => $organization->id,
+            'user_id' => $coach->id,
+        ]);
+        AthleteProfile::query()->firstOrCreate(
+            ['organization_id' => $organization->id, 'user_id' => $athlete->id],
+            ['timezone' => 'Asia/Riyadh']
+        );
+
         CoachAthleteAssignment::query()->create([
+            'organization_id' => $organization->id,
             'coach_id' => $coach->id,
             'athlete_id' => $athlete->id,
             'status' => 'active',
@@ -108,6 +149,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $program = TrainingProgram::query()->create([
+            'organization_id' => $organization->id,
             'coach_id' => $coach->id,
             'athlete_id' => $athlete->id,
             'title' => 'Strength Foundation',
@@ -120,6 +162,7 @@ class DatabaseSeeder extends Seeder
 
         foreach (range(0, 9) as $index) {
             TrainingSession::query()->create([
+                'organization_id' => $organization->id,
                 'training_program_id' => $program->id,
                 'title' => $index % 2 === 0 ? 'Lower Strength' : 'Upper Strength',
                 'focus' => $index % 2 === 0 ? 'Squat and hinge' : 'Press and pull',
@@ -155,6 +198,7 @@ class DatabaseSeeder extends Seeder
             ProgressEntry::query()->updateOrCreate(
                 ['athlete_id' => $athlete->id, 'logged_on' => now()->subDays($index)->toDateString()],
                 [
+                    'organization_id' => $organization->id,
                     'weight' => 82.5 - ($index * 0.05),
                     'calories' => 2400 + ($index * 20),
                     'protein' => 150 + ($index % 5),

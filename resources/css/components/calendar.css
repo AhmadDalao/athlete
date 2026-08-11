@@ -16,6 +16,7 @@
 }
 
 .tl-day.active {
-    background: linear-gradient(135deg, var(--tl-lime), var(--tl-emerald));
-    color: #061007;
+    background: var(--tl-lime);
+    border-color: var(--tl-lime);
+    color: #11190d;
 }

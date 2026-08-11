@@ -1,43 +1,99 @@
+.btn {
+    align-items: center;
+    border-radius: 0.78rem;
+    display: inline-flex;
+    font-weight: 700;
+    gap: 0.45rem;
+    justify-content: center;
+    min-height: 2.55rem;
+    padding-inline: 0.95rem;
+}
+
 .btn-tl {
     background: var(--tl-lime);
     border-color: var(--tl-lime);
-    color: #061007;
-    font-weight: 900;
+    color: #11190d;
 }
 
-.btn-tl:hover {
-    background: #d2ff69;
-    border-color: #d2ff69;
-    color: #061007;
+.btn-tl:hover,
+.btn-tl:focus {
+    background: var(--tl-lime-strong);
+    border-color: var(--tl-lime-strong);
+    color: #0d1509;
+    transform: translateY(-1px);
 }
 
 .btn-outline-tl {
-    border-color: rgba(183, 255, 60, 0.45);
-    color: var(--tl-lime);
+    background: transparent;
+    border-color: var(--tl-line-strong);
+    color: var(--tl-text);
 }
 
 .btn-outline-tl:hover {
-    background: rgba(183, 255, 60, 0.12);
-    border-color: var(--tl-lime);
-    color: var(--tl-lime);
+    background: var(--tl-lime-soft);
+    border-color: color-mix(in srgb, var(--tl-lime) 42%, var(--tl-line));
+    color: var(--tl-lime-strong);
+}
+
+.btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--tl-text);
+}
+
+.btn-ghost:hover {
+    background: var(--tl-control-hover);
+    color: var(--tl-text);
+}
+
+.form-label {
+    color: var(--tl-text-soft);
+    font-size: 0.74rem;
+    font-weight: 700;
+    margin-bottom: 0.42rem;
 }
 
 .form-control,
 .form-select,
 .form-check-input {
-    background-color: #0c1114;
+    background-color: var(--tl-control);
     border-color: var(--tl-line);
     color: var(--tl-text);
 }
 
+.form-control,
+.form-select {
+    border-radius: 0.78rem;
+    min-height: 2.7rem;
+}
+
 .form-control:focus,
 .form-select:focus {
-    background-color: #0c1114;
-    border-color: rgba(183, 255, 60, 0.75);
-    box-shadow: 0 0 0 0.2rem rgba(183, 255, 60, 0.14);
+    background-color: var(--tl-control);
+    border-color: color-mix(in srgb, var(--tl-lime) 72%, var(--tl-line));
+    box-shadow: 0 0 0 0.2rem var(--tl-lime-soft);
     color: var(--tl-text);
 }
 
 .form-control::placeholder {
-    color: #768079;
+    color: var(--tl-faint);
+}
+
+.form-select {
+    --bs-form-select-bg-img: none;
+}
+
+.form-check-input:checked {
+    background-color: var(--tl-lime-strong);
+    border-color: var(--tl-lime-strong);
+}
+
+.tl-form-help {
+    color: var(--tl-muted);
+    font-size: 0.72rem;
+}
+
+.tl-form-help a {
+    color: var(--tl-lime-strong);
+    font-weight: 700;
 }

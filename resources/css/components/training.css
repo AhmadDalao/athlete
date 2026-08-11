@@ -1,5 +1,5 @@
 .tl-media-panel {
-    background: #050708;
+    background: var(--tl-bg-subtle);
     border: 1px solid var(--tl-line);
     border-radius: 1.2rem;
     overflow: hidden;
@@ -70,7 +70,7 @@
 }
 
 .tl-exercise-card {
-    background: rgba(255, 255, 255, 0.035);
+    background: var(--tl-panel-2);
     border: 1px solid var(--tl-line);
     border-radius: 1.2rem;
     overflow: hidden;
@@ -147,7 +147,7 @@
 }
 
 .tl-exercise-targets > div {
-    background: rgba(255, 255, 255, 0.045);
+    background: var(--tl-control);
     border-radius: 0.85rem;
     padding: 0.75rem;
 }

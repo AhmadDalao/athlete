@@ -1,82 +1,140 @@
 @extends('layouts.guest')
 
 @section('content')
-@php
-    $planKeys = ['one', 'two', 'three'];
-    $plans = collect($planKeys)->map(fn (string $key) => [
-        'name' => \App\Models\PlatformSetting::get("plan_{$key}_name", str($key)->headline()),
-        'price' => \App\Models\PlatformSetting::get("plan_{$key}_price", 'Contact for pricing'),
-        'description' => \App\Models\PlatformSetting::get("plan_{$key}_description", ''),
-        'features' => collect(preg_split('/\r\n|\r|\n/', \App\Models\PlatformSetting::get("plan_{$key}_features", '') ?: ''))->filter()->values(),
-    ]);
-@endphp
-<section class="container py-5">
-    <x-tl.page-hero
-        tone="light"
-        heading="h1"
-        eyebrow="Website-first coaching platform"
-        :title="\App\Models\PlatformSetting::get('homepage_headline', 'Training, coaching, and progress tracking without the mess.')"
-        :subtitle="\App\Models\PlatformSetting::get('homepage_subheadline', 'A direct platform for coaches to manage athletes, assign programs, and track real execution.')"
-    >
-        <x-slot:actions>
-            <a class="btn btn-tl btn-lg" href="{{ route('login') }}">Login</a>
-            <a class="btn btn-outline-tl btn-lg" href="{{ route('contact') }}">Contact us</a>
-        </x-slot:actions>
-
-        <x-slot:visual>
-            <x-tl.product-preview />
-        </x-slot:visual>
-    </x-tl.page-hero>
-</section>
-
-<section class="container pb-5">
-    <div class="row g-3">
-        <div class="col-md-4">
-            <x-tl.metric-card icon="fa-solid fa-user-tie" label="Coach workspace" value="Invite" detail="Roster, programs, and athlete review stay in one flow." tone="gold" />
-        </div>
-        <div class="col-md-4">
-            <x-tl.metric-card icon="fa-solid fa-calendar-check" label="Athlete app" value="Train" detail="Calendar, workouts, media, and progress are simple to open." tone="emerald" />
-        </div>
-        <div class="col-md-4">
-            <x-tl.metric-card icon="fa-solid fa-table-list" label="Admin control" value="Track" detail="Users, settings, permissions, and exports stay table-first." tone="blue" />
-        </div>
-    </div>
-</section>
-
-<section class="container pb-5">
-    <div class="row align-items-end g-3 mb-3">
-        <div class="col-lg-7">
-            <div class="tl-eyebrow">Memberships</div>
-            <h2 class="display-6 fw-bold mt-2">{{ \App\Models\PlatformSetting::get('pricing_headline', 'Simple plans for real coaching.') }}</h2>
-            <p class="tl-muted mb-0">{{ \App\Models\PlatformSetting::get('pricing_subheadline', 'Start with the workflow you need now.') }}</p>
-        </div>
-        <div class="col-lg-5 text-lg-end">
-            <a class="btn btn-tl btn-lg" href="{{ route('contact') }}">Request access</a>
-        </div>
-    </div>
-    <div class="row g-3">
-        @foreach($plans as $index => $plan)
-            <div class="col-lg-4">
-                <div class="tl-price-card h-100 {{ $index === 1 ? 'featured' : '' }}">
-                    <div class="d-flex justify-content-between gap-3 align-items-start mb-4">
-                        <div>
-                            <div class="tl-eyebrow">Plan {{ $index + 1 }}</div>
-                            <h3 class="h4 fw-bold mt-2 mb-1">{{ $plan['name'] }}</h3>
-                            <p class="tl-muted mb-0">{{ $plan['description'] }}</p>
-                        </div>
-                        @if($index === 1)<span class="tl-badge gold">Popular</span>@endif
-                    </div>
-                    <div class="tl-price">{{ $plan['price'] }}</div>
-                    <ul class="list-unstyled vstack gap-2 mt-4 mb-0">
-                        @forelse($plan['features'] as $feature)
-                            <li class="d-flex gap-2"><i class="fa-solid fa-check text-success mt-1"></i><span>{{ $feature }}</span></li>
-                        @empty
-                            <li class="tl-muted">No public features configured yet.</li>
-                        @endforelse
-                    </ul>
+<section class="tl-public-hero">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6 tl-public-hero-copy">
+                <div class="tl-eyebrow">Coaching, connected</div>
+                <h1 class="mt-3">Build the plan. <span>Prove the progress.</span></h1>
+                <p class="lead mt-4">Throughline gives coaches one clean place to program training, guide athletes, and see what actually happened.</p>
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                    <a class="btn btn-tl btn-lg" href="{{ route('contact') }}">Request access <i class="fa-solid fa-arrow-right"></i></a>
+                    <a class="btn btn-outline-tl btn-lg" href="{{ route('features') }}"><i class="fa-regular fa-circle-play"></i> See the platform</a>
+                </div>
+                <div class="tl-public-proof">
+                    <span><i class="fa-solid fa-check"></i> No spreadsheet chaos</span>
+                    <span><i class="fa-solid fa-check"></i> Mobile-first athlete flow</span>
+                    <span><i class="fa-solid fa-check"></i> Real execution data</span>
                 </div>
             </div>
-        @endforeach
+            <div class="col-lg-6 tl-public-preview">
+                <x-tl.product-preview />
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="tl-logo-strip">
+    <div class="container tl-logo-strip-inner">
+        <span>Designed for</span>
+        <strong><i class="fa-solid fa-person-running me-2"></i>Performance coaches</strong>
+        <strong><i class="fa-solid fa-people-group me-2"></i>Training teams</strong>
+        <strong><i class="fa-solid fa-heart-pulse me-2"></i>Independent athletes</strong>
+        <strong><i class="fa-solid fa-apple-whole me-2"></i>Nutrition professionals</strong>
+    </div>
+</section>
+
+<section class="tl-public-section" id="features">
+    <div class="container">
+        <div class="tl-public-heading">
+            <div class="tl-eyebrow">One operating system</div>
+            <h2 class="mt-3">Less admin. Better coaching decisions.</h2>
+            <p class="mt-3">The core workflow stays direct from invitation to completed session. Nothing important is buried in decorative dashboards.</p>
+        </div>
+        @include('public.partials.feature-grid')
+    </div>
+</section>
+
+<section class="tl-public-section is-subtle">
+    <div class="container">
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <article class="tl-role-panel is-coach">
+                    <div class="tl-eyebrow">For coaches</div>
+                    <h2 class="mt-3">Run the roster without losing the athlete.</h2>
+                    <p class="mt-3">Build reusable programs, assign schedules, review adherence, and respond with context.</p>
+                    <div class="tl-role-list">
+                        <span><i class="fa-solid fa-check"></i> Reusable phases, sessions, and exercises</span>
+                        <span><i class="fa-solid fa-check"></i> Daily schedule and adherence review</span>
+                        <span><i class="fa-solid fa-check"></i> Athlete progress, photos, and private notes</span>
+                        <span><i class="fa-solid fa-check"></i> Scoped access for every coach</span>
+                    </div>
+                </article>
+            </div>
+            <div class="col-lg-6">
+                <article class="tl-role-panel is-athlete">
+                    <div class="tl-eyebrow">For athletes</div>
+                    <h2 class="mt-3">Open the app. Know exactly what to do.</h2>
+                    <p class="mt-3">Today’s work, coaching media, set targets, timers, notes, and progress in one focused flow.</p>
+                    <div class="tl-role-list">
+                        <span><i class="fa-solid fa-check"></i> Calendar and assigned programs</span>
+                        <span><i class="fa-solid fa-check"></i> Sets, reps, load, rest, and RPE</span>
+                        <span><i class="fa-solid fa-check"></i> Videos, images, and coach cues</span>
+                        <span><i class="fa-solid fa-check"></i> Progress entries and photos</span>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="tl-public-section">
+    <div class="container">
+        <div class="row g-5 align-items-start">
+            <div class="col-lg-5">
+                <div class="tl-public-heading mb-0">
+                    <div class="tl-eyebrow">How it works</div>
+                    <h2 class="mt-3">A clean line from plan to proof.</h2>
+                    <p class="mt-3">Throughline is opinionated on purpose. Every step should answer the next coaching question.</p>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="tl-workflow-step"><span>01</span><div><h3>Invite and connect</h3><p>Add the athlete, choose their coaches, and keep access inside the right organization.</p></div></div>
+                <div class="tl-workflow-step"><span>02</span><div><h3>Build and assign</h3><p>Create a reusable program, schedule it, and adapt the dates without damaging the template.</p></div></div>
+                <div class="tl-workflow-step"><span>03</span><div><h3>Execute and record</h3><p>The athlete follows the workout and records actual sets, reps, load, RPE, notes, and completion.</p></div></div>
+                <div class="tl-workflow-step"><span>04</span><div><h3>Review and coach</h3><p>The coach sees adherence and progress, then makes the next decision from evidence.</p></div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="tl-public-section is-subtle" id="pricing">
+    <div class="container">
+        <div class="tl-public-heading">
+            <div class="tl-eyebrow">Pricing</div>
+            <h2 class="mt-3">{{ \App\Models\PlatformSetting::get('pricing_headline', 'Start with the coaching workflow you need.') }}</h2>
+            <p class="mt-3">{{ \App\Models\PlatformSetting::get('pricing_subheadline', 'Pricing content is controlled by the owner from the website settings. Checkout comes after the coaching product is stable.') }}</p>
+        </div>
+        @include('public.partials.pricing-grid')
+    </div>
+</section>
+
+<section class="tl-public-section">
+    <div class="container">
+        <div class="row g-5">
+            <div class="col-lg-5">
+                <div class="tl-public-heading mb-0">
+                    <div class="tl-eyebrow">Questions</div>
+                    <h2 class="mt-3">Clear answers before you start.</h2>
+                </div>
+            </div>
+            <div class="col-lg-7 tl-faq">
+                <details open><summary>Is Throughline for individual coaches or teams?</summary><p>Both. Organizations separate teams and permissions, while coaches can manage only the athletes and programs assigned to them.</p></details>
+                <details><summary>Can one athlete work with multiple coaches?</summary><p>Yes. Athlete assignments and program assignments are separate, so strength, sport, and nutrition specialists can collaborate without sharing unnecessary access.</p></details>
+                <details><summary>Does the athlete get a mobile app?</summary><p>Yes. The website experience is available now, and the Flutter app uses the same Laravel API for coach and athlete workflows.</p></details>
+                <details><summary>Are wearables and payments included?</summary><p>Not in this core release. Coaching execution comes first; those integrations return after the workflow is stable and tested.</p></details>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="container pb-5">
+    <div class="tl-final-cta">
+        <div class="row align-items-end g-4">
+            <div class="col-lg-8"><div class="tl-eyebrow">Ready when you are</div><h2 class="mt-3 mb-0">Make coaching simpler without making it shallow.</h2></div>
+            <div class="col-lg-4 text-lg-end"><a class="btn btn-tl btn-lg" href="{{ route('contact') }}">Request access <i class="fa-solid fa-arrow-right"></i></a></div>
+        </div>
     </div>
 </section>
 @endsection

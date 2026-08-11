@@ -2,16 +2,30 @@
     box-sizing: border-box;
 }
 
+html {
+    background: var(--tl-bg);
+    overflow-x: clip;
+    scroll-behavior: smooth;
+}
+
 body {
     background:
-        radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.2), transparent 25rem),
-        radial-gradient(circle at 100% 9%, rgba(93, 124, 255, 0.14), transparent 32rem),
-        radial-gradient(circle at 60% 100%, rgba(183, 255, 60, 0.1), transparent 32rem),
+        radial-gradient(circle at 4% -10%, color-mix(in srgb, var(--tl-lime) 9%, transparent), transparent 28rem),
         var(--tl-bg);
     color: var(--tl-text);
     font-family: "Space Grotesk", "Segoe UI", sans-serif;
     min-height: 100vh;
-    overflow-x: hidden;
+    max-width: 100%;
+    overflow-x: clip;
+    transition: background-color var(--tl-transition), color var(--tl-transition);
+}
+
+body,
+button,
+input,
+select,
+textarea {
+    font-family: "Space Grotesk", "Segoe UI", sans-serif;
 }
 
 a {
@@ -19,6 +33,76 @@ a {
     text-decoration: none;
 }
 
+a,
+button {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+    transition: border-color var(--tl-transition), background-color var(--tl-transition), color var(--tl-transition), box-shadow var(--tl-transition), transform var(--tl-transition);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--tl-text);
+    letter-spacing: -0.035em;
+}
+
+::selection {
+    background: var(--tl-lime);
+    color: #101611;
+}
+
 .fw-black {
     font-weight: 900;
+}
+
+.min-w-0 {
+    min-width: 0;
+}
+
+.text-tl-muted,
+.tl-muted {
+    color: var(--tl-muted) !important;
+}
+
+.dropdown-menu,
+.offcanvas {
+    --bs-dropdown-bg: var(--tl-panel);
+    --bs-dropdown-border-color: var(--tl-line);
+    --bs-dropdown-color: var(--tl-text);
+    --bs-dropdown-link-color: var(--tl-text-soft);
+    --bs-dropdown-link-hover-bg: var(--tl-lime-soft);
+    --bs-dropdown-link-hover-color: var(--tl-text);
+    --bs-dropdown-link-active-bg: var(--tl-lime-soft);
+    --bs-dropdown-link-active-color: var(--tl-text);
+    background: var(--tl-panel);
+    color: var(--tl-text);
+}
+
+.btn-close {
+    filter: var(--tl-close-filter, none);
+}
+
+:root[data-theme="dark"] .btn-close {
+    --tl-close-filter: invert(1) grayscale(1);
+}
+
+.alert-success {
+    --bs-alert-bg: color-mix(in srgb, var(--tl-success) 14%, var(--tl-panel));
+    --bs-alert-border-color: color-mix(in srgb, var(--tl-success) 30%, transparent);
+    --bs-alert-color: var(--tl-text);
+}
+
+*:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--tl-lime) 54%, transparent);
+    outline-offset: 2px;
 }

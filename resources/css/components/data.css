@@ -1,66 +1,82 @@
 .tl-table-wrap {
-    overflow-x: auto;
-    border-radius: 1rem;
     border: 1px solid var(--tl-line);
+    border-radius: var(--tl-radius);
     max-width: 100%;
+    overflow-x: auto;
     -webkit-overflow-scrolling: touch;
 }
 
 .table.tl-table {
-    --bs-table-bg: #0d1215;
-    --bs-table-color: var(--tl-text);
+    --bs-table-bg: var(--tl-panel);
+    --bs-table-color: var(--tl-text-soft);
     --bs-table-border-color: var(--tl-line);
-    margin-bottom: 0;
-    min-width: 850px;
+    --bs-table-hover-bg: var(--tl-lime-soft);
+    --bs-table-hover-color: var(--tl-text);
+    margin: 0;
+    min-width: 52rem;
 }
 
 .tl-table td,
 .tl-table th {
-    vertical-align: top;
+    padding: 0.82rem 0.9rem;
+    vertical-align: middle;
+}
+
+.tl-table tbody tr:last-child td {
+    border-bottom: 0;
 }
 
 .tl-table thead th {
-    background: #151b20;
-    color: #9ba69f;
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
+    background: var(--tl-panel-2);
+    color: var(--tl-muted);
+    font-size: 0.63rem;
+    font-weight: 800;
+    letter-spacing: 0.11em;
     text-transform: uppercase;
     white-space: nowrap;
 }
 
+.tl-table tbody tr {
+    cursor: default;
+}
+
 .tl-badge {
-    border-radius: 999px;
-    display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.55rem;
-    font-size: 0.72rem;
-    font-weight: 900;
-    letter-spacing: 0.08em;
+    background: var(--tl-elevated);
+    border: 1px solid var(--tl-line);
+    border-radius: 999px;
+    color: var(--tl-text-soft);
+    display: inline-flex;
+    font-size: 0.62rem;
+    font-weight: 800;
+    gap: 0.3rem;
+    letter-spacing: 0.07em;
+    line-height: 1;
+    padding: 0.38rem 0.54rem;
     text-transform: uppercase;
 }
 
 .tl-badge.green {
-    background: rgba(0, 179, 122, 0.14);
-    color: #3effbd;
+    background: color-mix(in srgb, var(--tl-success) 13%, transparent);
+    border-color: color-mix(in srgb, var(--tl-success) 22%, transparent);
+    color: var(--tl-success);
 }
 
 .tl-badge.gold {
-    background: rgba(232, 184, 74, 0.16);
-    color: #ffd36e;
+    background: color-mix(in srgb, var(--tl-gold) 13%, transparent);
+    border-color: color-mix(in srgb, var(--tl-gold) 22%, transparent);
+    color: var(--tl-gold);
 }
 
 .tl-badge.gray {
-    background: rgba(255, 255, 255, 0.08);
-    color: #c7d1ca;
+    background: var(--tl-elevated);
+    color: var(--tl-muted);
 }
 
 .tl-mini-chart {
-    background:
-        linear-gradient(180deg, rgba(183, 255, 60, 0.08), transparent),
-        var(--tl-panel-2);
+    background: var(--tl-panel-2);
     border: 1px solid var(--tl-line);
-    border-radius: 1.1rem;
+    border-radius: var(--tl-radius);
     height: 100%;
     padding: 1rem;
 }
@@ -68,17 +84,17 @@
 .tl-bars {
     align-items: end;
     display: grid;
-    gap: 0.55rem;
+    gap: 0.5rem;
     grid-template-columns: repeat(7, minmax(0, 1fr));
-    min-height: 170px;
+    min-height: 10rem;
 }
 
 .tl-bar-item {
     align-items: center;
     display: grid;
-    gap: 0.4rem;
+    gap: 0.35rem;
     grid-template-rows: auto 1fr auto;
-    height: 170px;
+    height: 10rem;
     justify-items: center;
     min-width: 0;
 }
@@ -86,21 +102,34 @@
 .tl-bar-value,
 .tl-bar-date {
     color: var(--tl-muted);
-    font-size: 0.72rem;
+    font-size: 0.65rem;
     line-height: 1;
     overflow: hidden;
+    text-align: center;
     text-overflow: ellipsis;
     white-space: nowrap;
     width: 100%;
-    text-align: center;
 }
 
 .tl-bar {
     align-self: end;
     background: linear-gradient(180deg, var(--tl-lime), var(--tl-emerald));
-    border-radius: 999px 999px 0.35rem 0.35rem;
-    box-shadow: 0 12px 30px rgba(183, 255, 60, 0.16);
+    border-radius: 999px 999px 0.25rem 0.25rem;
+    box-shadow: var(--tl-shadow-accent);
     display: block;
-    min-height: 0.45rem;
-    width: min(100%, 1.1rem);
+    min-height: 0.4rem;
+    width: min(100%, 1rem);
+}
+
+.pagination {
+    --bs-pagination-bg: var(--tl-panel);
+    --bs-pagination-border-color: var(--tl-line);
+    --bs-pagination-color: var(--tl-text);
+    --bs-pagination-disabled-bg: var(--tl-panel-2);
+    --bs-pagination-disabled-border-color: var(--tl-line);
+    --bs-pagination-hover-bg: var(--tl-lime-soft);
+    --bs-pagination-hover-color: var(--tl-lime-strong);
+    --bs-pagination-active-bg: var(--tl-lime);
+    --bs-pagination-active-border-color: var(--tl-lime);
+    --bs-pagination-active-color: #101611;
 }

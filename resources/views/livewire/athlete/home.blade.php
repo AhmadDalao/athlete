@@ -26,7 +26,7 @@
 
     <div class="row g-3 mb-3">
         <div class="col-xl-5">
-            <section class="tl-app-today-card h-100">
+            <section class="tl-app-today-card h-100" id="today">
                 <div class="d-flex justify-content-between align-items-start gap-3">
                     <div>
                         <div class="tl-eyebrow">Today</div>
@@ -75,7 +75,7 @@
         </div>
     </div>
 
-    <x-tl.section-card title="Active programs" subtitle="Completion, next session, and media readiness for each assigned program.">
+    <x-tl.section-card id="programs" title="Active programs" subtitle="Completion, next session, and media readiness for each assigned program.">
         <div class="row g-3">
             @forelse($programSummaries as $summary)
                 @php($program = $summary['program'])
@@ -106,7 +106,7 @@
 
     <div class="row g-3 mb-3">
         <div class="col-12">
-            <section class="tl-section-card h-100">
+            <section class="tl-section-card h-100" id="calendar">
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                     <div>
                         <div class="tl-eyebrow">Calendar</div>
