@@ -17,7 +17,7 @@ class OrganizationController extends Controller
             ? Organization::query()->where('status', 'active')->orderBy('name')->get()
             : $request->user()->organizations()->wherePivot('status', 'active')->orderBy('name')->get();
 
-        return response()->json(['data' => OrganizationResource::collection($organizations)]);
+        return response()->json(['data' => OrganizationResource::collection($organizations), 'meta' => (object) [], 'links' => (object) []]);
     }
 
     public function select(Request $request, Organization $organization): JsonResponse
@@ -36,6 +36,8 @@ class OrganizationController extends Controller
                 'organization' => OrganizationResource::make($organization),
                 'user' => UserResource::make($request->user()->fresh()),
             ],
+            'meta' => (object) [],
+            'links' => (object) [],
         ]);
     }
 }

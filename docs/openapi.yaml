@@ -1,0 +1,699 @@
+openapi: 3.1.0
+info:
+  title: Throughline API
+  version: 1.0.0
+  description: Versioned API for the Throughline athlete and coach applications.
+servers:
+  - url: https://athlete.ahmaddalao.com/api/v1
+    description: Production
+  - url: http://127.0.0.1:8000/api/v1
+    description: Local development
+tags:
+  - name: System
+  - name: Authentication
+  - name: Organizations
+  - name: Profile
+  - name: Athlete
+  - name: Coach
+  - name: Messaging
+paths:
+  /status:
+    get:
+      tags: [System]
+      operationId: getApiStatus
+      security: []
+      responses:
+        '200':
+          description: API is available.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusEnvelope'
+  /auth/login:
+    post:
+      tags: [Authentication]
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, device_name]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+                device_name: { type: string, maxLength: 120 }
+      responses:
+        '200':
+          description: Token and available organizations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginEnvelope'
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /auth/me:
+    get:
+      tags: [Authentication]
+      operationId: getAuthenticatedUser
+      responses:
+        '200':
+          description: Current user and organizations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginEnvelope'
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      operationId: logout
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  /auth/tokens:
+    delete:
+      tags: [Authentication]
+      operationId: revokeAllTokens
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  /organizations:
+    get:
+      tags: [Organizations]
+      operationId: listOrganizations
+      responses:
+        '200':
+          description: Organizations available to the user.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Organization' }
+  /organizations/{organization}/select:
+    post:
+      tags: [Organizations]
+      operationId: selectOrganization
+      parameters:
+        - $ref: '#/components/parameters/OrganizationPath'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /profile:
+    get:
+      tags: [Profile]
+      operationId: getProfile
+      responses:
+        '200':
+          description: Current profile.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/User' }
+    put:
+      tags: [Profile]
+      operationId: updateProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 120 }
+                phone: { type: [string, 'null'], maxLength: 40 }
+                bio: { type: [string, 'null'], maxLength: 1500 }
+                primary_goal: { type: [string, 'null'], maxLength: 500 }
+                theme: { $ref: '#/components/schemas/Theme' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /profile/theme:
+    put:
+      tags: [Profile]
+      operationId: updateTheme
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [theme]
+              properties:
+                theme: { $ref: '#/components/schemas/Theme' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /app/home:
+    get:
+      tags: [Athlete]
+      operationId: getAthleteHome
+      responses:
+        '200':
+          description: Athlete summary, programs, workouts, and latest progress.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AthleteHomeEnvelope' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /app/calendar:
+    get:
+      tags: [Athlete]
+      operationId: getAthleteCalendar
+      parameters:
+        - name: month
+          in: query
+          schema: { type: string, pattern: '^\\d{4}-\\d{2}$' }
+        - name: date
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /app/programs:
+    get:
+      tags: [Athlete]
+      operationId: listAssignedPrograms
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: status
+          in: query
+          schema: { type: string, default: current }
+      responses:
+        '200':
+          description: Paginated athlete program assignments.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AssignmentListEnvelope' }
+  /app/programs/{assignment}:
+    get:
+      tags: [Athlete]
+      operationId: getAssignedProgram
+      parameters:
+        - $ref: '#/components/parameters/AssignmentPath'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /app/workouts/{workout}:
+    get:
+      tags: [Athlete]
+      operationId: getWorkout
+      parameters:
+        - $ref: '#/components/parameters/WorkoutPath'
+      responses:
+        '200':
+          description: Workout prescription and existing execution.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Workout' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /app/workouts/{workout}/execution:
+    put:
+      tags: [Athlete]
+      operationId: saveWorkoutExecution
+      parameters:
+        - $ref: '#/components/parameters/WorkoutPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WorkoutExecutionInput' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '409':
+          description: The local draft is based on a stale sync version.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /app/progress:
+    get:
+      tags: [Athlete]
+      operationId: listProgress
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+    post:
+      tags: [Athlete]
+      operationId: saveProgress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProgressInput' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '201': { $ref: '#/components/responses/Created' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /coach/home:
+    get:
+      tags: [Coach]
+      operationId: getCoachHome
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /coach/roster:
+    get:
+      tags: [Coach]
+      operationId: listCoachRoster
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /coach/athletes/{athlete}:
+    get:
+      tags: [Coach]
+      operationId: getCoachAthlete
+      parameters:
+        - name: athlete
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /coach/programs:
+    get:
+      tags: [Coach]
+      operationId: listCoachPrograms
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /coach/schedule:
+    get:
+      tags: [Coach]
+      operationId: listCoachSchedule
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /messages:
+    get:
+      tags: [Messaging]
+      operationId: listConversations
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /messages/{conversation}:
+    get:
+      tags: [Messaging]
+      operationId: getConversation
+      parameters:
+        - $ref: '#/components/parameters/ConversationPath'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Messaging]
+      operationId: sendMessage
+      parameters:
+        - $ref: '#/components/parameters/ConversationPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string, maxLength: 5000 }
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum token
+    organizationHeader:
+      type: apiKey
+      in: header
+      name: X-Organization-ID
+  parameters:
+    OrganizationHeader:
+      name: X-Organization-ID
+      in: header
+      required: true
+      schema: { type: integer }
+      description: Active organization selected by the authenticated user.
+    OrganizationPath:
+      name: organization
+      in: path
+      required: true
+      schema: { type: integer }
+    AssignmentPath:
+      name: assignment
+      in: path
+      required: true
+      schema: { type: integer }
+    WorkoutPath:
+      name: workout
+      in: path
+      required: true
+      schema: { type: integer }
+    ConversationPath:
+      name: conversation
+      in: path
+      required: true
+      schema: { type: integer }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PerPage:
+      name: per_page
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+    FromDate:
+      name: from
+      in: query
+      schema: { type: string, format: date }
+    ToDate:
+      name: to
+      in: query
+      schema: { type: string, format: date }
+  responses:
+    Success:
+      description: Successful response.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Envelope' }
+    Created:
+      description: Resource created.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Envelope' }
+    ValidationError:
+      description: Validation failed.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationErrorEnvelope' }
+    Unauthenticated:
+      description: Missing or invalid token.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    Forbidden:
+      description: The user lacks permission or organization scope.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    NotFound:
+      description: Resource not found in the active organization scope.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+  schemas:
+    Theme:
+      type: string
+      enum: [system, dark, light]
+    Envelope:
+      type: object
+      required: [data, meta, links]
+      properties:
+        data: {}
+        meta: { type: object }
+        links: { type: object }
+    ErrorEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          required: [error]
+          properties:
+            data: { type: 'null' }
+            error:
+              type: object
+              required: [code, message]
+              properties:
+                code: { type: string }
+                message: { type: string }
+    ValidationErrorEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/ErrorEnvelope'
+        - type: object
+          properties:
+            error:
+              type: object
+              properties:
+                fields:
+                  type: object
+                  additionalProperties:
+                    type: array
+                    items: { type: string }
+    StatusEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                service: { type: string }
+                version: { type: string }
+                status: { type: string }
+    User:
+      type: object
+      required: [id, name, email, platform_role, theme_preference]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: [string, 'null'] }
+        platform_role: { type: string }
+        organization_role: { type: [string, 'null'] }
+        current_organization_id: { type: [integer, 'null'] }
+        theme_preference: { $ref: '#/components/schemas/Theme' }
+        avatar_url: { type: [string, 'null'], format: uri }
+        landing_path: { type: string }
+    Organization:
+      type: object
+      required: [id, name, slug, status, timezone]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        slug: { type: string }
+        status: { type: string }
+        timezone: { type: string }
+        default_theme: { $ref: '#/components/schemas/Theme' }
+        role: { type: [string, 'null'] }
+    LoginEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                token: { type: string }
+                token_type: { type: string, const: Bearer }
+                user: { $ref: '#/components/schemas/User' }
+                organizations:
+                  type: array
+                  items: { $ref: '#/components/schemas/Organization' }
+    CompactUser:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string }
+        avatar_url: { type: [string, 'null'], format: uri }
+    Exercise:
+      type: object
+      properties:
+        id: { type: integer }
+        order: { type: integer }
+        section: { type: [string, 'null'] }
+        superset_label: { type: [string, 'null'] }
+        name: { type: string }
+        sets: { type: [integer, 'null'] }
+        reps: { type: [string, 'null'] }
+        load: { type: [string, 'null'] }
+        unit: { type: [string, 'null'] }
+        rest_seconds: { type: [integer, 'null'] }
+        notes: { type: [string, 'null'] }
+        media_url: { type: [string, 'null'] }
+        movement_type: { type: [string, 'null'] }
+    WorkoutSet:
+      type: object
+      properties:
+        id: { type: integer }
+        exercise_id: { type: [integer, 'null'] }
+        exercise_index: { type: integer }
+        exercise_name: { type: string }
+        set_number: { type: integer }
+        target_reps: { type: [string, 'null'] }
+        target_load: { type: [string, 'null'] }
+        target_rest_seconds: { type: [integer, 'null'] }
+        actual_reps: { type: [number, 'null'] }
+        actual_load: { type: [string, number, 'null'] }
+        rpe: { type: [integer, 'null'] }
+        notes: { type: [string, 'null'] }
+        completed: { type: boolean }
+    Workout:
+      type: object
+      properties:
+        id: { type: integer }
+        scheduled_for: { type: string, format: date-time }
+        status: { type: string }
+        coach_notes: { type: [string, 'null'] }
+        athlete_notes: { type: [string, 'null'] }
+        coach: { oneOf: [{ $ref: '#/components/schemas/CompactUser' }, { type: 'null' }] }
+        athlete: { oneOf: [{ $ref: '#/components/schemas/CompactUser' }, { type: 'null' }] }
+        program: { type: [object, 'null'] }
+        session:
+          type: [object, 'null']
+          properties:
+            id: { type: integer }
+            title: { type: string }
+            focus: { type: [string, 'null'] }
+            estimated_minutes: { type: [integer, 'null'] }
+            coach_notes: { type: [string, 'null'] }
+            media_url: { type: [string, 'null'] }
+            exercises:
+              type: array
+              items: { $ref: '#/components/schemas/Exercise' }
+        execution:
+          type: [object, 'null']
+          properties:
+            id: { type: integer }
+            status: { type: string }
+            duration_minutes: { type: [integer, 'null'] }
+            rpe: { type: [integer, 'null'] }
+            notes: { type: [string, 'null'] }
+            completed_at: { type: [string, 'null'], format: date-time }
+            sync_version: { type: integer }
+            sets:
+              type: array
+              items: { $ref: '#/components/schemas/WorkoutSet' }
+    ProgramAssignment:
+      type: object
+      properties:
+        id: { type: integer }
+        status: { type: string }
+        starts_on: { type: string, format: date }
+        ends_on: { type: [string, 'null'], format: date }
+        timezone: { type: [string, 'null'] }
+        notes: { type: [string, 'null'] }
+        completion: { type: object }
+        athlete: { oneOf: [{ $ref: '#/components/schemas/CompactUser' }, { type: 'null' }] }
+        program: { type: [object, 'null'] }
+        workouts:
+          type: array
+          items: { $ref: '#/components/schemas/Workout' }
+    ProgressEntry:
+      type: object
+      properties:
+        id: { type: integer }
+        logged_on: { type: string, format: date }
+        weight_kg: { type: [number, 'null'] }
+        calories_kcal: { type: [integer, 'null'] }
+        protein_g: { type: [integer, 'null'] }
+        hydration_ml: { type: [integer, 'null'] }
+        sleep_quality: { type: [integer, 'null'], minimum: 1, maximum: 10 }
+        soreness: { type: [integer, 'null'], minimum: 1, maximum: 10 }
+        energy: { type: [integer, 'null'], minimum: 1, maximum: 10 }
+        notes: { type: [string, 'null'] }
+    ProgressInput:
+      allOf:
+        - $ref: '#/components/schemas/ProgressEntry'
+        - type: object
+          required: [logged_on]
+    WorkoutExecutionInput:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [completed, partial, missed, skipped] }
+        notes: { type: [string, 'null'], maxLength: 1500 }
+        duration_minutes: { type: [integer, 'null'], minimum: 1, maximum: 600 }
+        rpe: { type: [integer, 'null'], minimum: 1, maximum: 10 }
+        sync_version: { type: [integer, 'null'], minimum: 0 }
+        sets:
+          type: array
+          items:
+            type: object
+            required: [exercise_index, exercise_name, set_number, completed]
+            properties:
+              exercise_id: { type: [integer, 'null'] }
+              exercise_index: { type: integer, minimum: 0 }
+              exercise_name: { type: string, maxLength: 160 }
+              set_number: { type: integer, minimum: 1 }
+              target_reps: { type: [string, 'null'] }
+              target_load: { type: [string, 'null'] }
+              target_rest_seconds: { type: [integer, 'null'] }
+              actual_reps: { type: [number, 'null'] }
+              actual_load: { type: [number, 'null'] }
+              rpe: { type: [integer, 'null'], minimum: 1, maximum: 10 }
+              notes: { type: [string, 'null'] }
+              completed: { type: boolean }
+    AthleteHomeEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                date: { type: string, format: date }
+                athlete: { type: object }
+                programs:
+                  type: array
+                  items: { $ref: '#/components/schemas/ProgramAssignment' }
+                today_workouts:
+                  type: array
+                  items: { $ref: '#/components/schemas/Workout' }
+                upcoming_workouts:
+                  type: array
+                  items: { $ref: '#/components/schemas/Workout' }
+                latest_progress:
+                  oneOf: [{ $ref: '#/components/schemas/ProgressEntry' }, { type: 'null' }]
+    AssignmentListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/ProgramAssignment' }
+security:
+  - bearerAuth: []
+    organizationHeader: []

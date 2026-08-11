@@ -45,6 +45,8 @@ class AuthController extends Controller
                 'user' => UserResource::make($user),
                 'organizations' => OrganizationResource::collection($user->organizations()->wherePivot('status', 'active')->get()),
             ],
+            'meta' => (object) [],
+            'links' => (object) [],
         ]);
     }
 
@@ -55,6 +57,8 @@ class AuthController extends Controller
                 'user' => UserResource::make($request->user()),
                 'organizations' => OrganizationResource::collection($request->user()->organizations()->wherePivot('status', 'active')->get()),
             ],
+            'meta' => (object) [],
+            'links' => (object) [],
         ]);
     }
 
@@ -62,13 +66,13 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()?->delete();
 
-        return response()->json(['data' => ['logged_out' => true]]);
+        return response()->json(['data' => ['logged_out' => true], 'meta' => (object) [], 'links' => (object) []]);
     }
 
     public function revokeAll(Request $request): JsonResponse
     {
         $request->user()->tokens()->delete();
 
-        return response()->json(['data' => ['revoked' => true]]);
+        return response()->json(['data' => ['revoked' => true], 'meta' => (object) [], 'links' => (object) []]);
     }
 }
