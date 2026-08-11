@@ -2,25 +2,31 @@
 
 namespace App\Models;
 
+use App\Support\OrganizationContext;
 use App\Support\PermissionCatalog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory;
-    use Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
+        'current_organization_id',
         'email',
         'phone',
         'password',
         'role',
         'status',
+        'theme_preference',
         'bio',
+        'avatar_path',
         'primary_goal',
         'email_verified_at',
         'last_login_at',
@@ -43,6 +49,33 @@ class User extends Authenticatable
     public function permissions(): HasMany
     {
         return $this->hasMany(UserPermission::class);
+    }
+
+    public function currentOrganization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class, 'current_organization_id');
+    }
+
+    public function organizations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organization::class, 'organization_memberships')
+            ->withPivot(['id', 'role', 'status', 'joined_at', 'last_active_at'])
+            ->withTimestamps();
+    }
+
+    public function organizationMemberships(): HasMany
+    {
+        return $this->hasMany(OrganizationMembership::class);
+    }
+
+    public function athleteProfiles(): HasMany
+    {
+        return $this->hasMany(AthleteProfile::class);
+    }
+
+    public function coachProfiles(): HasMany
+    {
+        return $this->hasMany(CoachProfile::class);
     }
 
     public function coachAssignments(): HasMany
@@ -75,38 +108,86 @@ class User extends Authenticatable
         return $this->hasMany(WorkoutLog::class, 'athlete_id');
     }
 
-    public function isOwner(): bool
+    public function sentMessages(): HasMany
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
+
+    public function activeOrganizationMembership(?int $organizationId = null): ?OrganizationMembership
+    {
+        $organizationId ??= app(OrganizationContext::class)->id() ?: $this->current_organization_id;
+
+        if (! $organizationId) {
+            return null;
+        }
+
+        return $this->organizationMemberships()
+            ->with('permissionOverrides')
+            ->where('organization_id', $organizationId)
+            ->where('status', 'active')
+            ->first();
+    }
+
+    public function isPlatformOwner(): bool
     {
         return $this->role === 'owner';
     }
 
-    public function isAdmin(): bool
+    public function isPlatformAdmin(): bool
     {
         return in_array($this->role, ['owner', 'admin'], true);
     }
 
+    public function isOwner(): bool
+    {
+        return $this->isPlatformOwner();
+    }
+
+    public function isAdmin(): bool
+    {
+        if ($this->isPlatformAdmin()) {
+            return true;
+        }
+
+        return in_array($this->activeOrganizationMembership()?->role, ['organization_owner', 'organization_admin'], true);
+    }
+
     public function isCoach(): bool
     {
-        return $this->role === 'coach';
+        return $this->role === 'coach' || $this->activeOrganizationMembership()?->role === 'coach';
     }
 
     public function isAthlete(): bool
     {
-        return $this->role === 'athlete';
+        return $this->role === 'athlete' || $this->activeOrganizationMembership()?->role === 'athlete';
     }
 
     public function hasPermission(string $permission): bool
     {
-        if ($this->isOwner()) {
+        if ($this->isPlatformOwner()) {
             return true;
         }
 
-        if ($permission === 'coach.access') {
-            return $this->isCoach() || $this->permissions()->where('permission', $permission)->exists();
+        $membership = $this->activeOrganizationMembership();
+
+        if ($membership) {
+            if ($membership->isOwner() && ! PermissionCatalog::isPlatformOnly($permission)) {
+                return true;
+            }
+
+            $override = $membership->permissionOverrides->firstWhere('permission', $permission);
+
+            if ($override) {
+                return $override->allowed;
+            }
+
+            if (in_array($permission, PermissionCatalog::defaultsForOrganizationRole($membership->role), true)) {
+                return true;
+            }
         }
 
-        if ($permission === 'athlete.access') {
-            return $this->isAthlete() || $this->permissions()->where('permission', $permission)->exists();
+        if (in_array($permission, PermissionCatalog::defaultsForRole($this->role), true)) {
+            return true;
         }
 
         return $this->permissions()->where('permission', $permission)->exists();
@@ -123,10 +204,10 @@ class User extends Authenticatable
 
     public function landingPath(): string
     {
-        return match ($this->role) {
-            'owner', 'admin' => route('admin.dashboard'),
-            'coach' => route('coach.home'),
-            default => route('app.home'),
-        };
+        if ($this->isAdmin()) {
+            return route('admin.dashboard');
+        }
+
+        return $this->isCoach() ? route('coach.home') : route('app.home');
     }
 }

@@ -6,23 +6,15 @@ use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class CoachAthleteAssignment extends Model
+class ProgressPhoto extends Model
 {
     use BelongsToOrganization;
 
-    protected $fillable = ['organization_id', 'coach_id', 'athlete_id', 'status', 'started_at', 'ended_at'];
+    protected $fillable = ['organization_id', 'athlete_id', 'progress_entry_id', 'uploaded_by', 'path', 'thumbnail_path', 'category', 'visibility', 'taken_on', 'notes'];
 
     protected function casts(): array
     {
-        return [
-            'started_at' => 'date',
-            'ended_at' => 'date',
-        ];
-    }
-
-    public function coach(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'coach_id');
+        return ['taken_on' => 'date'];
     }
 
     public function athlete(): BelongsTo

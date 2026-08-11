@@ -5,9 +5,9 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 
-class EmailLog extends Model
+class OrganizationSetting extends Model
 {
     use BelongsToOrganization;
 
-    protected $fillable = ['organization_id', 'recipient', 'subject', 'type', 'status', 'error'];
+    protected $fillable = ['organization_id', 'key', 'value', 'group'];
 }

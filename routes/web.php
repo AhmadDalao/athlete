@@ -21,7 +21,7 @@ Route::post('/login', [AuthController::class, 'store'])->name('login.store');
 Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 Route::get('/dashboard', DashboardRedirectController::class)->name('dashboard');
 
-Route::middleware('auth')->group(function (): void {
+Route::middleware(['auth', 'organization'])->group(function (): void {
     Route::middleware('can:admin.access')->prefix('admin')->name('admin.')->group(function (): void {
         Route::redirect('/', '/admin/dashboard')->name('root');
         Route::get('/dashboard', Admin\Dashboard::class)->name('dashboard');

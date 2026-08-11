@@ -2,14 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TrainingSession extends Model
 {
+    use BelongsToOrganization;
+
     protected $fillable = [
+        'organization_id',
         'training_program_id',
+        'program_phase_id',
         'title',
         'focus',
         'scheduled_on',
@@ -17,6 +22,9 @@ class TrainingSession extends Model
         'exercises',
         'coach_notes',
         'media_url',
+        'day_offset',
+        'sort_order',
+        'estimated_minutes',
     ];
 
     protected function casts(): array
@@ -32,9 +40,24 @@ class TrainingSession extends Model
         return $this->belongsTo(TrainingProgram::class, 'training_program_id');
     }
 
+    public function phase(): BelongsTo
+    {
+        return $this->belongsTo(ProgramPhase::class, 'program_phase_id');
+    }
+
     public function logs(): HasMany
     {
         return $this->hasMany(WorkoutLog::class);
+    }
+
+    public function prescribedExercises(): HasMany
+    {
+        return $this->hasMany(TrainingSessionExercise::class)->orderBy('sort_order');
+    }
+
+    public function scheduledWorkouts(): HasMany
+    {
+        return $this->hasMany(ScheduledWorkout::class);
     }
 
     public function exerciseSummary(): string
