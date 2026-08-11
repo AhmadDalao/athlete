@@ -113,11 +113,13 @@ class PageIntro extends StatelessWidget {
     required this.eyebrow,
     required this.title,
     required this.body,
+    this.action,
   });
 
   final String eyebrow;
   final String title;
   final String body;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -132,11 +134,19 @@ class PageIntro extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 8),
-      Text(
-        title,
-        style: Theme.of(
-          context,
-        ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900),
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900),
+            ),
+          ),
+          if (action != null) ...[const SizedBox(width: 12), action!],
+        ],
       ),
       const SizedBox(height: 7),
       Text(

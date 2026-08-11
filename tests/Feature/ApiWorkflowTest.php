@@ -11,6 +11,7 @@ use App\Models\TrainingProgram;
 use App\Models\User;
 use App\Services\ProgramScheduleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class ApiWorkflowTest extends TestCase
@@ -106,6 +107,122 @@ class ApiWorkflowTest extends TestCase
             ->withHeader('X-Organization-ID', (string) $organization->id)
             ->getJson("/api/v1/coach/athletes/{$other->id}")
             ->assertForbidden();
+    }
+
+    public function test_coach_can_build_and_assign_a_program_through_the_mobile_api(): void
+    {
+        [$organization, $coach, $athlete] = $this->team();
+
+        $programId = $this->actingAs($coach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->postJson('/api/v1/coach/programs', [
+                'title' => 'Mobile speed block',
+                'goal' => 'Acceleration',
+                'status' => 'active',
+                'visibility' => 'private',
+                'estimated_weeks' => 4,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.title', 'Mobile speed block')
+            ->json('data.id');
+
+        $phaseId = TrainingProgram::findOrFail($programId)->phases()->firstOrFail()->id;
+
+        $this->actingAs($coach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->postJson("/api/v1/coach/programs/{$programId}/sessions", [
+                'title' => 'Acceleration day',
+                'focus' => 'Speed',
+                'day_offset' => 2,
+                'estimated_minutes' => 50,
+                'program_phase_id' => $phaseId,
+                'exercises' => [[
+                    'section' => 'Main work',
+                    'name' => 'Sled sprint',
+                    'sets' => 4,
+                    'reps' => '20 m',
+                    'rest_seconds' => 120,
+                ]],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.exercises.0.name', 'Sled sprint');
+
+        $assignmentId = $this->actingAs($coach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->postJson("/api/v1/coach/programs/{$programId}/assignments", [
+                'athlete_id' => $athlete->id,
+                'starts_on' => today()->toDateString(),
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.athlete.id', $athlete->id)
+            ->json('data.id');
+
+        $this->assertDatabaseHas('scheduled_workouts', [
+            'coach_id' => $coach->id,
+            'athlete_id' => $athlete->id,
+        ]);
+        $workout = ProgramAssignment::findOrFail($assignmentId)->scheduledWorkouts()->firstOrFail();
+
+        $rescheduleResponse = $this->actingAs($coach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->patchJson("/api/v1/coach/schedule/{$workout->id}/reschedule", [
+                'scheduled_for' => today()->addWeek()->toDateString(),
+            ])
+            ->assertOk();
+        $this->assertStringStartsWith(
+            today()->addWeek()->toDateString(),
+            $rescheduleResponse->json('data.scheduled_for'),
+        );
+
+        $this->actingAs($coach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->patchJson("/api/v1/coach/assignments/{$assignmentId}/status", [
+                'status' => 'paused',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'paused');
+
+        $otherCoach = User::factory()->create(['role' => 'coach']);
+        $this->join($organization, $otherCoach, 'coach');
+        $this->actingAs($otherCoach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->getJson("/api/v1/coach/programs/{$programId}")
+            ->assertForbidden();
+
+        $this->actingAs($otherCoach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->patchJson("/api/v1/coach/schedule/{$workout->id}/reschedule", [
+                'scheduled_for' => today()->addDays(9)->toDateString(),
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_coach_can_create_and_cancel_an_athlete_invitation_through_the_mobile_api(): void
+    {
+        Mail::fake();
+        [$organization, $coach] = $this->team();
+
+        $invitationId = $this->actingAs($coach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->postJson('/api/v1/coach/invitations', [
+                'name' => 'New Athlete',
+                'email' => 'new.athlete@example.com',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonPath('data.email_sent', true)
+            ->json('data.id');
+
+        $this->actingAs($coach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->deleteJson("/api/v1/coach/invitations/{$invitationId}")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'cancelled');
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'invite.cancelled',
+            'entity_id' => $invitationId,
+        ]);
     }
 
     public function test_message_api_only_exposes_participant_conversations(): void

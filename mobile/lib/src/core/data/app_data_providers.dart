@@ -71,3 +71,35 @@ final coachScheduleProvider = FutureProvider.autoDispose<JsonMap>((ref) async {
       .watch(apiClientProvider)
       .get('/coach/schedule', query: {'per_page': 100});
 });
+
+final coachProgramProvider = FutureProvider.autoDispose.family<JsonMap, int>((
+  ref,
+  programId,
+) async {
+  final envelope = await ref
+      .watch(apiClientProvider)
+      .get('/coach/programs/$programId');
+  return envelope.object('data');
+});
+
+final coachAthleteProvider = FutureProvider.autoDispose.family<JsonMap, int>((
+  ref,
+  athleteId,
+) async {
+  final envelope = await ref
+      .watch(apiClientProvider)
+      .get('/coach/athletes/$athleteId');
+  return envelope.object('data');
+});
+
+final coachInvitationsProvider = FutureProvider.autoDispose<JsonMap>((ref) {
+  return ref
+      .watch(apiClientProvider)
+      .get('/coach/invitations', query: {'per_page': 100});
+});
+
+final coachExercisesProvider = FutureProvider.autoDispose<JsonMap>((ref) {
+  return ref
+      .watch(apiClientProvider)
+      .get('/coach/exercises', query: {'per_page': 100});
+});

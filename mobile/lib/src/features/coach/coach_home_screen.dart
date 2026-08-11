@@ -4,6 +4,7 @@ import 'package:throughline_mobile/src/core/data/app_data_providers.dart';
 import 'package:throughline_mobile/src/core/models/session_models.dart';
 import 'package:throughline_mobile/src/core/theme/app_theme.dart';
 import 'package:throughline_mobile/src/core/widgets/throughline_widgets.dart';
+import 'package:throughline_mobile/src/features/coach/coach_athlete_detail_screen.dart';
 
 class CoachHomeScreen extends ConsumerWidget {
   const CoachHomeScreen({super.key});
@@ -45,7 +46,19 @@ class CoachHomeScreen extends ConsumerWidget {
                   body: 'Invite or assign an athlete from the web workspace.',
                 )
               else
-                ...athletes.map((athlete) => _AthleteTile(athlete: athlete)),
+                ...athletes.map(
+                  (athlete) => _AthleteTile(
+                    athlete: athlete,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CoachAthleteDetailScreen(
+                          athleteId: athlete['id'] as int,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               const SectionTitle('Next seven days'),
               if (schedule.isEmpty)
                 const EmptyPanel(
@@ -105,40 +118,30 @@ class _CoachSummary extends StatelessWidget {
 }
 
 class _AthleteTile extends StatelessWidget {
-  const _AthleteTile({required this.athlete});
+  const _AthleteTile({required this.athlete, required this.onTap});
   final JsonMap athlete;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) => PremiumCard(
-    padding: const EdgeInsets.all(16),
-    child: Row(
-      children: [
-        CircleAvatar(
-          backgroundColor: ThroughlineColors.lime,
-          foregroundColor: ThroughlineColors.graphite,
-          child: Text(athlete.text('name', 'A').substring(0, 1).toUpperCase()),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                athlete.text('name'),
-                style: const TextStyle(fontWeight: FontWeight.w900),
-              ),
-              Text(
-                athlete.text('email'),
-                style: const TextStyle(
-                  color: ThroughlineColors.muted,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const Icon(Icons.chevron_right_rounded),
-      ],
+    padding: EdgeInsets.zero,
+    child: ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: CircleAvatar(
+        backgroundColor: ThroughlineColors.lime,
+        foregroundColor: ThroughlineColors.graphite,
+        child: Text(athlete.text('name', 'A').substring(0, 1).toUpperCase()),
+      ),
+      title: Text(
+        athlete.text('name'),
+        style: const TextStyle(fontWeight: FontWeight.w900),
+      ),
+      subtitle: Text(
+        athlete.text('email'),
+        style: const TextStyle(color: ThroughlineColors.muted, fontSize: 12),
+      ),
+      trailing: const Icon(Icons.chevron_right_rounded),
+      onTap: onTap,
     ),
   );
 }

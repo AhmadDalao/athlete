@@ -4,6 +4,7 @@ import 'package:throughline_mobile/src/core/providers.dart';
 import 'package:throughline_mobile/src/core/theme/app_theme.dart';
 import 'package:throughline_mobile/src/core/widgets/throughline_widgets.dart';
 import 'package:throughline_mobile/src/features/auth/auth_controller.dart';
+import 'package:throughline_mobile/src/features/coach/coach_invitations_screen.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -57,6 +58,31 @@ class MoreScreen extends ConsumerWidget {
             ],
           ),
         ),
+        if (auth.user?.isCoach == true) ...[
+          const SectionTitle('Coach tools'),
+          PremiumCard(
+            padding: EdgeInsets.zero,
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 8,
+              ),
+              leading: const Icon(Icons.mark_email_unread_rounded),
+              title: const Text(
+                'Athlete invitations',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              subtitle: const Text('Invite, resend, and cancel access links.'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const CoachInvitationsScreen(),
+                ),
+              ),
+            ),
+          ),
+        ],
         const SectionTitle('Appearance'),
         SegmentedButton<ThemeMode>(
           segments: const [

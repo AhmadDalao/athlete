@@ -59,3 +59,16 @@ await secureStorage.write(key: 'access_token', value: token);
 ```
 
 The full machine-readable contract is in [`docs/openapi.yaml`](openapi.yaml).
+
+## Coach write workflow
+
+The coach mobile workspace uses the same organization-scoped contract as the web workspace:
+
+1. Create or update a reusable program with `/coach/programs`.
+2. Add phases and ordered sessions under `/coach/programs/{program}`.
+3. Include complete exercise prescriptions in each session: section, sets, reps, load, unit, rest, coaching cue, and media URL.
+4. Assign the template with `/coach/programs/{program}/assignments`; Laravel generates the dated athlete schedule.
+5. Reschedule individual workouts with `/coach/schedule/{workout}/reschedule` without mutating the template.
+6. Invite athletes through `/coach/invitations` and manage pending links through the resend/cancel actions.
+
+Every coach operation is checked against both the active `X-Organization-ID` and the authenticated coach's ownership. Mobile clients cannot override those boundaries.

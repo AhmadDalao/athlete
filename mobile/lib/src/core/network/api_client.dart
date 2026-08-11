@@ -42,6 +42,9 @@ class ApiClient {
   Future<JsonMap> put(String path, {Object? data}) =>
       _request(() => _dio.put<Object?>(path, data: data));
 
+  Future<JsonMap> patch(String path, {Object? data}) =>
+      _request(() => _dio.patch<Object?>(path, data: data));
+
   Future<void> delete(String path) async {
     try {
       await _dio.delete<Object?>(path);

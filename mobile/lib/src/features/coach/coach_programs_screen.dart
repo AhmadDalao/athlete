@@ -4,6 +4,8 @@ import 'package:throughline_mobile/src/core/data/app_data_providers.dart';
 import 'package:throughline_mobile/src/core/models/session_models.dart';
 import 'package:throughline_mobile/src/core/theme/app_theme.dart';
 import 'package:throughline_mobile/src/core/widgets/throughline_widgets.dart';
+import 'package:throughline_mobile/src/features/coach/coach_program_detail_screen.dart';
+import 'package:throughline_mobile/src/features/coach/coach_program_editor_screen.dart';
 
 class CoachProgramsScreen extends ConsumerWidget {
   const CoachProgramsScreen({super.key});
@@ -23,62 +25,79 @@ class CoachProgramsScreen extends ConsumerWidget {
       ),
       data: (envelope) {
         final programs = envelope.maps('data');
-        return ContentColumn(
-          children: [
-            const PageIntro(
-              eyebrow: 'Program library',
-              title: 'Build once. Assign well.',
-              body:
-                  'Mobile editing comes next; this view is already scoped to your own templates.',
-            ),
-            if (programs.isEmpty)
-              const EmptyPanel(
-                title: 'No programs',
+        return RefreshIndicator(
+          onRefresh: () => ref.refresh(coachProgramsProvider.future),
+          child: ContentColumn(
+            children: [
+              PageIntro(
+                eyebrow: 'Program library',
+                title: 'Build once. Assign well.',
                 body:
-                    'Create the first reusable program in the web coach workspace.',
-              )
-            else
-              ...programs.map(
-                (program) => PremiumCard(
-                  accent: ThroughlineColors.cyan,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          StatusChip(program.text('status', 'draft')),
-                          const Spacer(),
-                          Text(
-                            '${program['assignments_count'] ?? 0} assigned',
-                            style: const TextStyle(
-                              color: ThroughlineColors.muted,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        program.text('title'),
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      Text(
-                        program.text('goal', 'No goal'),
-                        style: const TextStyle(color: ThroughlineColors.muted),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '${program['sessions_count'] ?? 0} sessions · ${program['estimated_weeks'] ?? '—'} weeks',
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
+                    'Create reusable programs, build sessions, and assign them to your athletes.',
+                action: FilledButton.icon(
+                  onPressed: () => _createProgram(context, ref),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('New program'),
                 ),
               ),
-          ],
+              if (programs.isEmpty)
+                const EmptyPanel(
+                  title: 'No programs',
+                  body:
+                      'Create the first reusable program in the web coach workspace.',
+                )
+              else
+                ...programs.map(
+                  (program) => PremiumCard(
+                    padding: EdgeInsets.zero,
+                    accent: ThroughlineColors.cyan,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 14,
+                      ),
+                      title: Text(
+                        program.text('title'),
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          '${program.text('goal', 'No goal')}\n${program['sessions_count'] ?? 0} sessions · ${program['assignments_count'] ?? 0} assigned',
+                        ),
+                      ),
+                      isThreeLine: true,
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CoachProgramDetailScreen(
+                            programId: program['id'] as int,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         );
       },
+    );
+  }
+
+  Future<void> _createProgram(BuildContext context, WidgetRef ref) async {
+    final programId = await Navigator.push<int>(
+      context,
+      MaterialPageRoute(builder: (_) => const CoachProgramEditorScreen()),
+    );
+    if (programId == null || !context.mounted) return;
+    ref.invalidate(coachProgramsProvider);
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CoachProgramDetailScreen(programId: programId),
+      ),
     );
   }
 }

@@ -307,6 +307,133 @@ paths:
       responses:
         '200': { $ref: '#/components/responses/Success' }
         '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Coach]
+      operationId: createCoachProgram
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProgramInput' }
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /coach/programs/{program}:
+    parameters:
+      - $ref: '#/components/parameters/ProgramPath'
+    get:
+      tags: [Coach]
+      operationId: getCoachProgram
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Coach]
+      operationId: updateCoachProgram
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProgramInput' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /coach/programs/{program}/phases:
+    post:
+      tags: [Coach]
+      operationId: createProgramPhase
+      parameters:
+        - $ref: '#/components/parameters/ProgramPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, maxLength: 120 }
+                description: { type: [string, 'null'], maxLength: 1000 }
+                duration_weeks: { type: [integer, 'null'], minimum: 1, maximum: 52 }
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /coach/programs/{program}/sessions:
+    post:
+      tags: [Coach]
+      operationId: createProgramSession
+      parameters:
+        - $ref: '#/components/parameters/ProgramPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SessionInput' }
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /coach/programs/{program}/sessions/{session}:
+    put:
+      tags: [Coach]
+      operationId: updateProgramSession
+      parameters:
+        - $ref: '#/components/parameters/ProgramPath'
+        - $ref: '#/components/parameters/SessionPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SessionInput' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /coach/programs/{program}/assignments:
+    post:
+      tags: [Coach]
+      operationId: assignProgram
+      parameters:
+        - $ref: '#/components/parameters/ProgramPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [athlete_id, starts_on]
+              properties:
+                athlete_id: { type: integer }
+                starts_on: { type: string, format: date }
+                notes: { type: [string, 'null'], maxLength: 1000 }
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /coach/assignments/{assignment}/status:
+    patch:
+      tags: [Coach]
+      operationId: updateProgramAssignmentStatus
+      parameters:
+        - $ref: '#/components/parameters/AssignmentPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [active, paused, completed, cancelled] }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /coach/schedule:
     get:
       tags: [Coach]
@@ -316,6 +443,82 @@ paths:
         - $ref: '#/components/parameters/PerPage'
         - $ref: '#/components/parameters/FromDate'
         - $ref: '#/components/parameters/ToDate'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /coach/schedule/{workout}/reschedule:
+    patch:
+      tags: [Coach]
+      operationId: rescheduleWorkout
+      parameters:
+        - $ref: '#/components/parameters/WorkoutPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scheduled_for]
+              properties:
+                scheduled_for: { type: string, format: date }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /coach/exercises:
+    get:
+      tags: [Coach]
+      operationId: listCoachExercises
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /coach/invitations:
+    get:
+      tags: [Coach]
+      operationId: listCoachInvitations
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: status
+          in: query
+          schema: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Coach]
+      operationId: createCoachInvitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InvitationInput' }
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /coach/invitations/{invitation}/resend:
+    post:
+      tags: [Coach]
+      operationId: resendCoachInvitation
+      parameters:
+        - $ref: '#/components/parameters/InvitationPath'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /coach/invitations/{invitation}:
+    delete:
+      tags: [Coach]
+      operationId: cancelCoachInvitation
+      parameters:
+        - $ref: '#/components/parameters/InvitationPath'
       responses:
         '200': { $ref: '#/components/responses/Success' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -382,6 +585,21 @@ components:
       schema: { type: integer }
     AssignmentPath:
       name: assignment
+      in: path
+      required: true
+      schema: { type: integer }
+    ProgramPath:
+      name: program
+      in: path
+      required: true
+      schema: { type: integer }
+    SessionPath:
+      name: session
+      in: path
+      required: true
+      schema: { type: integer }
+    InvitationPath:
+      name: invitation
       in: path
       required: true
       schema: { type: integer }
@@ -638,6 +856,54 @@ components:
         - $ref: '#/components/schemas/ProgressEntry'
         - type: object
           required: [logged_on]
+    ProgramInput:
+      type: object
+      required: [title, status, visibility]
+      properties:
+        title: { type: string, maxLength: 160 }
+        goal: { type: [string, 'null'], maxLength: 160 }
+        status: { type: string, enum: [draft, active, archived] }
+        visibility: { type: string, enum: [private, organization] }
+        estimated_weeks: { type: [integer, 'null'], minimum: 1, maximum: 104 }
+        notes: { type: [string, 'null'], maxLength: 1000 }
+    SessionInput:
+      type: object
+      required: [title, day_offset, exercises]
+      properties:
+        title: { type: string, maxLength: 160 }
+        focus: { type: [string, 'null'], maxLength: 120 }
+        day_offset: { type: integer, minimum: 0, maximum: 730 }
+        sort_order: { type: [integer, 'null'], minimum: 0, maximum: 1000 }
+        estimated_minutes: { type: [integer, 'null'], minimum: 1, maximum: 600 }
+        program_phase_id: { type: [integer, 'null'] }
+        coach_notes: { type: [string, 'null'], maxLength: 1000 }
+        media_url: { type: [string, 'null'], format: uri }
+        exercises:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            required: [name]
+            properties:
+              exercise_id: { type: [integer, 'null'] }
+              section: { type: [string, 'null'], maxLength: 80 }
+              superset_label: { type: [string, 'null'], maxLength: 40 }
+              name: { type: string, maxLength: 160 }
+              sets: { type: [integer, 'null'], minimum: 1, maximum: 50 }
+              reps: { type: [string, 'null'], maxLength: 40 }
+              rest_seconds: { type: [integer, 'null'], minimum: 0, maximum: 3600 }
+              load: { type: [string, 'null'], maxLength: 80 }
+              unit: { type: [string, 'null'], maxLength: 30 }
+              note: { type: [string, 'null'], maxLength: 200 }
+              media_url: { type: [string, 'null'], format: uri }
+              movement_type: { type: [string, 'null'], maxLength: 80 }
+    InvitationInput:
+      type: object
+      required: [email]
+      properties:
+        name: { type: [string, 'null'], maxLength: 120 }
+        email: { type: string, format: email, maxLength: 160 }
     WorkoutExecutionInput:
       type: object
       required: [status]
