@@ -4,11 +4,13 @@ namespace Tests\Feature;
 
 use App\Livewire\Coach\ExerciseLibraryTable;
 use App\Livewire\Coach\ProgramDetail;
+use App\Livewire\Coach\Reports;
 use App\Models\CoachAthleteAssignment;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\TrainingProgram;
 use App\Models\User;
+use App\Models\WorkoutLog;
 use App\Services\ProgramScheduleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -150,6 +152,67 @@ class CoachWorkflowTest extends TestCase
         $this->assertStringNotContainsString('Private Other Coach Program', $programCsv);
         $this->assertStringContainsString('Visible Session', $scheduleCsv);
         $this->assertStringContainsString($athlete->email, $scheduleCsv);
+    }
+
+    public function test_coach_report_calculates_adherence_and_excludes_other_coaches(): void
+    {
+        [$organization, $coach, $athlete] = $this->coachTeam();
+        $otherCoach = User::factory()->create(['role' => 'coach']);
+        $otherAthlete = User::factory()->create(['role' => 'athlete']);
+        $this->join($organization, $otherCoach, 'coach');
+        $this->join($organization, $otherAthlete, 'athlete');
+        CoachAthleteAssignment::create([
+            'organization_id' => $organization->id,
+            'coach_id' => $otherCoach->id,
+            'athlete_id' => $otherAthlete->id,
+            'status' => 'active',
+            'started_at' => today(),
+        ]);
+
+        $ownProgram = TrainingProgram::create([
+            'organization_id' => $organization->id,
+            'coach_id' => $coach->id,
+            'title' => 'Report Program',
+            'status' => 'active',
+            'is_template' => true,
+        ]);
+        $session = $ownProgram->sessions()->create([
+            'organization_id' => $organization->id,
+            'title' => 'Report Session',
+            'day_offset' => 0,
+            'status' => 'scheduled',
+        ]);
+        $assignment = app(ProgramScheduleService::class)->assign($ownProgram, $athlete, $coach, today()->toDateString());
+        $scheduledWorkout = $assignment->scheduledWorkouts()->firstOrFail();
+        WorkoutLog::create([
+            'organization_id' => $organization->id,
+            'training_session_id' => $session->id,
+            'program_assignment_id' => $assignment->id,
+            'scheduled_workout_id' => $scheduledWorkout->id,
+            'athlete_id' => $athlete->id,
+            'status' => 'completed',
+            'duration_minutes' => 48,
+            'rpe' => 8,
+            'completed_at' => now(),
+        ]);
+
+        Livewire::actingAs($coach)
+            ->test(Reports::class)
+            ->assertSee($athlete->name)
+            ->assertSee('100%')
+            ->assertDontSee($otherAthlete->name);
+
+        $csv = $this->actingAs($coach)
+            ->get(route('coach.reports.export', [
+                'from' => today()->subDay()->toDateString(),
+                'to' => today()->addDay()->toDateString(),
+            ]))
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertStringContainsString($athlete->email, $csv);
+        $this->assertStringContainsString('100%', $csv);
+        $this->assertStringNotContainsString($otherAthlete->email, $csv);
     }
 
     /** @return array{Organization, User, User} */

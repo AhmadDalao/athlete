@@ -150,13 +150,13 @@
             <a class="{{ request()->routeIs('coach.home') ? 'active' : '' }}" href="{{ route('coach.home') }}"><i class="fa-solid fa-house"></i><span>Home</span></a>
             <a class="{{ request()->routeIs('coach.athletes*') ? 'active' : '' }}" href="{{ route('coach.athletes') }}"><i class="fa-solid fa-users-line"></i><span>Roster</span></a>
             <a class="tl-bottom-action {{ request()->routeIs('coach.programs*') ? 'active' : '' }}" href="{{ route('coach.programs') }}"><i class="fa-solid fa-dumbbell"></i><span>Programs</span></a>
-            <a class="{{ request()->routeIs('coach.invitations*') ? 'active' : '' }}" href="{{ route('coach.invitations') }}"><i class="fa-solid fa-paper-plane"></i><span>Invites</span></a>
+            <a class="{{ request()->routeIs('coach.messages*') ? 'active' : '' }}" href="{{ route('coach.messages') }}"><i class="fa-solid fa-comments"></i><span>Messages</span></a>
             <button type="button" data-bs-toggle="offcanvas" data-bs-target="#tlSidebar"><i class="fa-solid fa-bars"></i><span>More</span></button>
         @else
             <a class="{{ request()->routeIs('app.home') ? 'active' : '' }}" href="{{ route('app.home') }}"><i class="fa-solid fa-house"></i><span>Home</span></a>
             <a href="{{ route('app.home') }}#calendar"><i class="fa-regular fa-calendar"></i><span>Calendar</span></a>
             <a class="tl-bottom-action {{ request()->routeIs('app.workouts*') ? 'active' : '' }}" href="{{ route('app.home') }}#today"><i class="fa-solid fa-play"></i><span>Train</span></a>
-            <a class="{{ request()->routeIs('app.progress*') ? 'active' : '' }}" href="{{ route('app.progress') }}"><i class="fa-solid fa-chart-line"></i><span>Progress</span></a>
+            <a class="{{ request()->routeIs('app.messages*') ? 'active' : '' }}" href="{{ route('app.messages') }}"><i class="fa-solid fa-comments"></i><span>Messages</span></a>
             <button type="button" data-bs-toggle="offcanvas" data-bs-target="#tlSidebar"><i class="fa-solid fa-user"></i><span>More</span></button>
         @endif
     </nav>

@@ -123,6 +123,28 @@ class User extends Authenticatable
         return $this->hasMany(Message::class, 'sender_id');
     }
 
+    public function conversations(): BelongsToMany
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_participants')
+            ->withPivot(['role', 'last_read_at', 'archived_at'])
+            ->withTimestamps();
+    }
+
+    public function progressPhotos(): HasMany
+    {
+        return $this->hasMany(ProgressPhoto::class, 'athlete_id');
+    }
+
+    public function personalRecords(): HasMany
+    {
+        return $this->hasMany(PersonalRecord::class, 'athlete_id');
+    }
+
+    public function coachNotes(): HasMany
+    {
+        return $this->hasMany(CoachNote::class, 'athlete_id');
+    }
+
     public function activeOrganizationMembership(?int $organizationId = null): ?OrganizationMembership
     {
         $organizationId ??= app(OrganizationContext::class)->id() ?: $this->current_organization_id;

@@ -21,4 +21,9 @@ class PersonalRecord extends Model
     {
         return $this->belongsTo(User::class, 'athlete_id');
     }
+
+    public function workoutSetLog(): BelongsTo
+    {
+        return $this->belongsTo(WorkoutSetLog::class);
+    }
 }

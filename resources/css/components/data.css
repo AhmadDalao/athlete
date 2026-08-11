@@ -197,3 +197,58 @@
     min-height: 46px;
     padding-inline: 1rem;
 }
+
+.tl-record-tabs {
+    background: var(--tl-panel);
+    border: 1px solid var(--tl-line);
+    border-radius: var(--tl-radius);
+    display: flex;
+    gap: .45rem;
+    overflow-x: auto;
+    padding: .55rem;
+    scrollbar-width: thin;
+}
+
+.tl-record-tabs button {
+    align-items: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: .75rem;
+    color: var(--tl-muted);
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: .78rem;
+    font-weight: 700;
+    gap: .45rem;
+    min-height: 2.55rem;
+    padding: .5rem .7rem;
+}
+
+.tl-record-tabs button:hover,
+.tl-record-tabs button.active {
+    background: var(--tl-lime-soft);
+    border-color: color-mix(in srgb, var(--tl-lime) 26%, var(--tl-line));
+    color: var(--tl-lime-strong);
+}
+
+.tl-record-tabs small {
+    align-items: center;
+    background: var(--tl-elevated);
+    border-radius: 999px;
+    color: var(--tl-text-soft);
+    display: inline-flex;
+    font-size: .62rem;
+    height: 1.25rem;
+    justify-content: center;
+    min-width: 1.25rem;
+    padding-inline: .3rem;
+}
+
+.tl-table-thumbnail {
+    aspect-ratio: 1;
+    border: 1px solid var(--tl-line);
+    border-radius: .7rem;
+    height: 3rem;
+    object-fit: cover;
+    width: 3rem;
+}

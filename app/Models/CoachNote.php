@@ -21,4 +21,9 @@ class CoachNote extends Model
     {
         return $this->belongsTo(User::class, 'coach_id');
     }
+
+    public function athlete(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'athlete_id');
+    }
 }

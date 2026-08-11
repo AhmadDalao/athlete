@@ -7,16 +7,21 @@ use App\Http\Controllers\Admin\OrganizationExportController;
 use App\Http\Controllers\Admin\OrganizationMemberExportController;
 use App\Http\Controllers\Admin\UserExportController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Coach\AthleteProfileExportController;
+use App\Http\Controllers\Coach\CoachReportExportController;
 use App\Http\Controllers\Coach\ExerciseExportController;
 use App\Http\Controllers\Coach\ProgramExportController;
+use App\Http\Controllers\Coach\ProgressPhotoController;
 use App\Http\Controllers\Coach\ScheduleExportController;
 use App\Http\Controllers\DashboardRedirectController;
+use App\Http\Controllers\MessageAttachmentController;
 use App\Http\Controllers\OrganizationSelectionController;
 use App\Http\Controllers\ThemePreferenceController;
 use App\Livewire\Admin;
 use App\Livewire\Athlete;
 use App\Livewire\Coach;
 use App\Livewire\Invite;
+use App\Livewire\Messaging\Inbox;
 use App\Livewire\Public\ContactForm;
 use Illuminate\Support\Facades\Route;
 
@@ -57,8 +62,10 @@ Route::middleware(['auth', 'organization'])->group(function (): void {
 
     Route::middleware('can:coach.access')->prefix('coach')->name('coach.')->group(function (): void {
         Route::get('/', Coach\Home::class)->name('home');
-        Route::get('/athletes', Coach\AthletesTable::class)->name('athletes');
-        Route::get('/athletes/{athlete}', Coach\AthleteDetail::class)->name('athletes.show');
+        Route::get('/athletes', Coach\AthletesTable::class)->middleware('can:athletes.view')->name('athletes');
+        Route::get('/athletes/{athlete}/export/{section}', AthleteProfileExportController::class)->middleware('can:athletes.view')->name('athletes.export');
+        Route::get('/athletes/{athlete}/photos/{photo}', ProgressPhotoController::class)->middleware('can:progress.review')->name('athletes.photos.view');
+        Route::get('/athletes/{athlete}', Coach\AthleteDetail::class)->middleware('can:athletes.view')->name('athletes.show');
         Route::get('/programs/export', ProgramExportController::class)->middleware('can:programs.manage')->name('programs.export');
         Route::get('/programs', Coach\ProgramsTable::class)->name('programs');
         Route::get('/programs/{program}', Coach\ProgramDetail::class)->name('programs.show');
@@ -66,7 +73,10 @@ Route::middleware(['auth', 'organization'])->group(function (): void {
         Route::get('/exercises', Coach\ExerciseLibraryTable::class)->middleware('can:exercises.manage')->name('exercises');
         Route::get('/schedule/export', ScheduleExportController::class)->middleware('can:schedule.manage')->name('schedule.export');
         Route::get('/schedule', Coach\ScheduleTable::class)->middleware('can:schedule.manage')->name('schedule');
+        Route::get('/reports/export', CoachReportExportController::class)->middleware('can:reports.view')->name('reports.export');
+        Route::get('/reports', Coach\Reports::class)->middleware('can:reports.view')->name('reports');
         Route::get('/invitations', Coach\InvitationsPanel::class)->name('invitations');
+        Route::get('/messages', Inbox::class)->middleware('can:messages.read')->name('messages');
     });
 
     Route::middleware('can:athlete.access')->prefix('app')->name('app.')->group(function (): void {
@@ -74,7 +84,10 @@ Route::middleware(['auth', 'organization'])->group(function (): void {
         Route::get('/programs/{program}', Athlete\ProgramDetail::class)->name('programs.show');
         Route::get('/workouts/{session}', Athlete\WorkoutDetail::class)->name('workouts.show');
         Route::get('/progress', Athlete\ProgressPanel::class)->name('progress');
+        Route::get('/messages', Inbox::class)->middleware('can:messages.read')->name('messages');
     });
+
+    Route::get('/messages/attachments/{media}', MessageAttachmentController::class)->middleware('can:messages.read')->name('messages.attachments');
 });
 
 Route::get('/invites/{token}', Invite\AcceptInvite::class)->name('invites.accept');

@@ -5,195 +5,167 @@
         :subtitle="$athlete->email.' · '.($athlete->primary_goal ?: 'No goal set')"
     >
         <x-slot:actions>
-            <a class="btn btn-tl" href="{{ route('coach.programs', ['athlete' => $athlete->id]) }}"><i class="fa-solid fa-plus"></i> Create program</a>
-            <a class="btn btn-outline-tl" href="{{ route('coach.athletes') }}"><i class="fa-solid fa-arrow-left"></i> Back to roster</a>
+            <a class="btn btn-tl" href="{{ route('coach.programs', ['athlete' => $athlete->id]) }}"><i class="fa-solid fa-plus"></i> Assign program</a>
+            @can('messages.send')
+                <a class="btn btn-outline-tl" href="{{ route('coach.messages', ['user' => $athlete->id]) }}"><i class="fa-regular fa-message"></i> Message</a>
+            @endcan
+            <a class="btn btn-outline-tl" href="{{ route('coach.athletes') }}"><i class="fa-solid fa-arrow-left"></i> Roster</a>
         </x-slot:actions>
     </x-tl.page-hero>
 
     <div class="row g-3 mb-3">
-        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-dumbbell" label="Assignments" :value="$assignments->count()" tone="lime" /></div>
-        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-calendar-check" label="Sessions" :value="$sessions->count()" tone="emerald" /></div>
-        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-clipboard-check" label="Workout logs" :value="$workoutLogs->count()" tone="gold" /></div>
-        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-chart-line" label="Progress logs" :value="$progressEntries->count()" tone="blue" /></div>
+        <div class="col-6 col-xl-3"><x-tl.metric-card icon="fa-solid fa-dumbbell" label="Programs" :value="$counts['programs']" tone="lime" /></div>
+        <div class="col-6 col-xl-3"><x-tl.metric-card icon="fa-solid fa-calendar-check" label="Scheduled workouts" :value="$counts['schedule']" tone="emerald" /></div>
+        <div class="col-6 col-xl-3"><x-tl.metric-card icon="fa-solid fa-clipboard-check" label="Workout logs" :value="$counts['workouts']" tone="gold" /></div>
+        <div class="col-6 col-xl-3"><x-tl.metric-card icon="fa-solid fa-chart-line" label="Progress logs" :value="$counts['progress']" tone="blue" /></div>
     </div>
 
-    <x-tl.table-card title="Assigned programs" subtitle="Reusable templates assigned to this athlete with independent dates and completion." :count="$assignments->count()" icon="fa-solid fa-dumbbell">
-        <div class="d-md-none vstack gap-2">
-            @forelse($assignments as $programAssignment)
-                @php($program = $programAssignment->program)
-                @php($completion = $programAssignment->completionStats())
-                <a class="tl-mobile-record" href="{{ route('coach.programs.show', $program) }}">
-                    <div class="d-flex justify-content-between gap-2 align-items-start">
-                        <div>
-                            <div class="fw-bold">{{ $program->title }}</div>
-                            <div class="tl-muted small">{{ $program->goal ?: 'No goal set' }}</div>
-                        </div>
-                        <span class="tl-badge {{ $programAssignment->status === 'active' ? 'green' : 'gray' }}">{{ $programAssignment->status }}</span>
-                    </div>
-                    <div class="tl-mobile-record-grid mt-3">
-                        <div><span class="tl-muted small d-block">Dates</span><span>{{ $programAssignment->starts_on->format('Y-m-d') }} to {{ $programAssignment->ends_on?->format('Y-m-d') ?: 'open' }}</span></div>
-                        <div><span class="tl-muted small d-block">Sessions</span><span>{{ $program->sessions->count() }}</span></div>
-                        <div><span class="tl-muted small d-block">Progress</span><span>{{ $completion['completed'] }}/{{ $completion['total'] }} · {{ $completion['percent'] }}%</span></div>
-                    </div>
-                </a>
-            @empty
-                <div class="tl-mobile-record tl-muted">No programs assigned by you yet.</div>
-            @endforelse
+    <nav class="tl-record-tabs mb-3" aria-label="Athlete record sections">
+        @foreach([
+            'programs' => ['fa-dumbbell', 'Programs'],
+            'schedule' => ['fa-calendar-days', 'Schedule'],
+            'workouts' => ['fa-clipboard-check', 'Workouts'],
+            'progress' => ['fa-chart-line', 'Progress'],
+            'photos' => ['fa-images', 'Photos'],
+            'records' => ['fa-trophy', 'Records'],
+            'notes' => ['fa-note-sticky', 'Coach notes'],
+        ] as $key => [$icon, $label])
+            <button class="{{ $tab === $key ? 'active' : '' }}" type="button" wire:click="selectTab('{{ $key }}')">
+                <i class="fa-solid {{ $icon }}"></i><span>{{ $label }}</span><small>{{ $counts[$key] }}</small>
+            </button>
+        @endforeach
+    </nav>
+
+    @if($tab === 'photos' && auth()->user()->can('progress.review'))
+        <x-tl.section-card eyebrow="Progress media" title="Upload progress photo" subtitle="Images are stored through Laravel Storage and remain scoped to this athlete and organization.">
+            <form class="row g-3 align-items-end" wire:submit="uploadPhoto">
+                <div class="col-md-4">
+                    <label class="form-label">Image</label>
+                    <input class="form-control" type="file" accept="image/jpeg,image/png,image/webp" wire:model="photo">
+                    @error('photo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label">Taken on</label>
+                    <input class="form-control" type="date" wire:model="photoTakenOn">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" wire:model="photoCategory">
+                        <option value="progress">Progress</option><option value="front">Front</option><option value="side">Side</option><option value="back">Back</option><option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Visible to</label>
+                    <select class="form-select" wire:model="photoVisibility">
+                        <option value="coaches">Assigned coaches</option><option value="athlete">Athlete and coaches</option><option value="private">Only me</option>
+                    </select>
+                </div>
+                <div class="col-md-10">
+                    <label class="form-label">Note</label>
+                    <input class="form-control" wire:model="photoNotes" placeholder="Pose, measurement context, or coaching note">
+                </div>
+                <div class="col-md-2"><button class="btn btn-tl w-100" type="submit"><i class="fa-solid fa-upload"></i> Upload</button></div>
+            </form>
+        </x-tl.section-card>
+    @endif
+
+    @if($tab === 'notes' && auth()->user()->can('athletes.notes'))
+        <x-tl.section-card eyebrow="Coach-only context" title="Add private note" subtitle="Private notes are visible only to you. Organization notes can be reviewed by authorized coaches in this organization.">
+            <form class="row g-3 align-items-end" wire:submit="addNote">
+                <div class="col-lg-7">
+                    <label class="form-label">Note</label>
+                    <textarea class="form-control" rows="3" wire:model="noteBody" placeholder="What should the coaching team remember?"></textarea>
+                    @error('noteBody')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <label class="form-label">Visibility</label>
+                    <select class="form-select" wire:model="noteVisibility"><option value="private">Only me</option><option value="organization">Organization coaches</option></select>
+                </div>
+                <div class="col-sm-6 col-lg-1">
+                    <label class="form-label d-block">Priority</label>
+                    <label class="tl-switch"><input class="form-check-input" type="checkbox" wire:model="notePinned"><span>Pin</span></label>
+                </div>
+                <div class="col-lg-2"><button class="btn btn-tl w-100" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save note</button></div>
+            </form>
+        </x-tl.section-card>
+    @endif
+
+    <div class="tl-section-card">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Search</label>
+                <input class="form-control" type="search" wire:model.live.debounce.300ms="search" placeholder="Search the current section">
+            </div>
+            <div class="col-6 col-md-2 col-xl-1">
+                <label class="form-label">Show</label>
+                <select class="form-select" wire:model.live="perPage">
+                    @foreach($pageSizeOptions as $option)<option value="{{ $option }}">{{ $option === 'all' ? 'All' : $option }}</option>@endforeach
+                </select>
+            </div>
+            @if(in_array($tab, ['programs', 'schedule', 'workouts']))
+                <div class="col-6 col-md-2">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" wire:model.live="status">
+                        <option value="all">All statuses</option>
+                        @foreach($tab === 'programs' ? ['active', 'paused', 'completed', 'cancelled'] : ['scheduled', 'in_progress', 'completed', 'partial', 'missed', 'skipped', 'cancelled'] as $option)<option value="{{ $option }}">{{ str($option)->replace('_', ' ')->headline() }}</option>@endforeach
+                    </select>
+                </div>
+            @elseif($tab === 'photos')
+                <div class="col-6 col-md-2"><label class="form-label">Category</label><select class="form-select" wire:model.live="category"><option value="all">All categories</option>@foreach(['progress', 'front', 'side', 'back', 'other'] as $option)<option value="{{ $option }}">{{ str($option)->headline() }}</option>@endforeach</select></div>
+            @elseif($tab === 'records')
+                <div class="col-6 col-md-2"><label class="form-label">Record type</label><select class="form-select" wire:model.live="recordType"><option value="all">All types</option>@foreach(['load', 'reps', 'volume', 'time', 'distance'] as $option)<option value="{{ $option }}">{{ str($option)->headline() }}</option>@endforeach</select></div>
+            @endif
+            @if(in_array($tab, ['schedule', 'workouts', 'progress', 'photos']))
+                <div class="col-6 col-md-2"><label class="form-label">From</label><input class="form-control" type="date" wire:model.live="from"></div>
+                <div class="col-6 col-md-2"><label class="form-label">To</label><input class="form-control" type="date" wire:model.live="to"></div>
+            @endif
+            <div class="col-md-auto ms-md-auto">
+                <a class="btn btn-outline-tl" href="{{ route('coach.athletes.export', ['athlete' => $athlete, 'section' => $tab, 'search' => $search, 'status' => $status, 'category' => $category, 'record_type' => $recordType, 'from' => $from, 'to' => $to]) }}"><i class="fa-solid fa-download"></i> Export CSV</a>
+            </div>
         </div>
-        <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
-            <thead><tr><th>Program</th><th>Goal</th><th>Status</th><th>Dates</th><th>Sessions</th><th>Progress</th><th>Action</th></tr></thead>
-            <tbody>
-            @forelse($assignments as $programAssignment)
-                <tr>
-                    @php($program = $programAssignment->program)
+    </div>
+
+    <x-tl.table-card :title="str($tab)->headline()" subtitle="Filtered records for this athlete. Open linked records for deeper review." :count="$records->total()" icon="fa-solid fa-table-list">
+        <div class="tl-table-wrap"><table class="table tl-table align-middle">
+            @if($tab === 'programs')
+                <thead><tr><th>Program</th><th>Goal</th><th>Status</th><th>Dates</th><th>Scheduled</th><th>Logs</th><th>Progress</th><th>Action</th></tr></thead>
+                <tbody>@forelse($records as $programAssignment)
                     @php($completion = $programAssignment->completionStats())
-                    <td><strong>{{ $program->title }}</strong></td>
-                    <td>{{ $program->goal ?: '-' }}</td>
-                    <td><span class="tl-badge {{ $programAssignment->status === 'active' ? 'green' : 'gray' }}">{{ $programAssignment->status }}</span></td>
-                    <td>{{ $programAssignment->starts_on->format('Y-m-d') }} to {{ $programAssignment->ends_on?->format('Y-m-d') ?: 'open' }}</td>
-                    <td>{{ $program->sessions->count() }}</td>
-                    <td>{{ $completion['completed'] }}/{{ $completion['total'] }} · {{ $completion['percent'] }}%</td>
-                    <td><a class="btn btn-outline-tl btn-sm" href="{{ route('coach.programs.show', $program) }}">Open</a></td>
-                </tr>
-            @empty
-                <tr><td colspan="7" class="tl-muted">No programs assigned by you yet.</td></tr>
-            @endforelse
-            </tbody>
+                    <tr><td><a class="tl-table-primary-link" href="{{ route('coach.programs.show', $programAssignment->program) }}">{{ $programAssignment->program->title }}</a></td><td>{{ $programAssignment->program->goal ?: '-' }}</td><td><span class="tl-badge {{ $programAssignment->status === 'active' ? 'green' : 'gray' }}">{{ $programAssignment->status }}</span></td><td>{{ $programAssignment->starts_on?->format('Y-m-d') }} to {{ $programAssignment->ends_on?->format('Y-m-d') ?: 'open' }}</td><td>{{ $programAssignment->scheduled_workouts_count }}</td><td>{{ $programAssignment->workout_logs_count }}</td><td><strong>{{ $completion['percent'] }}%</strong><br><span class="tl-muted">{{ $completion['completed'] }}/{{ $completion['total'] }}</span></td><td><a class="btn btn-outline-tl btn-sm" href="{{ route('coach.programs.show', $programAssignment->program) }}">Open</a></td></tr>
+                @empty<tr><td colspan="8" class="tl-muted">No program assignments match these filters.</td></tr>@endforelse</tbody>
+            @elseif($tab === 'schedule')
+                <thead><tr><th>Date</th><th>Session</th><th>Program</th><th>Focus</th><th>Status</th><th>Execution</th><th>Action</th></tr></thead>
+                <tbody>@forelse($records as $workout)
+                    @php($execution = $workout->logs->first()?->status)
+                    <tr><td>{{ $workout->scheduled_for?->timezone($workout->assignment->timezone)->format('Y-m-d H:i') }}</td><td><strong>{{ $workout->session->title }}</strong></td><td>{{ $workout->session->program->title }}</td><td>{{ $workout->session->focus ?: '-' }}</td><td><span class="tl-badge gray">{{ $workout->status }}</span></td><td>{{ $execution ?: 'Not logged' }}</td><td><a class="btn btn-outline-tl btn-sm" href="{{ route('coach.schedule', ['search' => $workout->session->title]) }}">Schedule</a></td></tr>
+                @empty<tr><td colspan="7" class="tl-muted">No scheduled workouts match these filters.</td></tr>@endforelse</tbody>
+            @elseif($tab === 'workouts')
+                <thead><tr><th>Logged</th><th>Session</th><th>Status</th><th>RPE</th><th>Duration</th><th>Sets</th><th>Notes</th></tr></thead>
+                <tbody>@forelse($records as $log)
+                    <tr><td>{{ $log->created_at->format('Y-m-d H:i') }}</td><td><strong>{{ $log->session->title }}</strong><br><span class="tl-muted">{{ $log->session->program->title }}</span></td><td><span class="tl-badge {{ $log->status === 'completed' ? 'green' : 'gray' }}">{{ $log->status }}</span></td><td>{{ $log->rpe ?: '-' }}</td><td>{{ $log->duration_minutes ? $log->duration_minutes.' min' : '-' }}</td><td>{{ $log->setLogs->whereNotNull('completed_at')->count() }}/{{ $log->setLogs->count() }}</td><td>{{ $log->notes ?: '-' }}</td></tr>
+                @empty<tr><td colspan="7" class="tl-muted">No workout logs match these filters.</td></tr>@endforelse</tbody>
+            @elseif($tab === 'progress')
+                <thead><tr><th>Date</th><th>Weight</th><th>Calories</th><th>Protein</th><th>Hydration</th><th>Sleep</th><th>Soreness</th><th>Energy</th><th>Notes</th></tr></thead>
+                <tbody>@forelse($records as $entry)
+                    <tr><td><strong>{{ $entry->logged_on->format('Y-m-d') }}</strong></td><td>{{ $entry->weight ? $entry->weight.' kg' : '-' }}</td><td>{{ $entry->calories ?: '-' }}</td><td>{{ $entry->protein ? $entry->protein.' g' : '-' }}</td><td>{{ $entry->hydration ? $entry->hydration.' ml' : '-' }}</td><td>{{ $entry->sleep_quality ?: '-' }}/10</td><td>{{ $entry->soreness ?: '-' }}/10</td><td>{{ $entry->energy ?: '-' }}/10</td><td>{{ $entry->notes ?: '-' }}</td></tr>
+                @empty<tr><td colspan="9" class="tl-muted">No progress entries match these filters.</td></tr>@endforelse</tbody>
+            @elseif($tab === 'photos')
+                <thead><tr><th>Photo</th><th>Taken</th><th>Category</th><th>Visibility</th><th>Uploaded by</th><th>Notes</th><th>Actions</th></tr></thead>
+                <tbody>@forelse($records as $progressPhoto)
+                    <tr><td><a href="{{ route('coach.athletes.photos.view', [$athlete, $progressPhoto]) }}" target="_blank"><img class="tl-table-thumbnail" src="{{ route('coach.athletes.photos.view', [$athlete, $progressPhoto]) }}" alt="{{ $progressPhoto->category }} progress photo" loading="lazy"></a></td><td>{{ $progressPhoto->taken_on->format('Y-m-d') }}</td><td>{{ str($progressPhoto->category)->headline() }}</td><td><span class="tl-badge gray">{{ $progressPhoto->visibility }}</span></td><td>{{ $progressPhoto->uploadedBy?->name ?: 'Unknown' }}</td><td>{{ $progressPhoto->notes ?: '-' }}</td><td class="text-nowrap"><a class="btn btn-outline-tl btn-sm" href="{{ route('coach.athletes.photos.view', [$athlete, $progressPhoto]) }}" target="_blank">Open</a>@if($progressPhoto->uploaded_by === auth()->id()) <button class="btn btn-outline-danger btn-sm" type="button" wire:click="deletePhoto({{ $progressPhoto->id }})" wire:confirm="Delete this photo?">Delete</button>@endif</td></tr>
+                @empty<tr><td colspan="7" class="tl-muted">No progress photos match these filters.</td></tr>@endforelse</tbody>
+            @elseif($tab === 'records')
+                <thead><tr><th>Date</th><th>Exercise</th><th>Record type</th><th>Value</th><th>Source</th></tr></thead>
+                <tbody>@forelse($records as $record)
+                    <tr><td>{{ $record->achieved_on->format('Y-m-d') }}</td><td><strong>{{ $record->exercise_name }}</strong></td><td><span class="tl-badge gold">{{ $record->record_type }}</span></td><td>{{ $record->value }} {{ $record->unit }}</td><td>{{ $record->workout_set_log_id ? 'Workout set' : 'Manual' }}</td></tr>
+                @empty<tr><td colspan="5" class="tl-muted">No personal records match these filters.</td></tr>@endforelse</tbody>
+            @else
+                <thead><tr><th>Created</th><th>Coach</th><th>Visibility</th><th>Priority</th><th>Note</th><th>Actions</th></tr></thead>
+                <tbody>@forelse($records as $note)
+                    <tr><td>{{ $note->created_at->format('Y-m-d H:i') }}</td><td>{{ $note->coach?->name ?: 'Unknown' }}</td><td><span class="tl-badge gray">{{ $note->visibility }}</span></td><td>{{ $note->is_pinned ? 'Pinned' : '-' }}</td><td>{{ $note->body }}</td><td>@if($note->coach_id === auth()->id())<div class="d-flex gap-2"><button class="btn btn-outline-tl btn-sm" type="button" wire:click="toggleNotePinned({{ $note->id }})">{{ $note->is_pinned ? 'Unpin' : 'Pin' }}</button><button class="btn btn-outline-danger btn-sm" type="button" wire:click="deleteNote({{ $note->id }})" wire:confirm="Delete this note?">Delete</button></div>@else<span class="tl-muted">Read only</span>@endif</td></tr>
+                @empty<tr><td colspan="6" class="tl-muted">No coach notes match this search.</td></tr>@endforelse</tbody>
+            @endif
         </table></div>
-    </x-tl.table-card>
-
-    <x-tl.table-card title="Schedule" subtitle="Upcoming and historical sessions for this athlete." :count="$sessions->count()" icon="fa-solid fa-calendar-days">
-        <div class="d-md-none vstack gap-2">
-            @forelse($sessions as $scheduledWorkout)
-                @php($session = $scheduledWorkout->session)
-                @php($log = $scheduledWorkout->logs->first())
-                <div class="tl-mobile-record">
-                    <div class="d-flex justify-content-between gap-2 align-items-start">
-                        <div>
-                            <div class="tl-muted small">{{ $scheduledWorkout->scheduled_for->timezone($scheduledWorkout->assignment->timezone)->format('M j, Y') }}</div>
-                            <div class="fw-bold">{{ $session->title }}</div>
-                        </div>
-                        <span class="tl-badge {{ ($log?->status ?? $scheduledWorkout->status) === 'completed' ? 'green' : 'gray' }}">{{ $log?->status ?? $scheduledWorkout->status }}</span>
-                    </div>
-                    <div class="tl-mobile-record-grid mt-3">
-                        <div><span class="tl-muted small d-block">Program</span><span>{{ $session->program->title }}</span></div>
-                        <div><span class="tl-muted small d-block">Focus</span><span>{{ $session->focus ?: '-' }}</span></div>
-                        <div><span class="tl-muted small d-block">Exercises</span><span>{{ $session->exerciseSummary() }}</span></div>
-                    </div>
-                </div>
-            @empty
-                <div class="tl-mobile-record tl-muted">No scheduled sessions.</div>
-            @endforelse
-        </div>
-        <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
-            <thead><tr><th>Date</th><th>Session</th><th>Program</th><th>Focus</th><th>Exercises</th><th>Status</th></tr></thead>
-            <tbody>
-            @forelse($sessions as $scheduledWorkout)
-                @php($session = $scheduledWorkout->session)
-                @php($log = $scheduledWorkout->logs->first())
-                <tr>
-                    <td>{{ $scheduledWorkout->scheduled_for->timezone($scheduledWorkout->assignment->timezone)->format('Y-m-d') }}</td>
-                    <td><strong>{{ $session->title }}</strong></td>
-                    <td>{{ $session->program->title }}</td>
-                    <td>{{ $session->focus ?: '-' }}</td>
-                    <td>{{ $session->exerciseSummary() }}</td>
-                    <td><span class="tl-badge {{ ($log?->status ?? $scheduledWorkout->status) === 'completed' ? 'green' : 'gray' }}">{{ $log?->status ?? $scheduledWorkout->status }}</span></td>
-                </tr>
-            @empty
-                <tr><td colspan="6" class="tl-muted">No scheduled sessions.</td></tr>
-            @endforelse
-            </tbody>
-        </table></div>
-    </x-tl.table-card>
-
-    <x-tl.table-card title="Workout logs" subtitle="Execution history: completed, partial, missed, notes, RPE, and duration." :count="$workoutLogs->count()" icon="fa-solid fa-clipboard-check">
-        <div class="d-md-none vstack gap-2">
-            @forelse($workoutLogs as $log)
-                <div class="tl-mobile-record">
-                    <div class="d-flex justify-content-between gap-2 align-items-start">
-                        <div>
-                            <div class="tl-muted small">{{ $log->created_at->format('Y-m-d H:i') }}</div>
-                            <div class="fw-bold">{{ $log->session->title }}</div>
-                        </div>
-                        <span class="tl-badge {{ $log->status === 'completed' ? 'green' : 'gray' }}">{{ $log->status }}</span>
-                    </div>
-                    <div class="tl-mobile-record-grid mt-3">
-                        <div><span class="tl-muted small d-block">RPE</span><span>{{ $log->rpe ?: '-' }}</span></div>
-                        <div><span class="tl-muted small d-block">Duration</span><span>{{ $log->duration_minutes ? $log->duration_minutes.' min' : '-' }}</span></div>
-                    </div>
-                    @if($log->notes)
-                        <div class="tl-muted small mt-3">{{ $log->notes }}</div>
-                    @endif
-                </div>
-            @empty
-                <div class="tl-mobile-record tl-muted">No workout logs yet.</div>
-            @endforelse
-        </div>
-        <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
-            <thead><tr><th>Logged</th><th>Session</th><th>Status</th><th>RPE</th><th>Duration</th><th>Notes</th></tr></thead>
-            <tbody>
-            @forelse($workoutLogs as $log)
-                <tr>
-                    <td>{{ $log->created_at->format('Y-m-d H:i') }}</td>
-                    <td>{{ $log->session->title }}</td>
-                    <td><span class="tl-badge {{ $log->status === 'completed' ? 'green' : 'gray' }}">{{ $log->status }}</span></td>
-                    <td>{{ $log->rpe ?: '-' }}</td>
-                    <td>{{ $log->duration_minutes ? $log->duration_minutes.' min' : '-' }}</td>
-                    <td>{{ $log->notes ?: '-' }}</td>
-                </tr>
-            @empty
-                <tr><td colspan="6" class="tl-muted">No workout logs yet.</td></tr>
-            @endforelse
-            </tbody>
-        </table></div>
-    </x-tl.table-card>
-
-    <x-tl.table-card title="Progress logs" subtitle="Athlete check-ins for food, body, hydration, sleep quality, soreness, and energy." :count="$progressEntries->count()" icon="fa-solid fa-chart-line">
-        <div class="d-md-none vstack gap-2">
-            @forelse($progressEntries as $entry)
-                <div class="tl-mobile-record">
-                    <div class="d-flex justify-content-between gap-2 align-items-start">
-                        <div>
-                            <div class="tl-muted small">Progress check-in</div>
-                            <div class="fw-bold">{{ $entry->logged_on->format('M j, Y') }}</div>
-                        </div>
-                        <span class="tl-badge gray">Energy {{ $entry->energy ?: '-' }}/10</span>
-                    </div>
-                    <div class="tl-mobile-record-grid mt-3">
-                        <div><span class="tl-muted small d-block">Weight</span><span>{{ $entry->weight ?: '-' }}</span></div>
-                        <div><span class="tl-muted small d-block">Calories</span><span>{{ $entry->calories ?: '-' }}</span></div>
-                        <div><span class="tl-muted small d-block">Protein</span><span>{{ $entry->protein ?: '-' }}</span></div>
-                        <div><span class="tl-muted small d-block">Hydration</span><span>{{ $entry->hydration ?: '-' }}</span></div>
-                        <div><span class="tl-muted small d-block">Sleep</span><span>{{ $entry->sleep_quality ?: '-' }}/10</span></div>
-                        <div><span class="tl-muted small d-block">Soreness</span><span>{{ $entry->soreness ?: '-' }}/10</span></div>
-                    </div>
-                    @if($entry->notes)
-                        <div class="tl-muted small mt-3">{{ $entry->notes }}</div>
-                    @endif
-                </div>
-            @empty
-                <div class="tl-mobile-record tl-muted">No progress logs yet.</div>
-            @endforelse
-        </div>
-        <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
-            <thead><tr><th>Date</th><th>Weight</th><th>Calories</th><th>Protein</th><th>Hydration</th><th>Sleep</th><th>Soreness</th><th>Energy</th><th>Notes</th></tr></thead>
-            <tbody>
-            @forelse($progressEntries as $entry)
-                <tr>
-                    <td>{{ $entry->logged_on->format('Y-m-d') }}</td>
-                    <td>{{ $entry->weight ?: '-' }}</td>
-                    <td>{{ $entry->calories ?: '-' }}</td>
-                    <td>{{ $entry->protein ?: '-' }}</td>
-                    <td>{{ $entry->hydration ?: '-' }}</td>
-                    <td>{{ $entry->sleep_quality ?: '-' }}/10</td>
-                    <td>{{ $entry->soreness ?: '-' }}/10</td>
-                    <td>{{ $entry->energy ?: '-' }}/10</td>
-                    <td>{{ $entry->notes ?: '-' }}</td>
-                </tr>
-            @empty
-                <tr><td colspan="9" class="tl-muted">No progress logs yet.</td></tr>
-            @endforelse
-            </tbody>
-        </table></div>
+        <div class="mt-3">{{ $records->links() }}</div>
     </x-tl.table-card>
 </div>

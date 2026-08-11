@@ -21,4 +21,14 @@ class ProgressPhoto extends Model
     {
         return $this->belongsTo(User::class, 'athlete_id');
     }
+
+    public function progressEntry(): BelongsTo
+    {
+        return $this->belongsTo(ProgressEntry::class);
+    }
+
+    public function uploadedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
+    }
 }

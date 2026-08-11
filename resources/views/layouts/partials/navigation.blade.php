@@ -25,6 +25,8 @@
                 ['route' => 'coach.programs', 'active' => 'coach.programs*', 'icon' => 'fa-dumbbell', 'label' => 'Programs'],
                 ['route' => 'coach.exercises', 'active' => 'coach.exercises*', 'icon' => 'fa-list-check', 'label' => 'Exercises', 'permission' => 'exercises.manage'],
                 ['route' => 'coach.schedule', 'active' => 'coach.schedule*', 'icon' => 'fa-calendar-days', 'label' => 'Schedule', 'permission' => 'schedule.manage'],
+                ['route' => 'coach.reports', 'active' => 'coach.reports*', 'icon' => 'fa-chart-column', 'label' => 'Reports', 'permission' => 'reports.view'],
+                ['route' => 'coach.messages', 'active' => 'coach.messages*', 'icon' => 'fa-comments', 'label' => 'Messages', 'permission' => 'messages.read'],
                 ['route' => 'coach.invitations', 'active' => 'coach.invitations*', 'icon' => 'fa-user-plus', 'label' => 'Invitations'],
             ],
         ],
@@ -34,6 +36,7 @@
                 ['route' => 'app.home', 'active' => 'app.programs*', 'icon' => 'fa-dumbbell', 'label' => 'Programs', 'fragment' => 'programs'],
                 ['route' => 'app.home', 'active' => 'never', 'icon' => 'fa-calendar-days', 'label' => 'Calendar', 'fragment' => 'calendar'],
                 ['route' => 'app.progress', 'active' => 'app.progress*', 'icon' => 'fa-chart-line', 'label' => 'Progress'],
+                ['route' => 'app.messages', 'active' => 'app.messages*', 'icon' => 'fa-comments', 'label' => 'Messages', 'permission' => 'messages.read'],
             ],
         ],
     };
