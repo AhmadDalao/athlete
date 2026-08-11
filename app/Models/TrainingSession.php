@@ -62,7 +62,13 @@ class TrainingSession extends Model
 
     public function exerciseSummary(): string
     {
-        $items = collect($this->exercises ?? []);
+        $items = $this->relationLoaded('prescribedExercises') && $this->prescribedExercises->isNotEmpty()
+            ? $this->prescribedExercises->map(fn (TrainingSessionExercise $exercise): array => [
+                'name' => $exercise->name,
+                'sets' => $exercise->target_sets,
+                'reps' => $exercise->target_reps,
+            ])
+            : collect($this->exercises ?? []);
 
         if ($items->isEmpty()) {
             return 'No exercises yet';
@@ -78,10 +84,13 @@ class TrainingSession extends Model
 
     public function mediaCount(): int
     {
-        return (filled($this->media_url) ? 1 : 0)
-            + collect($this->exercises ?? [])->filter(
+        $exerciseMedia = $this->relationLoaded('prescribedExercises')
+            ? $this->prescribedExercises->whereNotNull('media_url')->count()
+            : collect($this->exercises ?? [])->filter(
                 fn (array $exercise): bool => filled($exercise['media_url'] ?? null)
             )->count();
+
+        return (filled($this->media_url) ? 1 : 0) + $exerciseMedia;
     }
 
     public function hasMedia(): bool

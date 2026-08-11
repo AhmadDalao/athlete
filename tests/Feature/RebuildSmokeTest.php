@@ -15,6 +15,8 @@ use App\Models\AuditLog;
 use App\Models\CoachAthleteAssignment;
 use App\Models\ContactSubmission;
 use App\Models\EmailLog;
+use App\Models\Organization;
+use App\Models\OrganizationMembership;
 use App\Models\ProgressEntry;
 use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
@@ -217,12 +219,29 @@ class RebuildSmokeTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_coach_can_create_program_directly_for_assigned_athlete(): void
+    public function test_coach_can_create_reusable_program_and_assign_it_to_an_athlete(): void
     {
         $coach = User::factory()->create(['role' => 'coach']);
         $athlete = User::factory()->create(['role' => 'athlete']);
+        $organization = Organization::create([
+            'name' => 'Coach Test Organization',
+            'slug' => 'coach-test-organization',
+            'status' => 'active',
+        ]);
+
+        foreach ([[$coach, 'coach'], [$athlete, 'athlete']] as [$user, $role]) {
+            OrganizationMembership::create([
+                'organization_id' => $organization->id,
+                'user_id' => $user->id,
+                'role' => $role,
+                'status' => 'active',
+                'joined_at' => now(),
+            ]);
+            $user->forceFill(['current_organization_id' => $organization->id])->saveQuietly();
+        }
 
         CoachAthleteAssignment::create([
+            'organization_id' => $organization->id,
             'coach_id' => $coach->id,
             'athlete_id' => $athlete->id,
             'status' => 'active',
@@ -235,8 +254,7 @@ class RebuildSmokeTest extends TestCase
             ->assertSet('athleteId', $athlete->id)
             ->set('title', 'Speed Foundation')
             ->set('goal', 'Build repeat sprint capacity')
-            ->set('startsOn', today()->toDateString())
-            ->set('endsOn', today()->addWeeks(6)->toDateString())
+            ->set('estimatedWeeks', 6)
             ->call('createProgram')
             ->assertHasNoErrors();
 
@@ -244,7 +262,14 @@ class RebuildSmokeTest extends TestCase
 
         $component->assertRedirect(route('coach.programs.show', $program));
         $this->assertSame($coach->id, $program->coach_id);
-        $this->assertSame($athlete->id, $program->athlete_id);
+        $this->assertNull($program->athlete_id);
+        $this->assertTrue($program->is_template);
+        $this->assertDatabaseHas('program_assignments', [
+            'organization_id' => $organization->id,
+            'training_program_id' => $program->id,
+            'athlete_id' => $athlete->id,
+            'status' => 'active',
+        ]);
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'program.created',
             'entity' => 'training_program',

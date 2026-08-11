@@ -98,6 +98,16 @@ class User extends Authenticatable
         return $this->hasMany(TrainingProgram::class, 'athlete_id');
     }
 
+    public function programAssignments(): HasMany
+    {
+        return $this->hasMany(ProgramAssignment::class, 'athlete_id');
+    }
+
+    public function scheduledWorkouts(): HasMany
+    {
+        return $this->hasMany(ScheduledWorkout::class, 'athlete_id');
+    }
+
     public function progressEntries(): HasMany
     {
         return $this->hasMany(ProgressEntry::class, 'athlete_id');

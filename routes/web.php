@@ -7,6 +7,9 @@ use App\Http\Controllers\Admin\OrganizationExportController;
 use App\Http\Controllers\Admin\OrganizationMemberExportController;
 use App\Http\Controllers\Admin\UserExportController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Coach\ExerciseExportController;
+use App\Http\Controllers\Coach\ProgramExportController;
+use App\Http\Controllers\Coach\ScheduleExportController;
 use App\Http\Controllers\DashboardRedirectController;
 use App\Http\Controllers\OrganizationSelectionController;
 use App\Http\Controllers\ThemePreferenceController;
@@ -56,8 +59,13 @@ Route::middleware(['auth', 'organization'])->group(function (): void {
         Route::get('/', Coach\Home::class)->name('home');
         Route::get('/athletes', Coach\AthletesTable::class)->name('athletes');
         Route::get('/athletes/{athlete}', Coach\AthleteDetail::class)->name('athletes.show');
+        Route::get('/programs/export', ProgramExportController::class)->middleware('can:programs.manage')->name('programs.export');
         Route::get('/programs', Coach\ProgramsTable::class)->name('programs');
         Route::get('/programs/{program}', Coach\ProgramDetail::class)->name('programs.show');
+        Route::get('/exercises/export', ExerciseExportController::class)->middleware('can:exercises.manage')->name('exercises.export');
+        Route::get('/exercises', Coach\ExerciseLibraryTable::class)->middleware('can:exercises.manage')->name('exercises');
+        Route::get('/schedule/export', ScheduleExportController::class)->middleware('can:schedule.manage')->name('schedule.export');
+        Route::get('/schedule', Coach\ScheduleTable::class)->middleware('can:schedule.manage')->name('schedule');
         Route::get('/invitations', Coach\InvitationsPanel::class)->name('invitations');
     });
 

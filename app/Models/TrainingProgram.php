@@ -44,7 +44,7 @@ class TrainingProgram extends Model
 
     public function assignments(): HasMany
     {
-        return $this->hasMany(ProgramAssignment::class);
+        return $this->hasMany(ProgramAssignment::class)->latest('starts_on');
     }
 
     /**
@@ -52,13 +52,21 @@ class TrainingProgram extends Model
      */
     public function completionStats(): array
     {
-        $sessions = $this->sessions->where('status', '!=', 'cancelled');
-        $total = $sessions->count();
-        $completed = $sessions->filter(
-            fn (TrainingSession $session): bool => $session->logs
-                ->where('athlete_id', $this->athlete_id)
-                ->contains('status', 'completed')
-        )->count();
+        $logs = $this->assignments
+            ->flatMap->scheduledWorkouts
+            ->flatMap->logs;
+        $total = $this->assignments->flatMap->scheduledWorkouts->count();
+        $completed = $logs->where('status', 'completed')->count();
+
+        if ($total === 0 && $this->athlete_id) {
+            $sessions = $this->sessions->where('status', '!=', 'cancelled');
+            $total = $sessions->count();
+            $completed = $sessions->filter(
+                fn (TrainingSession $session): bool => $session->logs
+                    ->where('athlete_id', $this->athlete_id)
+                    ->contains('status', 'completed')
+            )->count();
+        }
 
         return [
             'completed' => $completed,

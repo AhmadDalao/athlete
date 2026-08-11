@@ -159,3 +159,41 @@
     --bs-pagination-active-border-color: var(--tl-lime);
     --bs-pagination-active-color: #101611;
 }
+
+.tl-builder-table {
+    min-width: 1180px;
+}
+
+.tl-builder-name-cell {
+    min-width: 220px;
+}
+
+.tl-builder-notes-cell {
+    min-width: 240px;
+}
+
+.tl-number-input {
+    min-width: 86px;
+}
+
+.tl-inline-editor {
+    align-items: center;
+    background: var(--tl-panel-2);
+    border: 1px solid var(--tl-line);
+    border-radius: var(--tl-radius);
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(220px, 1fr) minmax(180px, 240px) auto auto;
+    padding: 1rem;
+}
+
+.tl-switch {
+    align-items: center;
+    background: var(--tl-panel-2);
+    border: 1px solid var(--tl-line);
+    border-radius: var(--tl-radius-sm);
+    display: flex;
+    gap: 0.75rem;
+    min-height: 46px;
+    padding-inline: 1rem;
+}

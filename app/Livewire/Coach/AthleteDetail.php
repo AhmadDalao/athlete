@@ -2,7 +2,10 @@
 
 namespace App\Livewire\Coach;
 
+use App\Models\ProgramAssignment;
+use App\Models\ScheduledWorkout;
 use App\Models\User;
+use App\Models\WorkoutLog;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -28,21 +31,33 @@ class AthleteDetail extends Component
     {
         $coachId = Auth::id();
 
-        $programs = $this->athlete->athletePrograms()
-            ->with(['sessions.logs', 'coach'])
-            ->where('coach_id', $coachId)
-            ->latest()
+        $assignments = ProgramAssignment::query()
+            ->where('athlete_id', $this->athlete->id)
+            ->whereHas('program', fn ($query) => $query->where('coach_id', $coachId))
+            ->with(['program.sessions', 'scheduledWorkouts.logs'])
+            ->latest('starts_on')
             ->get();
 
-        $sessionIds = $programs->flatMap(fn ($program) => $program->sessions->pluck('id'))->values();
+        $sessions = ScheduledWorkout::query()
+            ->where('athlete_id', $this->athlete->id)
+            ->where('coach_id', $coachId)
+            ->with(['session.program', 'logs', 'assignment'])
+            ->latest('scheduled_for')
+            ->limit(30)
+            ->get();
 
         return view('livewire.coach.athlete-detail', [
             'assignment' => $this->athlete->athleteAssignments()->with('coach')->where('coach_id', $coachId)->first(),
-            'programs' => $programs,
-            'sessions' => $programs->flatMap->sessions->sortByDesc('scheduled_on')->take(30),
-            'workoutLogs' => $this->athlete->workoutLogs()
+            'assignments' => $assignments,
+            'sessions' => $sessions,
+            'workoutLogs' => WorkoutLog::query()
+                ->where('athlete_id', $this->athlete->id)
                 ->with('session.program')
-                ->whereIn('training_session_id', $sessionIds)
+                ->where(fn ($query) => $query
+                    ->whereHas('scheduledWorkout', fn ($query) => $query->where('coach_id', $coachId))
+                    ->orWhere(fn ($query) => $query
+                        ->whereNull('scheduled_workout_id')
+                        ->whereHas('session.program', fn ($query) => $query->where('coach_id', $coachId))))
                 ->latest()
                 ->limit(30)
                 ->get(),

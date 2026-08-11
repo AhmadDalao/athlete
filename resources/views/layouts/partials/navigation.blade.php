@@ -23,6 +23,8 @@
                 ['route' => 'coach.home', 'active' => 'coach.home', 'icon' => 'fa-house', 'label' => 'Home'],
                 ['route' => 'coach.athletes', 'active' => 'coach.athletes*', 'icon' => 'fa-users-line', 'label' => 'Roster'],
                 ['route' => 'coach.programs', 'active' => 'coach.programs*', 'icon' => 'fa-dumbbell', 'label' => 'Programs'],
+                ['route' => 'coach.exercises', 'active' => 'coach.exercises*', 'icon' => 'fa-list-check', 'label' => 'Exercises', 'permission' => 'exercises.manage'],
+                ['route' => 'coach.schedule', 'active' => 'coach.schedule*', 'icon' => 'fa-calendar-days', 'label' => 'Schedule', 'permission' => 'schedule.manage'],
                 ['route' => 'coach.invitations', 'active' => 'coach.invitations*', 'icon' => 'fa-user-plus', 'label' => 'Invitations'],
             ],
         ],

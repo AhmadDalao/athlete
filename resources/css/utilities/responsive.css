@@ -42,6 +42,10 @@
 }
 
 @media (max-width: 767.98px) {
+    .tl-inline-editor {
+        grid-template-columns: 1fr;
+    }
+
     .tl-public-hero {
         min-height: auto;
         padding: 3.2rem 0;

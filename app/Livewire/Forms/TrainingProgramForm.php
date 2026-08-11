@@ -19,6 +19,10 @@ class TrainingProgramForm extends Form
 
     public string $notes = '';
 
+    public string $visibility = 'private';
+
+    public ?int $estimatedWeeks = null;
+
     /**
      * @return array<string, array<int, string>>
      */
@@ -31,6 +35,8 @@ class TrainingProgramForm extends Form
             'startsOn' => ['nullable', 'date'],
             'endsOn' => ['nullable', 'date', 'after_or_equal:startsOn'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'visibility' => ['required', 'in:private,organization'],
+            'estimatedWeeks' => ['nullable', 'integer', 'min:1', 'max:104'],
         ];
     }
 
@@ -42,6 +48,8 @@ class TrainingProgramForm extends Form
         $this->startsOn = $program->starts_on?->toDateString();
         $this->endsOn = $program->ends_on?->toDateString();
         $this->notes = $program->notes ?: '';
+        $this->visibility = $program->visibility ?: 'private';
+        $this->estimatedWeeks = $program->estimated_weeks;
     }
 
     /**
@@ -58,6 +66,8 @@ class TrainingProgramForm extends Form
             'starts_on' => $data['startsOn'],
             'ends_on' => $data['endsOn'],
             'notes' => $data['notes'] ?: null,
+            'visibility' => $data['visibility'],
+            'estimated_weeks' => $data['estimatedWeeks'],
         ];
     }
 }

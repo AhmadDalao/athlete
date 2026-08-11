@@ -37,4 +37,26 @@ class ProgramAssignment extends Model
     {
         return $this->hasMany(ScheduledWorkout::class)->orderBy('scheduled_for');
     }
+
+    public function workoutLogs(): HasMany
+    {
+        return $this->hasMany(WorkoutLog::class);
+    }
+
+    /** @return array{completed: int, total: int, percent: int} */
+    public function completionStats(): array
+    {
+        $workouts = $this->relationLoaded('scheduledWorkouts')
+            ? $this->scheduledWorkouts
+            : $this->scheduledWorkouts()->with('logs')->get();
+        $completed = $workouts->filter(fn (ScheduledWorkout $workout): bool => $workout->status === 'completed' || $workout->logs->contains('status', 'completed')
+        )->count();
+        $total = $workouts->count();
+
+        return [
+            'completed' => $completed,
+            'total' => $total,
+            'percent' => $total > 0 ? (int) round(($completed / $total) * 100) : 0,
+        ];
+    }
 }

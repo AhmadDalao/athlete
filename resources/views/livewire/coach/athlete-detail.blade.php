@@ -11,26 +11,27 @@
     </x-tl.page-hero>
 
     <div class="row g-3 mb-3">
-        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-dumbbell" label="Programs" :value="$programs->count()" tone="lime" /></div>
+        <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-dumbbell" label="Assignments" :value="$assignments->count()" tone="lime" /></div>
         <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-calendar-check" label="Sessions" :value="$sessions->count()" tone="emerald" /></div>
         <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-clipboard-check" label="Workout logs" :value="$workoutLogs->count()" tone="gold" /></div>
         <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-chart-line" label="Progress logs" :value="$progressEntries->count()" tone="blue" /></div>
     </div>
 
-    <x-tl.table-card title="Assigned programs" subtitle="Programs this coach assigned to the athlete." :count="$programs->count()" icon="fa-solid fa-dumbbell">
+    <x-tl.table-card title="Assigned programs" subtitle="Reusable templates assigned to this athlete with independent dates and completion." :count="$assignments->count()" icon="fa-solid fa-dumbbell">
         <div class="d-md-none vstack gap-2">
-            @forelse($programs as $program)
+            @forelse($assignments as $programAssignment)
+                @php($program = $programAssignment->program)
+                @php($completion = $programAssignment->completionStats())
                 <a class="tl-mobile-record" href="{{ route('coach.programs.show', $program) }}">
                     <div class="d-flex justify-content-between gap-2 align-items-start">
                         <div>
                             <div class="fw-bold">{{ $program->title }}</div>
                             <div class="tl-muted small">{{ $program->goal ?: 'No goal set' }}</div>
                         </div>
-                        <span class="tl-badge {{ $program->status === 'active' ? 'green' : 'gray' }}">{{ $program->status }}</span>
+                        <span class="tl-badge {{ $programAssignment->status === 'active' ? 'green' : 'gray' }}">{{ $programAssignment->status }}</span>
                     </div>
                     <div class="tl-mobile-record-grid mt-3">
-                        @php($completion = $program->completionStats())
-                        <div><span class="tl-muted small d-block">Dates</span><span>{{ $program->starts_on?->format('Y-m-d') ?: '-' }} to {{ $program->ends_on?->format('Y-m-d') ?: '-' }}</span></div>
+                        <div><span class="tl-muted small d-block">Dates</span><span>{{ $programAssignment->starts_on->format('Y-m-d') }} to {{ $programAssignment->ends_on?->format('Y-m-d') ?: 'open' }}</span></div>
                         <div><span class="tl-muted small d-block">Sessions</span><span>{{ $program->sessions->count() }}</span></div>
                         <div><span class="tl-muted small d-block">Progress</span><span>{{ $completion['completed'] }}/{{ $completion['total'] }} · {{ $completion['percent'] }}%</span></div>
                     </div>
@@ -42,13 +43,14 @@
         <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
             <thead><tr><th>Program</th><th>Goal</th><th>Status</th><th>Dates</th><th>Sessions</th><th>Progress</th><th>Action</th></tr></thead>
             <tbody>
-            @forelse($programs as $program)
+            @forelse($assignments as $programAssignment)
                 <tr>
-                    @php($completion = $program->completionStats())
+                    @php($program = $programAssignment->program)
+                    @php($completion = $programAssignment->completionStats())
                     <td><strong>{{ $program->title }}</strong></td>
                     <td>{{ $program->goal ?: '-' }}</td>
-                    <td><span class="tl-badge {{ $program->status === 'active' ? 'green' : 'gray' }}">{{ $program->status }}</span></td>
-                    <td>{{ $program->starts_on?->format('Y-m-d') ?: '-' }} to {{ $program->ends_on?->format('Y-m-d') ?: '-' }}</td>
+                    <td><span class="tl-badge {{ $programAssignment->status === 'active' ? 'green' : 'gray' }}">{{ $programAssignment->status }}</span></td>
+                    <td>{{ $programAssignment->starts_on->format('Y-m-d') }} to {{ $programAssignment->ends_on?->format('Y-m-d') ?: 'open' }}</td>
                     <td>{{ $program->sessions->count() }}</td>
                     <td>{{ $completion['completed'] }}/{{ $completion['total'] }} · {{ $completion['percent'] }}%</td>
                     <td><a class="btn btn-outline-tl btn-sm" href="{{ route('coach.programs.show', $program) }}">Open</a></td>
@@ -62,15 +64,16 @@
 
     <x-tl.table-card title="Schedule" subtitle="Upcoming and historical sessions for this athlete." :count="$sessions->count()" icon="fa-solid fa-calendar-days">
         <div class="d-md-none vstack gap-2">
-            @forelse($sessions as $session)
-                @php($log = $session->logs->firstWhere('athlete_id', $athlete->id))
+            @forelse($sessions as $scheduledWorkout)
+                @php($session = $scheduledWorkout->session)
+                @php($log = $scheduledWorkout->logs->first())
                 <div class="tl-mobile-record">
                     <div class="d-flex justify-content-between gap-2 align-items-start">
                         <div>
-                            <div class="tl-muted small">{{ $session->scheduled_on->format('M j, Y') }}</div>
+                            <div class="tl-muted small">{{ $scheduledWorkout->scheduled_for->timezone($scheduledWorkout->assignment->timezone)->format('M j, Y') }}</div>
                             <div class="fw-bold">{{ $session->title }}</div>
                         </div>
-                        <span class="tl-badge {{ $log?->status === 'completed' ? 'green' : 'gray' }}">{{ $log?->status ?? 'open' }}</span>
+                        <span class="tl-badge {{ ($log?->status ?? $scheduledWorkout->status) === 'completed' ? 'green' : 'gray' }}">{{ $log?->status ?? $scheduledWorkout->status }}</span>
                     </div>
                     <div class="tl-mobile-record-grid mt-3">
                         <div><span class="tl-muted small d-block">Program</span><span>{{ $session->program->title }}</span></div>
@@ -85,15 +88,16 @@
         <div class="tl-table-wrap d-none d-md-block"><table class="table tl-table align-middle">
             <thead><tr><th>Date</th><th>Session</th><th>Program</th><th>Focus</th><th>Exercises</th><th>Status</th></tr></thead>
             <tbody>
-            @forelse($sessions as $session)
-                @php($log = $session->logs->firstWhere('athlete_id', $athlete->id))
+            @forelse($sessions as $scheduledWorkout)
+                @php($session = $scheduledWorkout->session)
+                @php($log = $scheduledWorkout->logs->first())
                 <tr>
-                    <td>{{ $session->scheduled_on->format('Y-m-d') }}</td>
+                    <td>{{ $scheduledWorkout->scheduled_for->timezone($scheduledWorkout->assignment->timezone)->format('Y-m-d') }}</td>
                     <td><strong>{{ $session->title }}</strong></td>
                     <td>{{ $session->program->title }}</td>
                     <td>{{ $session->focus ?: '-' }}</td>
                     <td>{{ $session->exerciseSummary() }}</td>
-                    <td><span class="tl-badge {{ $log?->status === 'completed' ? 'green' : 'gray' }}">{{ $log?->status ?? 'not started' }}</span></td>
+                    <td><span class="tl-badge {{ ($log?->status ?? $scheduledWorkout->status) === 'completed' ? 'green' : 'gray' }}">{{ $log?->status ?? $scheduledWorkout->status }}</span></td>
                 </tr>
             @empty
                 <tr><td colspan="6" class="tl-muted">No scheduled sessions.</td></tr>

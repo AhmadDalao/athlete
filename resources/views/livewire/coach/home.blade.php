@@ -62,15 +62,15 @@
             <x-tl.section-card
                 title="Upcoming sessions"
                 subtitle="The next scheduled work for your roster."
-                :action-href="route('coach.programs')"
-                action-label="Programs"
+                :action-href="route('coach.schedule')"
+                action-label="Full schedule"
                 icon="fa-solid fa-dumbbell"
             >
                 <div class="tl-table-wrap"><table class="table tl-table align-middle">
                     <thead><tr><th>Date</th><th>Session</th><th>Athlete</th><th>Preview</th></tr></thead>
                     <tbody>
                     @forelse($sessions as $session)
-                        <tr><td>{{ $session->scheduled_on->format('M j') }}</td><td><strong>{{ $session->title }}</strong><br><span class="tl-muted">{{ $session->focus }}</span></td><td>{{ $session->program->athlete->name }}</td><td>{{ $session->exerciseSummary() }}</td></tr>
+                        <tr><td>{{ $session->scheduled_for->timezone($session->assignment->timezone)->format('M j') }}</td><td><strong>{{ $session->session->title }}</strong><br><span class="tl-muted">{{ $session->session->focus }}</span></td><td>{{ $session->athlete->name }}</td><td>{{ $session->session->exerciseSummary() }}</td></tr>
                     @empty
                         <tr><td colspan="4" class="tl-muted">No upcoming sessions.</td></tr>
                     @endforelse
