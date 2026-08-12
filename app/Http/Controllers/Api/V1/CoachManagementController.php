@@ -201,6 +201,8 @@ class CoachManagementController extends Controller
         InvitationDeliveryService $delivery,
         AuditLogger $audit,
     ): JsonResponse {
+        abort_unless(PlatformSetting::enabled('invitations_enabled', true), 423, 'Athlete invitations are currently paused.');
+
         $data = $request->validate([
             'name' => ['nullable', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:160'],
@@ -226,6 +228,8 @@ class CoachManagementController extends Controller
         InvitationDeliveryService $delivery,
         AuditLogger $audit,
     ): JsonResponse {
+        abort_unless(PlatformSetting::enabled('invitations_enabled', true), 423, 'Athlete invitations are currently paused.');
+
         $this->authorizeInvitation($request, $invitation);
         abort_unless($invitation->status === 'pending', 422);
         $sent = $delivery->send($invitation);

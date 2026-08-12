@@ -217,6 +217,11 @@ Current automated coverage:
 
 ### Control And Coaching
 
+- Rebuilt Website Control into a permission-protected owner workspace for branding, public copy, logo uploads, theme defaults, pricing display, feature visibility, invitation controls, and safe email sender identity.
+- Added public page visibility enforcement: disabled features, pricing, contact, request-access, and invitation workflows cannot be reached through stale links or direct routes.
+- Added uploaded logo support across public and authenticated shells while keeping the built-in Throughline mark as the fallback.
+- Added explicit `admin.settings` and `admin.permissions` enforcement in routes and Livewire actions so ordinary admins cannot elevate themselves through hidden endpoints.
+- Kept SMTP credentials outside database settings; Website Control only edits safe sender labels while Hostinger environment variables retain infrastructure secrets.
 - Added admin user detail/edit page.
 - Added filtered user CSV export.
 - Added coach athlete profile detail with programs, schedule, workout logs, and progress logs.

@@ -16,6 +16,8 @@ class InvitationDeliveryService
         $appName = PlatformSetting::get('app_name', 'Throughline');
         $subject = PlatformSetting::get('invite_email_subject', "{$appName} athlete invitation");
         $body = PlatformSetting::get('invite_email_body', "Coach {coach_name} invited you to {app_name}.\n\nAccept here: {invite_link}");
+        $fromName = PlatformSetting::get('mail_from_name');
+        $fromAddress = PlatformSetting::get('mail_from_address');
         $link = route('invites.accept', $invitation->token);
 
         $messageBody = strtr($body, [
@@ -27,7 +29,11 @@ class InvitationDeliveryService
         ]);
 
         try {
-            Mail::raw($messageBody, function ($message) use ($invitation, $subject): void {
+            Mail::raw($messageBody, function ($message) use ($invitation, $subject, $fromName, $fromAddress): void {
+                if ($fromAddress) {
+                    $message->from($fromAddress, $fromName ?: null);
+                }
+
                 $message->to($invitation->email)->subject($subject);
             });
 

@@ -5,8 +5,8 @@
     <div class="container">
         <div class="tl-public-heading">
             <div class="tl-eyebrow">Pricing</div>
-            <h1 class="tl-public-page-title mt-3">Simple plans. No fake complexity.</h1>
-            <p class="mt-4">Pricing is managed by the owner and reflects the coaching workflow, not a maze of technical add-ons.</p>
+            <h1 class="tl-public-page-title mt-3">{{ $platformSettings['pricing_headline'] }}</h1>
+            <p class="mt-4">{{ $platformSettings['pricing_subheadline'] }}</p>
         </div>
         @include('public.partials.pricing-grid')
     </div>

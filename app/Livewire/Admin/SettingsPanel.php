@@ -4,105 +4,96 @@ namespace App\Livewire\Admin;
 
 use App\Models\AuditLog;
 use App\Models\PlatformSetting;
+use App\Support\PlatformSettingCatalog;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class SettingsPanel extends Component
 {
-    public array $settings = [
-        'app_name' => '',
-        'tagline' => '',
-        'support_email' => '',
-        'invite_expiry_days' => '7',
-        'homepage_headline' => '',
-        'homepage_subheadline' => '',
-        'contact_headline' => '',
-        'contact_subheadline' => '',
-        'contact_button_label' => '',
-        'pricing_headline' => '',
-        'pricing_subheadline' => '',
-        'plan_one_name' => '',
-        'plan_one_price' => '',
-        'plan_one_description' => '',
-        'plan_one_features' => '',
-        'plan_two_name' => '',
-        'plan_two_price' => '',
-        'plan_two_description' => '',
-        'plan_two_features' => '',
-        'plan_three_name' => '',
-        'plan_three_price' => '',
-        'plan_three_description' => '',
-        'plan_three_features' => '',
-        'invite_email_subject' => '',
-        'invite_email_body' => '',
-        'mail_from_name' => '',
-        'mail_from_address' => '',
-    ];
+    use WithFileUploads;
+
+    public array $settings = [];
+
+    public $logo = null;
 
     public function mount(): void
     {
-        foreach (array_keys($this->settings) as $key) {
-            $this->settings[$key] = PlatformSetting::get($key, $this->settings[$key]);
-        }
+        abort_unless(Auth::user()?->can('admin.settings'), 403);
+
+        $defaults = PlatformSettingCatalog::defaults();
+        $stored = collect($defaults)->mapWithKeys(fn (mixed $fallback, string $key): array => [
+            $key => PlatformSetting::get($key, (string) $fallback),
+        ])->all();
+
+        $this->settings = PlatformSettingCatalog::normalizeForForm($stored);
     }
 
     public function save(): void
     {
-        $this->validate([
-            'settings.app_name' => ['required', 'string', 'max:80'],
-            'settings.tagline' => ['nullable', 'string', 'max:120'],
-            'settings.support_email' => ['required', 'email'],
-            'settings.invite_expiry_days' => ['required', 'integer', 'min:1', 'max:60'],
-            'settings.homepage_headline' => ['required', 'string', 'max:180'],
-            'settings.homepage_subheadline' => ['nullable', 'string', 'max:260'],
-            'settings.contact_headline' => ['required', 'string', 'max:160'],
-            'settings.contact_subheadline' => ['nullable', 'string', 'max:260'],
-            'settings.contact_button_label' => ['required', 'string', 'max:80'],
-            'settings.pricing_headline' => ['required', 'string', 'max:160'],
-            'settings.pricing_subheadline' => ['nullable', 'string', 'max:260'],
-            'settings.plan_one_name' => ['required', 'string', 'max:80'],
-            'settings.plan_one_price' => ['required', 'string', 'max:80'],
-            'settings.plan_one_description' => ['nullable', 'string', 'max:180'],
-            'settings.plan_one_features' => ['nullable', 'string', 'max:600'],
-            'settings.plan_two_name' => ['required', 'string', 'max:80'],
-            'settings.plan_two_price' => ['required', 'string', 'max:80'],
-            'settings.plan_two_description' => ['nullable', 'string', 'max:180'],
-            'settings.plan_two_features' => ['nullable', 'string', 'max:600'],
-            'settings.plan_three_name' => ['required', 'string', 'max:80'],
-            'settings.plan_three_price' => ['required', 'string', 'max:80'],
-            'settings.plan_three_description' => ['nullable', 'string', 'max:180'],
-            'settings.plan_three_features' => ['nullable', 'string', 'max:600'],
-            'settings.invite_email_subject' => ['required', 'string', 'max:180'],
-            'settings.invite_email_body' => ['required', 'string', 'max:2000'],
-            'settings.mail_from_name' => ['nullable', 'string', 'max:120'],
-            'settings.mail_from_address' => ['nullable', 'email'],
-        ]);
+        $this->authorizeSettings();
 
-        foreach ($this->settings as $key => $value) {
-            $group = match (true) {
-                str_starts_with($key, 'mail_') => 'mail',
-                str_starts_with($key, 'invite_') => 'invitations',
-                str_starts_with($key, 'contact_') => 'contact',
-                str_starts_with($key, 'pricing_'), str_starts_with($key, 'plan_') => 'pricing',
-                default => 'site',
-            };
+        $rules = PlatformSettingCatalog::rules();
+        $rules['logo'] = ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'];
+        $this->validate($rules);
 
-            PlatformSetting::put($key, (string) $value, $group);
+        if ($this->logo) {
+            $oldLogo = $this->settings['logo_path'] ?? null;
+            $this->settings['logo_path'] = $this->logo->storePublicly('branding', 'public');
+
+            if ($oldLogo && $oldLogo !== $this->settings['logo_path']) {
+                Storage::disk('public')->delete($oldLogo);
+            }
+
+            $this->reset('logo');
         }
 
+        foreach ($this->settings as $key => $value) {
+            PlatformSetting::put(
+                $key,
+                PlatformSettingCatalog::serialize($key, $value),
+                PlatformSettingCatalog::groupFor($key),
+            );
+        }
+
+        $this->audit('settings.updated', 'Updated website, communication, theme, and feature settings.');
+        session()->flash('status', 'Website and system settings saved.');
+    }
+
+    public function removeLogo(): void
+    {
+        $this->authorizeSettings();
+
+        $logoPath = $this->settings['logo_path'] ?? null;
+        if ($logoPath) {
+            Storage::disk('public')->delete($logoPath);
+        }
+
+        $this->settings['logo_path'] = '';
+        PlatformSetting::put('logo_path', '', 'branding');
+        $this->audit('settings.logo_removed', 'Removed the public website logo.');
+        session()->flash('status', 'Logo removed. The Throughline mark is active again.');
+    }
+
+    private function authorizeSettings(): void
+    {
+        abort_unless(Auth::user()?->can('admin.settings'), 403);
+    }
+
+    private function audit(string $action, string $summary): void
+    {
         AuditLog::create([
             'user_id' => Auth::id(),
-            'action' => 'settings.updated',
+            'action' => $action,
             'entity' => 'platform_settings',
-            'summary' => 'Updated platform settings.',
+            'summary' => $summary,
             'ip_address' => request()->ip(),
         ]);
-
-        session()->flash('status', 'Settings saved.');
     }
 
     public function render()
     {
-        return view('livewire.admin.settings-panel')->layout('layouts.app', ['title' => 'Settings']);
+        return view('livewire.admin.settings-panel')->layout('layouts.app', ['title' => 'Website control']);
     }
 }

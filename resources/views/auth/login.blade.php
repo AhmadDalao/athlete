@@ -40,7 +40,9 @@
                 </div>
                 <button class="btn btn-tl btn-lg w-100" type="submit">Log in <i class="fa-solid fa-arrow-right"></i></button>
             </form>
-            <p class="tl-muted small text-center mt-4 mb-0">Need an account? <a class="text-decoration-underline" href="{{ route('contact') }}">Request access</a>.</p>
+            @if($platformSettings['request_access_enabled'] && $platformSettings['public_contact_enabled'])
+                <p class="tl-muted small text-center mt-4 mb-0">Need an account? <a class="text-decoration-underline" href="{{ route('contact') }}">Request access</a>.</p>
+            @endif
         </div>
     </div>
 </section>

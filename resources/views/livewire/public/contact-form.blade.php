@@ -3,8 +3,8 @@
         <div class="col-lg-7">
             <x-tl.section-card
                 eyebrow="Contact"
-                :title="\App\Models\PlatformSetting::get('contact_headline', 'Tell us what you need.')"
-                :subtitle="\App\Models\PlatformSetting::get('contact_subheadline', 'Questions, coaching setup, or platform access. This saves directly into the admin database.')"
+                :title="$platformSettings['contact_headline']"
+                :subtitle="$platformSettings['contact_subheadline']"
             >
 
                 @if (session('status'))
@@ -32,7 +32,7 @@
                         <div class="col-12 text-danger small">{{ $errors->first() }}</div>
                     @endif
                     <div class="col-12">
-                        <button class="btn btn-tl btn-lg" type="submit">{{ \App\Models\PlatformSetting::get('contact_button_label', 'Send message') }}</button>
+                        <button class="btn btn-tl btn-lg" type="submit">{{ $platformSettings['contact_button_label'] }}</button>
                     </div>
                 </form>
             </x-tl.section-card>

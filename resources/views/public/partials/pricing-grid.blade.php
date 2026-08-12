@@ -1,10 +1,10 @@
 @php
     $planKeys = ['one', 'two', 'three'];
     $plans = collect($planKeys)->map(fn (string $key) => [
-        'name' => \App\Models\PlatformSetting::get("plan_{$key}_name", str($key)->headline()),
-        'price' => \App\Models\PlatformSetting::get("plan_{$key}_price", 'Contact us'),
-        'description' => \App\Models\PlatformSetting::get("plan_{$key}_description", 'Built around direct coaching workflows.'),
-        'features' => collect(preg_split('/\r\n|\r|\n/', \App\Models\PlatformSetting::get("plan_{$key}_features", '') ?: ''))->filter()->values(),
+        'name' => $platformSettings["plan_{$key}_name"],
+        'price' => $platformSettings["plan_{$key}_price"],
+        'description' => $platformSettings["plan_{$key}_description"],
+        'features' => collect(preg_split('/\r\n|\r|\n/', $platformSettings["plan_{$key}_features"] ?: ''))->filter()->values(),
     ]);
 @endphp
 <div class="row g-3">
@@ -17,7 +17,9 @@
                 </div>
                 <p class="tl-muted mt-3">{{ $plan['description'] }}</p>
                 <div class="tl-price mt-4">{{ $plan['price'] }}</div>
-                <a class="btn {{ $index === 1 ? 'btn-tl' : 'btn-outline-tl' }} w-100 mt-4" href="{{ route('contact') }}">Request access</a>
+                @if($platformSettings['request_access_enabled'] && $platformSettings['public_contact_enabled'])
+                    <a class="btn {{ $index === 1 ? 'btn-tl' : 'btn-outline-tl' }} w-100 mt-4" href="{{ route('contact') }}">{{ $platformSettings['homepage_primary_label'] }}</a>
+                @endif
                 <ul class="list-unstyled vstack gap-2 mt-4 mb-0">
                     @forelse($plan['features'] as $feature)
                         <li class="d-flex gap-2"><i class="fa-solid fa-check text-success mt-1"></i><span>{{ $feature }}</span></li>

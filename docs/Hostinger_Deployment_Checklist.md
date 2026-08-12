@@ -168,6 +168,10 @@ Verify these workflows:
 - Athlete login redirects to `/app`.
 - Normal users cannot open `/admin/dashboard`.
 - Admin can edit settings.
+- Owner can upload/remove the public logo, edit public content, switch the guest theme, and control public feature visibility.
+- An admin without `admin.settings` or `admin.permissions` receives `403` from those control surfaces.
+- Hidden features, pricing, and contact routes return `404` and leave no dead public CTA links.
+- Pausing invitations blocks coach web and mobile API invitation creation/resend without deleting existing invitations.
 - Admin can export users, invitations, contact submissions, and logs.
 - Coach can invite an athlete.
 - Coach can create/edit a program and session.

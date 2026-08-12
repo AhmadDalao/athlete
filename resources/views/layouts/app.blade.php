@@ -159,7 +159,7 @@
             <a class="{{ request()->routeIs('admin.users*') ? 'active' : '' }}" href="{{ route('admin.users') }}"><i class="fa-solid fa-users"></i><span>Users</span></a>
             <a class="tl-bottom-action {{ request()->routeIs('admin.coaches*', 'admin.athletes*') ? 'active' : '' }}" href="{{ route('admin.athletes') }}"><i class="fa-solid fa-person-running"></i><span>People</span></a>
             <a class="{{ request()->routeIs('admin.audit*') ? 'active' : '' }}" href="{{ route('admin.audit') }}"><i class="fa-solid fa-clock-rotate-left"></i><span>Activity</span></a>
-            <a class="{{ request()->routeIs('admin.settings*') ? 'active' : '' }}" href="{{ route('admin.settings') }}"><i class="fa-solid fa-sliders"></i><span>More</span></a>
+            @can('admin.settings')<a class="{{ request()->routeIs('admin.settings*') ? 'active' : '' }}" href="{{ route('admin.settings') }}"><i class="fa-solid fa-sliders"></i><span>Control</span></a>@else<button type="button" data-bs-toggle="offcanvas" data-bs-target="#tlSidebar"><i class="fa-solid fa-bars"></i><span>More</span></button>@endcan
         @elseif($role === 'coach')
             <a class="{{ request()->routeIs('coach.home') ? 'active' : '' }}" href="{{ route('coach.home') }}"><i class="fa-solid fa-house"></i><span>Home</span></a>
             <a class="{{ request()->routeIs('coach.athletes*') ? 'active' : '' }}" href="{{ route('coach.athletes') }}"><i class="fa-solid fa-users-line"></i><span>Roster</span></a>

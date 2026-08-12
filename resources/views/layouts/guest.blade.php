@@ -1,4 +1,4 @@
-@php($themePreference = auth()->user()?->theme_preference ?? 'system')
+@php($themePreference = auth()->user()?->theme_preference ?? ($platformSettings['default_theme'] ?? 'system'))
 <!doctype html>
 <html
     lang="en"
@@ -29,9 +29,9 @@
         <div class="container tl-public-nav">
             <x-tl.brand :href="route('home')" :show-tagline="false" />
             <nav class="tl-public-links d-none d-lg-flex" aria-label="Public navigation">
-                <a class="{{ request()->routeIs('features') ? 'active' : '' }}" href="{{ route('features') }}">Features</a>
-                <a class="{{ request()->routeIs('pricing') ? 'active' : '' }}" href="{{ route('pricing') }}">Pricing</a>
-                <a class="{{ request()->routeIs('contact') ? 'active' : '' }}" href="{{ route('contact') }}">Contact</a>
+                @if($platformSettings['public_features_enabled'])<a class="{{ request()->routeIs('features') ? 'active' : '' }}" href="{{ route('features') }}">Features</a>@endif
+                @if($platformSettings['public_pricing_enabled'])<a class="{{ request()->routeIs('pricing') ? 'active' : '' }}" href="{{ route('pricing') }}">Pricing</a>@endif
+                @if($platformSettings['public_contact_enabled'])<a class="{{ request()->routeIs('contact') ? 'active' : '' }}" href="{{ route('contact') }}">Contact</a>@endif
             </nav>
             <div class="tl-public-actions">
                 <x-tl.theme-switch compact />
@@ -39,7 +39,7 @@
                     <a class="btn btn-tl d-none d-sm-inline-flex" href="{{ auth()->user()->landingPath() }}">Open workspace</a>
                 @else
                     <a class="btn btn-ghost d-none d-sm-inline-flex" href="{{ route('login') }}">Log in</a>
-                    <a class="btn btn-tl d-none d-md-inline-flex" href="{{ route('contact') }}">Request access</a>
+                    @if($platformSettings['request_access_enabled'] && $platformSettings['public_contact_enabled'])<a class="btn btn-tl d-none d-md-inline-flex" href="{{ route('contact') }}">Request access</a>@endif
                 @endauth
                 <button class="tl-icon-button d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#publicNavigation" aria-label="Open menu">
                     <i class="fa-solid fa-bars-staggered"></i>
@@ -55,9 +55,9 @@
         </div>
         <div class="offcanvas-body">
             <nav class="tl-drawer-links">
-                <a href="{{ route('features') }}"><i class="fa-solid fa-table-cells-large"></i> Features</a>
-                <a href="{{ route('pricing') }}"><i class="fa-solid fa-tags"></i> Pricing</a>
-                <a href="{{ route('contact') }}"><i class="fa-solid fa-message"></i> Contact</a>
+                @if($platformSettings['public_features_enabled'])<a href="{{ route('features') }}"><i class="fa-solid fa-table-cells-large"></i> Features</a>@endif
+                @if($platformSettings['public_pricing_enabled'])<a href="{{ route('pricing') }}"><i class="fa-solid fa-tags"></i> Pricing</a>@endif
+                @if($platformSettings['public_contact_enabled'])<a href="{{ route('contact') }}"><i class="fa-solid fa-message"></i> Contact</a>@endif
                 <a href="{{ route('login') }}"><i class="fa-solid fa-arrow-right-to-bracket"></i> Log in</a>
             </nav>
         </div>
@@ -73,24 +73,26 @@
             <div class="row g-4 align-items-start">
                 <div class="col-lg-5">
                     <x-tl.brand :href="route('home')" />
-                    <p>One clear system for coaching, execution, and measurable progress.</p>
+                    <p>{{ $platformSettings['footer_copy'] }}</p>
                 </div>
                 <div class="col-6 col-lg-2">
                     <strong>Product</strong>
-                    <a href="{{ route('features') }}">Features</a>
-                    <a href="{{ route('pricing') }}">Pricing</a>
+                    @if($platformSettings['public_features_enabled'])<a href="{{ route('features') }}">Features</a>@endif
+                    @if($platformSettings['public_pricing_enabled'])<a href="{{ route('pricing') }}">Pricing</a>@endif
                 </div>
                 <div class="col-6 col-lg-2">
                     <strong>Company</strong>
-                    <a href="{{ route('contact') }}">Contact</a>
+                    @if($platformSettings['public_contact_enabled'])<a href="{{ route('contact') }}">Contact</a>@endif
                     <a href="{{ route('login') }}">Login</a>
+                    @if($platformSettings['terms_url'])<a href="{{ $platformSettings['terms_url'] }}" target="_blank" rel="noopener">Terms</a>@endif
+                    @if($platformSettings['privacy_url'])<a href="{{ $platformSettings['privacy_url'] }}" target="_blank" rel="noopener">Privacy</a>@endif
                 </div>
                 <div class="col-lg-3">
                     <strong>Ready to simplify coaching?</strong>
-                    <a class="btn btn-tl mt-3" href="{{ route('contact') }}">Request access</a>
+                    @if($platformSettings['request_access_enabled'] && $platformSettings['public_contact_enabled'])<a class="btn btn-tl mt-3" href="{{ route('contact') }}">{{ $platformSettings['homepage_primary_label'] }}</a>@endif
                 </div>
             </div>
-            <div class="tl-footer-base"><span>© {{ now()->year }} Throughline</span><span>Built for coaches who care about the work.</span></div>
+            <div class="tl-footer-base"><span>© {{ now()->year }} {{ $platformSettings['app_name'] }}</span><span>{{ $platformSettings['support_email'] }}@if($platformSettings['support_phone']) · {{ $platformSettings['support_phone'] }}@endif</span></div>
         </div>
     </footer>
 

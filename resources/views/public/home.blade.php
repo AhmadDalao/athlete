@@ -5,12 +5,12 @@
     <div class="container">
         <div class="row align-items-center g-5">
             <div class="col-lg-6 tl-public-hero-copy">
-                <div class="tl-eyebrow">Coaching, connected</div>
-                <h1 class="mt-3">Build the plan. <span>Prove the progress.</span></h1>
-                <p class="lead mt-4">Throughline gives coaches one clean place to program training, guide athletes, and see what actually happened.</p>
+                <div class="tl-eyebrow">{{ $platformSettings['homepage_eyebrow'] }}</div>
+                <h1 class="mt-3">{{ $platformSettings['homepage_headline'] }} <span>{{ $platformSettings['homepage_headline_accent'] }}</span></h1>
+                <p class="lead mt-4">{{ $platformSettings['homepage_subheadline'] }}</p>
                 <div class="d-flex flex-wrap gap-2 mt-4">
-                    <a class="btn btn-tl btn-lg" href="{{ route('contact') }}">Request access <i class="fa-solid fa-arrow-right"></i></a>
-                    <a class="btn btn-outline-tl btn-lg" href="{{ route('features') }}"><i class="fa-regular fa-circle-play"></i> See the platform</a>
+                    @if($platformSettings['request_access_enabled'] && $platformSettings['public_contact_enabled'])<a class="btn btn-tl btn-lg" href="{{ route('contact') }}">{{ $platformSettings['homepage_primary_label'] }} <i class="fa-solid fa-arrow-right"></i></a>@endif
+                    @if($platformSettings['public_features_enabled'])<a class="btn btn-outline-tl btn-lg" href="{{ route('features') }}"><i class="fa-regular fa-circle-play"></i> {{ $platformSettings['homepage_secondary_label'] }}</a>@endif
                 </div>
                 <div class="tl-public-proof">
                     <span><i class="fa-solid fa-check"></i> No spreadsheet chaos</span>
@@ -35,16 +35,18 @@
     </div>
 </section>
 
+@if($platformSettings['public_features_enabled'])
 <section class="tl-public-section" id="features">
     <div class="container">
         <div class="tl-public-heading">
             <div class="tl-eyebrow">One operating system</div>
-            <h2 class="mt-3">Less admin. Better coaching decisions.</h2>
-            <p class="mt-3">The core workflow stays direct from invitation to completed session. Nothing important is buried in decorative dashboards.</p>
+            <h2 class="mt-3">{{ $platformSettings['features_headline'] }}</h2>
+            <p class="mt-3">{{ $platformSettings['features_subheadline'] }}</p>
         </div>
         @include('public.partials.feature-grid')
     </div>
 </section>
+@endif
 
 <section class="tl-public-section is-subtle">
     <div class="container">
@@ -52,8 +54,8 @@
             <div class="col-lg-6">
                 <article class="tl-role-panel is-coach">
                     <div class="tl-eyebrow">For coaches</div>
-                    <h2 class="mt-3">Run the roster without losing the athlete.</h2>
-                    <p class="mt-3">Build reusable programs, assign schedules, review adherence, and respond with context.</p>
+                    <h2 class="mt-3">{{ $platformSettings['coach_headline'] }}</h2>
+                    <p class="mt-3">{{ $platformSettings['coach_description'] }}</p>
                     <div class="tl-role-list">
                         <span><i class="fa-solid fa-check"></i> Reusable phases, sessions, and exercises</span>
                         <span><i class="fa-solid fa-check"></i> Daily schedule and adherence review</span>
@@ -65,8 +67,8 @@
             <div class="col-lg-6">
                 <article class="tl-role-panel is-athlete">
                     <div class="tl-eyebrow">For athletes</div>
-                    <h2 class="mt-3">Open the app. Know exactly what to do.</h2>
-                    <p class="mt-3">Today’s work, coaching media, set targets, timers, notes, and progress in one focused flow.</p>
+                    <h2 class="mt-3">{{ $platformSettings['athlete_headline'] }}</h2>
+                    <p class="mt-3">{{ $platformSettings['athlete_description'] }}</p>
                     <div class="tl-role-list">
                         <span><i class="fa-solid fa-check"></i> Calendar and assigned programs</span>
                         <span><i class="fa-solid fa-check"></i> Sets, reps, load, rest, and RPE</span>
@@ -99,6 +101,7 @@
     </div>
 </section>
 
+@if($platformSettings['public_pricing_enabled'])
 <section class="tl-public-section is-subtle" id="pricing">
     <div class="container">
         <div class="tl-public-heading">
@@ -109,6 +112,7 @@
         @include('public.partials.pricing-grid')
     </div>
 </section>
+@endif
 
 <section class="tl-public-section">
     <div class="container">
@@ -133,7 +137,7 @@
     <div class="tl-final-cta">
         <div class="row align-items-end g-4">
             <div class="col-lg-8"><div class="tl-eyebrow">Ready when you are</div><h2 class="mt-3 mb-0">Make coaching simpler without making it shallow.</h2></div>
-            <div class="col-lg-4 text-lg-end"><a class="btn btn-tl btn-lg" href="{{ route('contact') }}">Request access <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="col-lg-4 text-lg-end">@if($platformSettings['request_access_enabled'] && $platformSettings['public_contact_enabled'])<a class="btn btn-tl btn-lg" href="{{ route('contact') }}">{{ $platformSettings['homepage_primary_label'] }} <i class="fa-solid fa-arrow-right"></i></a>@endif</div>
         </div>
     </div>
 </section>

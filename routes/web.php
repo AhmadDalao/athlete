@@ -18,6 +18,7 @@ use App\Http\Controllers\DashboardRedirectController;
 use App\Http\Controllers\MessageAttachmentController;
 use App\Http\Controllers\OrganizationSelectionController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\PublicPageController;
 use App\Http\Controllers\ThemePreferenceController;
 use App\Livewire\Admin;
 use App\Livewire\Athlete;
@@ -29,8 +30,8 @@ use App\Livewire\Public\ContactForm;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'public.home')->name('home');
-Route::view('/features', 'public.features')->name('features');
-Route::view('/pricing', 'public.pricing')->name('pricing');
+Route::get('/features', [PublicPageController::class, 'features'])->name('features');
+Route::get('/pricing', [PublicPageController::class, 'pricing'])->name('pricing');
 Route::get('/contact', ContactForm::class)->name('contact');
 
 Route::get('/login', [AuthController::class, 'create'])->name('login');
@@ -62,8 +63,8 @@ Route::middleware(['auth', 'organization'])->group(function (): void {
         Route::get('/contact-submissions', Admin\ContactSubmissionsTable::class)->middleware('can:admin.contacts')->name('contact-submissions');
         Route::get('/invitations/export', InvitationExportController::class)->middleware('can:invitations.manage')->name('invitations.export');
         Route::get('/invitations', Admin\InvitationsTable::class)->name('invitations');
-        Route::get('/permissions', Admin\PermissionsPanel::class)->name('permissions');
-        Route::get('/settings', Admin\SettingsPanel::class)->name('settings');
+        Route::get('/permissions', Admin\PermissionsPanel::class)->middleware('can:admin.permissions')->name('permissions');
+        Route::get('/settings', Admin\SettingsPanel::class)->middleware('can:admin.settings')->name('settings');
         Route::get('/audit-log/export', LogExportController::class)->middleware('can:admin.audit')->name('audit.export');
         Route::get('/audit-log', Admin\AuditLogTable::class)->name('audit');
     });

@@ -16,6 +16,8 @@ class PermissionsPanel extends Component
 
     public function mount(): void
     {
+        abort_unless(Auth::user()?->can('admin.permissions'), 403);
+
         $this->selectedUserId = User::where('role', 'admin')->where('status', 'active')->value('id');
         $this->loadPermissions();
     }
@@ -33,6 +35,8 @@ class PermissionsPanel extends Component
 
     public function save(): void
     {
+        abort_unless(Auth::user()?->can('admin.permissions'), 403);
+
         $user = User::findOrFail($this->selectedUserId);
 
         if ($user->isOwner()) {
@@ -61,6 +65,8 @@ class PermissionsPanel extends Component
 
     public function applyRoleDefaults(): void
     {
+        abort_unless(Auth::user()?->can('admin.permissions'), 403);
+
         $user = User::findOrFail($this->selectedUserId);
 
         if ($user->isOwner()) {
@@ -74,6 +80,8 @@ class PermissionsPanel extends Component
 
     public function clearSelection(): void
     {
+        abort_unless(Auth::user()?->can('admin.permissions'), 403);
+
         $user = User::findOrFail($this->selectedUserId);
 
         if ($user->isOwner()) {

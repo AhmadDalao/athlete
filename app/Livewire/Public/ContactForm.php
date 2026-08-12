@@ -3,6 +3,7 @@
 namespace App\Livewire\Public;
 
 use App\Models\ContactSubmission;
+use App\Models\PlatformSetting;
 use Livewire\Component;
 
 class ContactForm extends Component
@@ -14,6 +15,11 @@ class ContactForm extends Component
     public string $phone = '';
 
     public string $message = '';
+
+    public function mount(): void
+    {
+        abort_unless(PlatformSetting::enabled('public_contact_enabled', true), 404);
+    }
 
     public function submit(): void
     {

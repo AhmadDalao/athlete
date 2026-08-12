@@ -23,6 +23,8 @@ class InvitationsPanel extends Component
 
     public function invite(InvitationDeliveryService $delivery): void
     {
+        abort_unless(PlatformSetting::enabled('invitations_enabled', true), 423, 'Athlete invitations are currently paused.');
+
         $data = $this->validate([
             'name' => ['nullable', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:160'],
@@ -73,6 +75,8 @@ class InvitationsPanel extends Component
 
     public function resend(int $inviteId, InvitationDeliveryService $delivery): void
     {
+        abort_unless(PlatformSetting::enabled('invitations_enabled', true), 423, 'Athlete invitations are currently paused.');
+
         $invite = AthleteInvitation::where('coach_id', Auth::id())->where('status', 'pending')->findOrFail($inviteId);
         $sent = $delivery->send($invite);
 

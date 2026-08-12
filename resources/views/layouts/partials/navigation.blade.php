@@ -14,8 +14,8 @@
                 ['route' => 'admin.invitations', 'active' => 'admin.invitations*', 'icon' => 'fa-paper-plane', 'label' => 'Invitations'],
             ],
             'Control' => [
-                ['route' => 'admin.permissions', 'active' => 'admin.permissions*', 'icon' => 'fa-shield-halved', 'label' => 'Permissions'],
-                ['route' => 'admin.settings', 'active' => 'admin.settings*', 'icon' => 'fa-sliders', 'label' => 'System settings'],
+                ['route' => 'admin.permissions', 'active' => 'admin.permissions*', 'icon' => 'fa-shield-halved', 'label' => 'Permissions', 'permission' => 'admin.permissions'],
+                ['route' => 'admin.settings', 'active' => 'admin.settings*', 'icon' => 'fa-sliders', 'label' => 'Website control', 'permission' => 'admin.settings'],
                 ['route' => 'admin.audit', 'active' => 'admin.audit*', 'icon' => 'fa-clock-rotate-left', 'label' => 'Audit log'],
             ],
         ],
