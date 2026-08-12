@@ -42,7 +42,9 @@ Users can belong to multiple organizations and select an active organization. Or
 | --- | --- | --- |
 | `/admin/dashboard` | Operations summary | `admin.access` |
 | `/admin/organizations` | Organization list, members, and exports | `organizations.manage` |
-| `/admin/users`, `/coaches`, `/athletes` | Account tables and details | `admin.access` |
+| `/admin/users` and user details/export | Platform accounts or current-organization members | `users.manage` |
+| `/admin/coaches` | Current scope coach table | `coaches.manage` |
+| `/admin/athletes` | Current scope athlete table | `athletes.manage` |
 | `/admin/invitations` | Invitation operations and export | `invitations.manage` |
 | `/admin/reports` | Organization coaching delivery and adherence | `reports.view` |
 | `/admin/contact-submissions` | Public inquiry inbox | `admin.contacts` |
@@ -52,6 +54,8 @@ Users can belong to multiple organizations and select an active organization. Or
 | `/admin/audit-log` | Sensitive system action trail and export | `admin.audit` |
 
 Admin and coach list pages use the same Livewire contract: debounced search, AJAX filters, `10/25/50/100/All`, Bootstrap pagination, CSV export where operationally useful, and table-contained horizontal scrolling.
+
+Platform owners/admins manage global accounts. Organization owners/admins see only members of their active organization. Their role/status actions update that membership rather than disabling a shared global account; organization-owner memberships are protected from lockout.
 
 ### Coach
 

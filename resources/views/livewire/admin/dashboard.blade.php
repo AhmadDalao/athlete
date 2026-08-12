@@ -5,8 +5,8 @@
         subtitle="Users, coaches, athletes, programs, invitations, and progress are visible without hunting."
     >
         <x-slot:actions>
-            <a class="btn btn-tl" href="{{ route('admin.users') }}">Open users</a>
-            <a class="btn btn-outline-tl" href="{{ route('admin.settings') }}">System settings</a>
+            @can('users.manage')<a class="btn btn-tl" href="{{ route('admin.users') }}">Open users</a>@endcan
+            @can('admin.settings')<a class="btn btn-outline-tl" href="{{ route('admin.settings') }}">System settings</a>@endcan
         </x-slot:actions>
         <x-slot:visual>
             <x-tl.product-preview />
@@ -38,7 +38,7 @@
         @endforeach
     </div>
 
-    <x-tl.section-card
+    @if($canViewAudit)<x-tl.section-card
         eyebrow="Audit"
         title="Recent activity"
         subtitle="Latest system changes, invites, account actions, and settings updates."
@@ -63,5 +63,5 @@
                 </tbody>
             </table>
         </div>
-    </x-tl.section-card>
+    </x-tl.section-card>@endif
 </div>

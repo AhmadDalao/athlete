@@ -9,24 +9,40 @@ use App\Models\ProgressEntry;
 use App\Models\TrainingProgram;
 use App\Models\TrainingSession;
 use App\Models\User;
+use App\Queries\Admin\ManagedUserQuery;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class Dashboard extends Component
 {
     public function render()
     {
+        $actor = Auth::user();
+        $organizationId = (int) $actor->current_organization_id;
+        $organizationScope = fn (Builder $query): Builder => $query->when(
+            $organizationId > 0,
+            fn (Builder $query) => $query->withoutGlobalScope('organization')->where('organization_id', $organizationId)
+        );
+        $users = $organizationId > 0
+            ? ManagedUserQuery::forOrganization($organizationId)
+            : ManagedUserQuery::visibleTo($actor);
+
         return view('livewire.admin.dashboard', [
             'stats' => [
-                'users' => User::count(),
-                'coaches' => User::where('role', 'coach')->count(),
-                'athletes' => User::where('role', 'athlete')->count(),
-                'activePrograms' => TrainingProgram::where('status', 'active')->count(),
-                'todaySessions' => TrainingSession::whereDate('scheduled_on', today())->count(),
-                'openInvites' => AthleteInvitation::where('status', 'pending')->count(),
-                'assignments' => CoachAthleteAssignment::where('status', 'active')->count(),
-                'checkIns' => ProgressEntry::whereDate('logged_on', '>=', now()->subDays(7))->count(),
+                'users' => (clone $users)->count(),
+                'coaches' => $organizationId > 0 ? ManagedUserQuery::forOrganization($organizationId, 'coach')->count() : User::where('role', 'coach')->count(),
+                'athletes' => $organizationId > 0 ? ManagedUserQuery::forOrganization($organizationId, 'athlete')->count() : User::where('role', 'athlete')->count(),
+                'activePrograms' => $organizationScope(TrainingProgram::query())->where('status', 'active')->count(),
+                'todaySessions' => $organizationScope(TrainingSession::query())->whereDate('scheduled_on', today())->count(),
+                'openInvites' => $organizationScope(AthleteInvitation::query())->where('status', 'pending')->count(),
+                'assignments' => $organizationScope(CoachAthleteAssignment::query())->where('status', 'active')->count(),
+                'checkIns' => $organizationScope(ProgressEntry::query())->whereDate('logged_on', '>=', now()->subDays(7))->count(),
             ],
-            'recentAudits' => AuditLog::with('user')->latest()->limit(8)->get(),
+            'recentAudits' => $actor->hasPermission('admin.audit')
+                ? $organizationScope(AuditLog::query())->with('user')->latest()->limit(8)->get()
+                : collect(),
+            'canViewAudit' => $actor->hasPermission('admin.audit'),
         ])->layout('layouts.app', ['title' => 'Admin dashboard']);
     }
 }

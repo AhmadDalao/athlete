@@ -2,7 +2,7 @@
     <x-tl.page-hero
         eyebrow="User profile"
         :title="$user->name"
-        :subtitle="$user->email.' · '.ucfirst($user->role).' · '.ucfirst($user->status)"
+        :subtitle="$user->email.' · '.str($role)->headline().' · '.ucfirst($status)"
     >
         <x-slot:actions>
             <a class="btn btn-outline-tl" href="{{ route('admin.users') }}"><i class="fa-solid fa-arrow-left"></i> Back to users</a>
@@ -16,31 +16,29 @@
         <div class="col-6 col-lg-3"><x-tl.metric-card icon="fa-solid fa-clipboard-check" label="Workout logs" :value="$user->workout_logs_count" tone="blue" /></div>
     </div>
 
-    <x-tl.section-card eyebrow="Account control" title="Edit profile and access" subtitle="Owner accounts stay protected; normal accounts can be updated here.">
+    <x-tl.section-card eyebrow="Account control" :title="$platformMode ? 'Edit profile and access' : 'Organization access'" :subtitle="$platformMode ? 'Owner accounts stay protected; normal accounts can be updated here.' : 'Identity belongs to the user. Organization admins control only this membership role and status.'">
         <form class="row g-3 align-items-end" wire:submit.prevent="updateUser">
-            <div class="col-md-3"><label class="form-label">Name</label><input class="form-control" wire:model="name"></div>
-            <div class="col-md-3"><label class="form-label">Email</label><input class="form-control" type="email" wire:model="email"></div>
-            <div class="col-md-2"><label class="form-label">Phone</label><input class="form-control" wire:model="phone"></div>
+            <div class="col-md-3"><label class="form-label">Name</label><input class="form-control" wire:model="name" @readonly(!$platformMode)></div>
+            <div class="col-md-3"><label class="form-label">Email</label><input class="form-control" type="email" wire:model="email" @readonly(!$platformMode)></div>
+            <div class="col-md-2"><label class="form-label">Phone</label><input class="form-control" wire:model="phone" @readonly(!$platformMode)></div>
             <div class="col-md-2">
                 <label class="form-label">Role</label>
-                <select class="form-select" wire:model="role" @disabled($user->isOwner())>
-                    <option value="owner">Owner</option>
-                    <option value="admin">Admin</option>
-                    <option value="coach">Coach</option>
-                    <option value="athlete">Athlete</option>
+                <select class="form-select" wire:model="role" @disabled(str_contains($role, 'owner'))>
+                    @if($platformMode)<option value="owner">Platform owner</option><option value="admin">Platform admin</option>@else<option value="organization_owner">Organization owner</option><option value="organization_admin">Organization admin</option>@endif
+                    <option value="coach">Coach</option><option value="athlete">Athlete</option>
                 </select>
             </div>
             <div class="col-md-2">
                 <label class="form-label">Status</label>
-                <select class="form-select" wire:model="status" @disabled($user->isOwner())>
+                <select class="form-select" wire:model="status" @disabled(str_contains($role, 'owner'))>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                 </select>
             </div>
-            <div class="col-md-6"><label class="form-label">Primary goal</label><input class="form-control" wire:model="primaryGoal"></div>
-            <div class="col-md-3"><label class="form-label">New password</label><input class="form-control" type="password" wire:model="password" placeholder="Leave blank"></div>
-            <div class="col-md-3"><button class="btn btn-tl w-100" type="submit">Save user</button></div>
-            <div class="col-12"><label class="form-label">Bio / notes</label><textarea class="form-control" rows="3" wire:model="bio"></textarea></div>
+            @if($platformMode)<div class="col-md-6"><label class="form-label">Primary goal</label><input class="form-control" wire:model="primaryGoal"></div>
+            <div class="col-md-3"><label class="form-label">New password</label><input class="form-control" type="password" wire:model="password" placeholder="Leave blank"></div>@endif
+            <div class="col-md-3"><button class="btn btn-tl w-100" type="submit">{{ $platformMode ? 'Save user' : 'Save membership' }}</button></div>
+            @if($platformMode)<div class="col-12"><label class="form-label">Bio / notes</label><textarea class="form-control" rows="3" wire:model="bio"></textarea></div>@endif
         </form>
         @if($errors->any())<div class="text-danger small mt-3">{{ $errors->first() }}</div>@endif
     </x-tl.section-card>
@@ -107,7 +105,7 @@
         </table></div>
     </x-tl.table-card>
 
-    <x-tl.table-card title="Audit trail" subtitle="Recent recorded actions for this user." :count="$auditLogs->count()" icon="fa-solid fa-clipboard-list">
+    @if($canViewAudit)<x-tl.table-card title="Audit trail" subtitle="Recent recorded actions for this user." :count="$auditLogs->count()" icon="fa-solid fa-clipboard-list">
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
             <thead><tr><th>When</th><th>Action</th><th>Summary</th><th>IP</th></tr></thead>
             <tbody>
@@ -118,5 +116,5 @@
             @endforelse
             </tbody>
         </table></div>
-    </x-tl.table-card>
+    </x-tl.table-card>@endif
 </div>

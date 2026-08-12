@@ -9,10 +9,10 @@
                 ['route' => 'admin.reports', 'active' => 'admin.reports*', 'icon' => 'fa-chart-column', 'label' => 'Reports', 'permission' => 'reports.view'],
             ],
             'People' => [
-                ['route' => 'admin.users', 'active' => 'admin.users*', 'icon' => 'fa-users', 'label' => 'All users'],
-                ['route' => 'admin.coaches', 'active' => 'admin.coaches*', 'icon' => 'fa-user-tie', 'label' => 'Coaches'],
-                ['route' => 'admin.athletes', 'active' => 'admin.athletes*', 'icon' => 'fa-person-running', 'label' => 'Athletes'],
-                ['route' => 'admin.invitations', 'active' => 'admin.invitations*', 'icon' => 'fa-paper-plane', 'label' => 'Invitations'],
+                ['route' => 'admin.users', 'active' => 'admin.users*', 'icon' => 'fa-users', 'label' => 'All users', 'permission' => 'users.manage'],
+                ['route' => 'admin.coaches', 'active' => 'admin.coaches*', 'icon' => 'fa-user-tie', 'label' => 'Coaches', 'permission' => 'coaches.manage'],
+                ['route' => 'admin.athletes', 'active' => 'admin.athletes*', 'icon' => 'fa-person-running', 'label' => 'Athletes', 'permission' => 'athletes.manage'],
+                ['route' => 'admin.invitations', 'active' => 'admin.invitations*', 'icon' => 'fa-paper-plane', 'label' => 'Invitations', 'permission' => 'invitations.manage'],
             ],
             'Control' => [
                 ['route' => 'admin.permissions', 'active' => 'admin.permissions*', 'icon' => 'fa-shield-halved', 'label' => 'Permissions', 'permission' => 'admin.permissions'],

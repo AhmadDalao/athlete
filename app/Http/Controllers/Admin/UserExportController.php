@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Queries\Admin\ManagedUserQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -14,10 +14,11 @@ class UserExportController extends Controller
     {
         $role = $request->string('role')->toString();
         $search = $request->string('search')->toString();
+        $actor = $request->user();
+        $role = in_array($role, ['owner', 'admin', 'coach', 'athlete'], true) ? $role : 'all';
+        ManagedUserQuery::authorizeRole($actor, $role);
 
-        $users = User::query()
-            ->withCount(['coachAssignments', 'athleteAssignments', 'coachPrograms', 'progressEntries'])
-            ->when(in_array($role, ['owner', 'admin', 'coach', 'athlete'], true), fn (Builder $query) => $query->where('role', $role))
+        $users = ManagedUserQuery::visibleTo($actor, $role)
             ->when($search !== '', function (Builder $query) use ($search): void {
                 $query->where(function (Builder $query) use ($search): void {
                     $query->where('name', 'like', "%{$search}%")
@@ -30,7 +31,7 @@ class UserExportController extends Controller
             ->orderBy('name')
             ->get();
 
-        return response()->streamDownload(function () use ($users): void {
+        return response()->streamDownload(function () use ($actor, $users): void {
             $handle = fopen('php://output', 'w');
 
             fputcsv($handle, [
@@ -54,8 +55,8 @@ class UserExportController extends Controller
                     $user->name,
                     $user->email,
                     $user->phone,
-                    $user->role,
-                    $user->status,
+                    ManagedUserQuery::displayRole($actor, $user),
+                    ManagedUserQuery::displayStatus($actor, $user),
                     $user->primary_goal,
                     $user->coach_programs_count,
                     $user->coach_assignments_count,

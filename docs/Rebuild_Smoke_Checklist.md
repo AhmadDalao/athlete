@@ -25,6 +25,9 @@ Use this checklist before deploying or after pulling the rebuild onto Hostinger.
 - Login as owner and confirm `/dashboard` redirects to `/admin/dashboard`.
 - Open `/admin/users`, search a user, change page size, and export CSV.
 - Open a user detail page and confirm role/status/contact fields are visible.
+- Confirm an organization admin sees only active-organization users, coaches, athletes, counts, details, and exports.
+- Confirm disabling a multi-organization member changes only the active organization membership.
+- Confirm organization owners cannot be disabled or demoted from the people screens.
 - Open `/admin/permissions`, select an admin, change permissions, and save.
 - Open `/admin/settings`, update homepage/contact/pricing copy, and confirm the public website changes.
 - Open `/admin/reports`, change the date range/search/page size, and export the organization-scoped CSV.

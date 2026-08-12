@@ -35,10 +35,16 @@ class ResolveOrganization
             $user->forceFill(['current_organization_id' => $organization->id])->saveQuietly();
         }
 
+        $livewireUpdate = $request->headers->has('X-Livewire');
+
         try {
             return $next($request);
         } finally {
-            $this->context->clear();
+            // Persistent Livewire middleware runs before the component update. Keep
+            // this request-scoped context alive until that update has completed.
+            if (! $livewireUpdate) {
+                $this->context->clear();
+            }
         }
     }
 

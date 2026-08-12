@@ -156,9 +156,9 @@
     <nav class="tl-bottom-nav d-lg-none" aria-label="Mobile primary navigation">
         @if($role === 'admin')
             <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}"><i class="fa-solid fa-house"></i><span>Home</span></a>
-            <a class="{{ request()->routeIs('admin.users*') ? 'active' : '' }}" href="{{ route('admin.users') }}"><i class="fa-solid fa-users"></i><span>Users</span></a>
-            <a class="tl-bottom-action {{ request()->routeIs('admin.coaches*', 'admin.athletes*') ? 'active' : '' }}" href="{{ route('admin.athletes') }}"><i class="fa-solid fa-person-running"></i><span>People</span></a>
-            <a class="{{ request()->routeIs('admin.audit*') ? 'active' : '' }}" href="{{ route('admin.audit') }}"><i class="fa-solid fa-clock-rotate-left"></i><span>Activity</span></a>
+            @can('users.manage')<a class="{{ request()->routeIs('admin.users*') ? 'active' : '' }}" href="{{ route('admin.users') }}"><i class="fa-solid fa-users"></i><span>Users</span></a>@endcan
+            @can('athletes.manage')<a class="tl-bottom-action {{ request()->routeIs('admin.coaches*', 'admin.athletes*') ? 'active' : '' }}" href="{{ route('admin.athletes') }}"><i class="fa-solid fa-person-running"></i><span>People</span></a>@endcan
+            @can('admin.audit')<a class="{{ request()->routeIs('admin.audit*') ? 'active' : '' }}" href="{{ route('admin.audit') }}"><i class="fa-solid fa-clock-rotate-left"></i><span>Activity</span></a>@endcan
             @can('admin.settings')<a class="{{ request()->routeIs('admin.settings*') ? 'active' : '' }}" href="{{ route('admin.settings') }}"><i class="fa-solid fa-sliders"></i><span>Control</span></a>@else<button type="button" data-bs-toggle="offcanvas" data-bs-target="#tlSidebar"><i class="fa-solid fa-bars"></i><span>More</span></button>@endcan
         @elseif($role === 'coach')
             <a class="{{ request()->routeIs('coach.home') ? 'active' : '' }}" href="{{ route('coach.home') }}"><i class="fa-solid fa-house"></i><span>Home</span></a>
