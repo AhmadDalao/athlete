@@ -23,7 +23,7 @@ return new class extends Migration
 
         Schema::create('organizations', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('owner_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('owner_id')->nullable()->constrained('users', indexName: 'org_owner_fk')->nullOnDelete();
             $table->string('name');
             $table->string('slug')->unique();
             $table->string('status')->default('active')->index();
@@ -36,46 +36,46 @@ return new class extends Migration
         });
 
         Schema::table('users', function (Blueprint $table): void {
-            $table->foreignId('current_organization_id')->nullable()->after('id')->constrained('organizations')->nullOnDelete();
+            $table->foreignId('current_organization_id')->nullable()->after('id')->constrained('organizations', indexName: 'users_current_org_fk')->nullOnDelete();
             $table->string('theme_preference')->default('system')->after('status');
             $table->string('avatar_path')->nullable()->after('bio');
         });
 
         Schema::create('organization_memberships', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('organization_id')->constrained(indexName: 'org_memberships_org_fk')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained(indexName: 'org_memberships_user_fk')->cascadeOnDelete();
             $table->string('role')->index();
             $table->string('status')->default('active')->index();
             $table->timestamp('joined_at')->nullable();
             $table->timestamp('last_active_at')->nullable();
             $table->timestamps();
-            $table->unique(['organization_id', 'user_id']);
+            $table->unique(['organization_id', 'user_id'], 'org_memberships_org_user_uq');
         });
 
         Schema::create('membership_permission_overrides', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_membership_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('organization_membership_id')->constrained(indexName: 'permission_overrides_membership_fk')->cascadeOnDelete();
             $table->string('permission');
             $table->boolean('allowed')->default(true);
             $table->timestamps();
-            $table->unique(['organization_membership_id', 'permission']);
+            $table->unique(['organization_membership_id', 'permission'], 'permission_overrides_member_perm_uq');
         });
 
         Schema::create('organization_settings', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('organization_id')->constrained(indexName: 'org_settings_org_fk')->cascadeOnDelete();
             $table->string('key');
             $table->text('value')->nullable();
             $table->string('group')->default('general')->index();
             $table->timestamps();
-            $table->unique(['organization_id', 'key']);
+            $table->unique(['organization_id', 'key'], 'org_settings_org_key_uq');
         });
 
         Schema::create('athlete_profiles', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('organization_id')->constrained(indexName: 'athlete_profiles_org_fk')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained(indexName: 'athlete_profiles_user_fk')->cascadeOnDelete();
             $table->date('date_of_birth')->nullable();
             $table->string('gender')->nullable();
             $table->decimal('height_cm', 6, 2)->nullable();
@@ -86,24 +86,24 @@ return new class extends Migration
             $table->string('emergency_contact_phone')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();
-            $table->unique(['organization_id', 'user_id']);
+            $table->unique(['organization_id', 'user_id'], 'athlete_profiles_org_user_uq');
         });
 
         Schema::create('coach_profiles', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('organization_id')->constrained(indexName: 'coach_profiles_org_fk')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained(indexName: 'coach_profiles_user_fk')->cascadeOnDelete();
             $table->string('title')->nullable();
             $table->json('specialties')->nullable();
             $table->text('certifications')->nullable();
             $table->unsignedSmallInteger('years_experience')->nullable();
             $table->timestamps();
-            $table->unique(['organization_id', 'user_id']);
+            $table->unique(['organization_id', 'user_id'], 'coach_profiles_org_user_uq');
         });
 
         foreach (['athlete_invitations', 'coach_athlete_assignments', 'training_programs', 'training_sessions', 'workout_logs', 'progress_entries', 'audit_logs', 'email_logs'] as $tableName) {
-            Schema::table($tableName, function (Blueprint $table): void {
-                $table->foreignId('organization_id')->nullable()->constrained()->nullOnDelete();
+            Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
+                $table->foreignId('organization_id')->nullable()->constrained(indexName: $tableName.'_org_fk')->nullOnDelete();
             });
         }
 
@@ -133,8 +133,8 @@ return new class extends Migration
 
         Schema::create('program_phases', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('training_program_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('organization_id')->constrained(indexName: 'program_phases_org_fk')->cascadeOnDelete();
+            $table->foreignId('training_program_id')->constrained(indexName: 'program_phases_program_fk')->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->unsignedSmallInteger('sort_order')->default(0);
@@ -143,31 +143,31 @@ return new class extends Migration
         });
 
         Schema::table('training_sessions', function (Blueprint $table): void {
-            $table->foreignId('program_phase_id')->nullable()->after('training_program_id')->constrained()->nullOnDelete();
+            $table->foreignId('program_phase_id')->nullable()->after('training_program_id')->constrained(indexName: 'training_sessions_phase_fk')->nullOnDelete();
         });
 
         Schema::create('program_assignments', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('training_program_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('athlete_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('assigned_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('organization_id')->constrained(indexName: 'program_assignments_org_fk')->cascadeOnDelete();
+            $table->foreignId('training_program_id')->constrained(indexName: 'program_assignments_program_fk')->cascadeOnDelete();
+            $table->foreignId('athlete_id')->constrained('users', indexName: 'program_assignments_athlete_fk')->cascadeOnDelete();
+            $table->foreignId('assigned_by')->nullable()->constrained('users', indexName: 'program_assignments_assigner_fk')->nullOnDelete();
             $table->string('status')->default('active')->index();
             $table->date('starts_on');
             $table->date('ends_on')->nullable();
             $table->string('timezone')->default('Asia/Riyadh');
             $table->text('notes')->nullable();
             $table->timestamps();
-            $table->index(['organization_id', 'athlete_id', 'status']);
+            $table->index(['organization_id', 'athlete_id', 'status'], 'program_assignments_org_athlete_status_ix');
         });
 
         Schema::create('scheduled_workouts', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('program_assignment_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('training_session_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('athlete_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('coach_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('organization_id')->constrained(indexName: 'scheduled_workouts_org_fk')->cascadeOnDelete();
+            $table->foreignId('program_assignment_id')->constrained(indexName: 'scheduled_workouts_assignment_fk')->cascadeOnDelete();
+            $table->foreignId('training_session_id')->constrained(indexName: 'scheduled_workouts_session_fk')->cascadeOnDelete();
+            $table->foreignId('athlete_id')->constrained('users', indexName: 'scheduled_workouts_athlete_fk')->cascadeOnDelete();
+            $table->foreignId('coach_id')->nullable()->constrained('users', indexName: 'scheduled_workouts_coach_fk')->nullOnDelete();
             $table->dateTime('scheduled_for')->index();
             $table->string('status')->default('scheduled')->index();
             $table->text('coach_notes')->nullable();
@@ -178,8 +178,8 @@ return new class extends Migration
 
         Schema::create('exercise_library', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('owner_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('organization_id')->constrained(indexName: 'exercise_library_org_fk')->cascadeOnDelete();
+            $table->foreignId('owner_id')->nullable()->constrained('users', indexName: 'exercise_library_owner_fk')->nullOnDelete();
             $table->string('name');
             $table->string('section')->nullable();
             $table->string('movement_type')->nullable();
@@ -193,14 +193,14 @@ return new class extends Migration
             $table->boolean('is_shared')->default(false);
             $table->string('status')->default('active')->index();
             $table->timestamps();
-            $table->index(['organization_id', 'name']);
+            $table->index(['organization_id', 'name'], 'exercise_library_org_name_ix');
         });
 
         Schema::create('training_session_exercises', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('training_session_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('exercise_id')->nullable()->constrained('exercise_library')->nullOnDelete();
+            $table->foreignId('organization_id')->constrained(indexName: 'session_exercises_org_fk')->cascadeOnDelete();
+            $table->foreignId('training_session_id')->constrained(indexName: 'session_exercises_session_fk')->cascadeOnDelete();
+            $table->foreignId('exercise_id')->nullable()->constrained('exercise_library', indexName: 'session_exercises_exercise_fk')->nullOnDelete();
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->string('section')->nullable();
             $table->string('superset_label')->nullable();
@@ -219,19 +219,19 @@ return new class extends Migration
 
         Schema::table('workout_logs', function (Blueprint $table): void {
             $table->dropUnique('workout_logs_training_session_id_athlete_id_unique');
-            $table->foreignId('program_assignment_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('scheduled_workout_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('program_assignment_id')->nullable()->constrained(indexName: 'workout_logs_assignment_fk')->nullOnDelete();
+            $table->foreignId('scheduled_workout_id')->nullable()->constrained(indexName: 'workout_logs_schedule_fk')->nullOnDelete();
             $table->unsignedInteger('sync_version')->default(1);
             $table->unique(['scheduled_workout_id', 'athlete_id'], 'workout_logs_scheduled_athlete_unique');
         });
 
         Schema::create('workout_set_logs', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('workout_log_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('scheduled_workout_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('training_session_exercise_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('athlete_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('organization_id')->constrained(indexName: 'workout_sets_org_fk')->cascadeOnDelete();
+            $table->foreignId('workout_log_id')->constrained(indexName: 'workout_sets_log_fk')->cascadeOnDelete();
+            $table->foreignId('scheduled_workout_id')->nullable()->constrained(indexName: 'workout_sets_schedule_fk')->nullOnDelete();
+            $table->foreignId('training_session_exercise_id')->nullable()->constrained(indexName: 'workout_sets_session_exercise_fk')->nullOnDelete();
+            $table->foreignId('athlete_id')->constrained('users', indexName: 'workout_sets_athlete_fk')->cascadeOnDelete();
             $table->unsignedSmallInteger('exercise_index')->default(0);
             $table->string('exercise_name');
             $table->unsignedSmallInteger('set_number');
@@ -249,10 +249,10 @@ return new class extends Migration
 
         Schema::create('progress_photos', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('athlete_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('progress_entry_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('organization_id')->constrained(indexName: 'progress_photos_org_fk')->cascadeOnDelete();
+            $table->foreignId('athlete_id')->constrained('users', indexName: 'progress_photos_athlete_fk')->cascadeOnDelete();
+            $table->foreignId('progress_entry_id')->nullable()->constrained(indexName: 'progress_photos_entry_fk')->nullOnDelete();
+            $table->foreignId('uploaded_by')->nullable()->constrained('users', indexName: 'progress_photos_uploader_fk')->nullOnDelete();
             $table->string('path');
             $table->string('thumbnail_path')->nullable();
             $table->string('category')->default('progress');
@@ -264,9 +264,9 @@ return new class extends Migration
 
         Schema::create('coach_notes', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('coach_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('athlete_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('organization_id')->constrained(indexName: 'coach_notes_org_fk')->cascadeOnDelete();
+            $table->foreignId('coach_id')->constrained('users', indexName: 'coach_notes_coach_fk')->cascadeOnDelete();
+            $table->foreignId('athlete_id')->constrained('users', indexName: 'coach_notes_athlete_fk')->cascadeOnDelete();
             $table->text('body');
             $table->string('visibility')->default('private');
             $table->boolean('is_pinned')->default(false);
@@ -275,8 +275,8 @@ return new class extends Migration
 
         Schema::create('media_assets', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('organization_id')->nullable()->constrained(indexName: 'media_assets_org_fk')->nullOnDelete();
+            $table->foreignId('uploaded_by')->nullable()->constrained('users', indexName: 'media_assets_uploader_fk')->nullOnDelete();
             $table->nullableMorphs('attachable');
             $table->string('type');
             $table->string('disk')->default('public');
@@ -292,7 +292,7 @@ return new class extends Migration
 
         Schema::create('conversations', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('organization_id')->constrained(indexName: 'conversations_org_fk')->cascadeOnDelete();
             $table->string('type')->default('direct');
             $table->string('subject')->nullable();
             $table->timestamps();
@@ -300,20 +300,20 @@ return new class extends Migration
 
         Schema::create('conversation_participants', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('conversation_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('conversation_id')->constrained(indexName: 'conversation_participants_conversation_fk')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained(indexName: 'conversation_participants_user_fk')->cascadeOnDelete();
             $table->string('role')->nullable();
             $table->timestamp('last_read_at')->nullable();
             $table->timestamp('archived_at')->nullable();
             $table->timestamps();
-            $table->unique(['conversation_id', 'user_id']);
+            $table->unique(['conversation_id', 'user_id'], 'conversation_participants_user_uq');
         });
 
         Schema::create('messages', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('conversation_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('sender_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('reply_to_id')->nullable()->constrained('messages')->nullOnDelete();
+            $table->foreignId('conversation_id')->constrained(indexName: 'messages_conversation_fk')->cascadeOnDelete();
+            $table->foreignId('sender_id')->nullable()->constrained('users', indexName: 'messages_sender_fk')->nullOnDelete();
+            $table->foreignId('reply_to_id')->nullable()->constrained('messages', indexName: 'messages_reply_fk')->nullOnDelete();
             $table->text('body');
             $table->timestamp('sent_at')->useCurrent();
             $table->timestamp('edited_at')->nullable();
@@ -323,16 +323,16 @@ return new class extends Migration
 
         Schema::create('personal_records', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('athlete_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('workout_set_log_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('organization_id')->constrained(indexName: 'personal_records_org_fk')->cascadeOnDelete();
+            $table->foreignId('athlete_id')->constrained('users', indexName: 'personal_records_athlete_fk')->cascadeOnDelete();
+            $table->foreignId('workout_set_log_id')->nullable()->constrained(indexName: 'personal_records_workout_set_fk')->nullOnDelete();
             $table->string('exercise_name');
             $table->string('record_type')->default('load');
             $table->decimal('value', 10, 2);
             $table->string('unit')->default('kg');
             $table->date('achieved_on');
             $table->timestamps();
-            $table->index(['organization_id', 'athlete_id', 'exercise_name']);
+            $table->index(['organization_id', 'athlete_id', 'exercise_name'], 'personal_records_org_athlete_exercise_ix');
         });
 
         Schema::create('notifications', function (Blueprint $table): void {
@@ -533,14 +533,16 @@ return new class extends Migration
 
         Schema::table('workout_logs', function (Blueprint $table): void {
             $table->dropUnique('workout_logs_scheduled_athlete_unique');
-            $table->dropConstrainedForeignId('scheduled_workout_id');
-            $table->dropConstrainedForeignId('program_assignment_id');
+            $this->dropForeignKey($table, 'scheduled_workout_id', 'workout_logs_schedule_fk');
+            $this->dropForeignKey($table, 'program_assignment_id', 'workout_logs_assignment_fk');
+            $table->dropColumn(['scheduled_workout_id', 'program_assignment_id']);
             $table->dropColumn('sync_version');
             $table->unique(['training_session_id', 'athlete_id']);
         });
 
         Schema::table('training_sessions', function (Blueprint $table): void {
-            $table->dropConstrainedForeignId('program_phase_id');
+            $this->dropForeignKey($table, 'program_phase_id', 'training_sessions_phase_fk');
+            $table->dropColumn('program_phase_id');
             $table->dropColumn(['day_offset', 'sort_order', 'estimated_minutes']);
         });
 
@@ -554,17 +556,30 @@ return new class extends Migration
         });
 
         foreach (['athlete_invitations', 'coach_athlete_assignments', 'training_programs', 'training_sessions', 'workout_logs', 'progress_entries', 'audit_logs', 'email_logs'] as $tableName) {
-            Schema::table($tableName, function (Blueprint $table): void {
-                $table->dropConstrainedForeignId('organization_id');
+            Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
+                $this->dropForeignKey($table, 'organization_id', $tableName.'_org_fk');
+                $table->dropColumn('organization_id');
             });
         }
 
         Schema::table('users', function (Blueprint $table): void {
-            $table->dropConstrainedForeignId('current_organization_id');
+            $this->dropForeignKey($table, 'current_organization_id', 'users_current_org_fk');
+            $table->dropColumn('current_organization_id');
             $table->dropColumn(['theme_preference', 'avatar_path']);
         });
 
         Schema::dropIfExists('organizations');
         Schema::dropIfExists('personal_access_tokens');
+    }
+
+    private function dropForeignKey(Blueprint $table, string $column, string $name): void
+    {
+        if (DB::getDriverName() === 'sqlite') {
+            $table->dropForeign([$column]);
+
+            return;
+        }
+
+        $table->dropForeign($name);
     }
 };
