@@ -7,12 +7,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\CompactUserResource;
 use App\Http\Resources\Api\V1\ProgramAssignmentResource;
 use App\Http\Resources\Api\V1\ProgressEntryResource;
+use App\Http\Resources\Api\V1\ProgressPhotoResource;
 use App\Http\Resources\Api\V1\WorkoutResource;
 use App\Models\ProgramAssignment;
 use App\Models\ProgressEntry;
 use App\Models\ScheduledWorkout;
 use App\Models\TrainingProgram;
 use App\Models\User;
+use App\Queries\Coach\AthleteProfileQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -66,12 +68,38 @@ class CoachAppController extends Controller
             ->latest('starts_on')
             ->get();
         $progress = ProgressEntry::query()->where('athlete_id', $athlete->id)->latest('logged_on')->limit(30)->get();
+        $notes = AthleteProfileQuery::notes($request->user()->id, $athlete->id)->limit(30)->get();
+        $photos = AthleteProfileQuery::photos($athlete->id)
+            ->where(fn (Builder $query) => $query
+                ->where('visibility', '!=', 'private')
+                ->orWhere('uploaded_by', $request->user()->id))
+            ->limit(30)
+            ->get();
+        $records = AthleteProfileQuery::records($athlete->id)->limit(30)->get();
 
         return $this->success([
             'athlete' => new CompactUserResource($athlete),
             'profile' => $athlete->athleteProfiles()->first(),
             'programs' => ProgramAssignmentResource::collection($assignments),
             'progress' => ProgressEntryResource::collection($progress),
+            'photos' => ProgressPhotoResource::collection($photos),
+            'records' => $records->map(fn ($record): array => [
+                'id' => $record->id,
+                'exercise_name' => $record->exercise_name,
+                'record_type' => $record->record_type,
+                'value' => $record->value,
+                'unit' => $record->unit,
+                'achieved_on' => $record->achieved_on?->toDateString(),
+            ]),
+            'notes' => $notes->map(fn ($note): array => [
+                'id' => $note->id,
+                'body' => $note->body,
+                'visibility' => $note->visibility,
+                'is_pinned' => $note->is_pinned,
+                'coach' => $note->coach?->only(['id', 'name', 'email']),
+                'can_edit' => $note->coach_id === $request->user()->id,
+                'created_at' => $note->created_at?->toIso8601String(),
+            ]),
         ]);
     }
 

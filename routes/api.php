@@ -4,10 +4,13 @@ use App\Http\Controllers\Api\V1\AthleteAppController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CoachAppController;
 use App\Http\Controllers\Api\V1\CoachManagementController;
+use App\Http\Controllers\Api\V1\CoachReviewController;
+use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\MessagingController;
 use App\Http\Controllers\Api\V1\OrganizationController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ProgressController;
+use App\Http\Controllers\Api\V1\ProgressPhotoController;
 use App\Http\Controllers\Api\V1\WorkoutExecutionController;
 use Illuminate\Support\Facades\Route;
 
@@ -35,11 +38,13 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/profile', [ProfileController::class, 'show']);
         Route::put('/profile', [ProfileController::class, 'update']);
         Route::put('/profile/theme', [ProfileController::class, 'theme']);
+        Route::get('/media/progress-photos/{photo}', [MediaController::class, 'progressPhoto'])->name('api.v1.media.progress-photos');
 
         Route::middleware('can:messages.read')->group(function (): void {
             Route::get('/messages', [MessagingController::class, 'index']);
             Route::get('/messages/{conversation}', [MessagingController::class, 'show']);
             Route::post('/messages/{conversation}', [MessagingController::class, 'store'])->middleware('can:messages.send');
+            Route::get('/media/message-attachments/{media}', [MediaController::class, 'messageAttachment'])->name('api.v1.media.message-attachments');
         });
 
         Route::middleware('can:athlete.access')->prefix('app')->group(function (): void {
@@ -51,6 +56,9 @@ Route::prefix('v1')->group(function (): void {
             Route::put('/workouts/{workout}/execution', [WorkoutExecutionController::class, 'update']);
             Route::get('/progress', [ProgressController::class, 'index']);
             Route::post('/progress', [ProgressController::class, 'store']);
+            Route::get('/photos', [ProgressPhotoController::class, 'index'])->middleware('can:photos.manage');
+            Route::post('/photos', [ProgressPhotoController::class, 'store'])->middleware('can:photos.manage');
+            Route::delete('/photos/{photo}', [ProgressPhotoController::class, 'destroy'])->middleware('can:photos.manage');
         });
 
         Route::middleware('can:coach.access')->prefix('coach')->group(function (): void {
@@ -73,6 +81,11 @@ Route::prefix('v1')->group(function (): void {
             Route::post('/invitations', [CoachManagementController::class, 'storeInvitation'])->middleware('can:invitations.manage');
             Route::post('/invitations/{invitation}/resend', [CoachManagementController::class, 'resendInvitation'])->middleware('can:invitations.manage');
             Route::delete('/invitations/{invitation}', [CoachManagementController::class, 'cancelInvitation'])->middleware('can:invitations.manage');
+            Route::post('/athletes/{athlete}/notes', [CoachReviewController::class, 'storeNote'])->middleware('can:athletes.notes');
+            Route::patch('/athletes/{athlete}/notes/{note}', [CoachReviewController::class, 'updateNote'])->middleware('can:athletes.notes');
+            Route::delete('/athletes/{athlete}/notes/{note}', [CoachReviewController::class, 'destroyNote'])->middleware('can:athletes.notes');
+            Route::post('/athletes/{athlete}/photos', [CoachReviewController::class, 'storePhoto'])->middleware('can:progress.review');
+            Route::delete('/athletes/{athlete}/photos/{photo}', [CoachReviewController::class, 'destroyPhoto'])->middleware('can:progress.review');
         });
     });
 });

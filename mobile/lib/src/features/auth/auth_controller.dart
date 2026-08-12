@@ -133,6 +133,11 @@ class AuthController extends StateNotifier<AuthState> {
     state = const AuthState.signedOut();
   }
 
+  Future<void> refreshProfile() async {
+    final envelope = await _api.get('/profile');
+    state = state.copyWith(user: AppUser.fromJson(envelope.object('data')));
+  }
+
   Future<void> _applySession(JsonMap data, int organizationId) async {
     final user = AppUser.fromJson(data.object('user'));
     final organizations = data

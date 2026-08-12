@@ -9,6 +9,9 @@ class AppUser {
     required this.organizationRole,
     required this.theme,
     this.avatarUrl,
+    this.phone,
+    this.bio,
+    this.primaryGoal,
   });
 
   factory AppUser.fromJson(JsonMap json) => AppUser(
@@ -19,6 +22,9 @@ class AppUser {
     organizationRole: json['organization_role'] as String?,
     theme: json['theme_preference'] as String? ?? 'system',
     avatarUrl: json['avatar_url'] as String?,
+    phone: json['phone'] as String?,
+    bio: json['bio'] as String?,
+    primaryGoal: json['primary_goal'] as String?,
   );
 
   final int id;
@@ -28,6 +34,9 @@ class AppUser {
   final String? organizationRole;
   final String theme;
   final String? avatarUrl;
+  final String? phone;
+  final String? bio;
+  final String? primaryGoal;
 
   bool get isAthlete => organizationRole == 'athlete';
   bool get isCoach => organizationRole == 'coach';

@@ -4,14 +4,18 @@ namespace Tests\Feature;
 
 use App\Models\CoachAthleteAssignment;
 use App\Models\Conversation;
+use App\Models\MediaAsset;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\ProgramAssignment;
+use App\Models\ProgressPhoto;
 use App\Models\TrainingProgram;
 use App\Models\User;
 use App\Services\ProgramScheduleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ApiWorkflowTest extends TestCase
@@ -90,6 +94,60 @@ class ApiWorkflowTest extends TestCase
             ->assertJsonPath('data.0.protein_g', 165);
     }
 
+    public function test_athlete_can_manage_private_progress_photos_through_the_api(): void
+    {
+        Storage::fake('public');
+        [$organization, , $athlete] = $this->team();
+
+        $response = $this->actingAs($athlete, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->post('/api/v1/app/photos', [
+                'photo' => UploadedFile::fake()->image('front.jpg', 800, 1000),
+                'taken_on' => today()->toDateString(),
+                'category' => 'front',
+                'notes' => 'Baseline photo',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.category', 'front')
+            ->assertJsonPath('data.can_delete', true);
+
+        $photo = ProgressPhoto::findOrFail($response->json('data.id'));
+        Storage::disk('public')->assertExists($photo->path);
+
+        $this->actingAs($athlete, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->get('/api/v1/media/progress-photos/'.$photo->id)
+            ->assertOk()
+            ->assertHeader('content-type', 'image/jpeg');
+
+        $outsider = User::factory()->create(['role' => 'athlete']);
+        $this->join($organization, $outsider, 'athlete');
+        $this->actingAs($outsider, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->get('/api/v1/media/progress-photos/'.$photo->id)
+            ->assertForbidden();
+
+        $otherOrganization = Organization::create([
+            'name' => 'Other Photo Team',
+            'slug' => 'other-photo-team',
+            'status' => 'active',
+            'timezone' => 'Asia/Riyadh',
+        ]);
+        $this->join($otherOrganization, $athlete, 'athlete');
+        $this->actingAs($athlete, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $otherOrganization->id)
+            ->get('/api/v1/media/progress-photos/'.$photo->id)
+            ->assertForbidden();
+
+        $this->actingAs($athlete, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->deleteJson('/api/v1/app/photos/'.$photo->id)
+            ->assertOk()
+            ->assertJsonPath('data.deleted', true);
+
+        Storage::disk('public')->assertMissing($photo->path);
+    }
+
     public function test_coach_roster_and_athlete_detail_are_assignment_scoped(): void
     {
         [$organization, $coach, $athlete] = $this->team();
@@ -107,6 +165,72 @@ class ApiWorkflowTest extends TestCase
             ->withHeader('X-Organization-ID', (string) $organization->id)
             ->getJson("/api/v1/coach/athletes/{$other->id}")
             ->assertForbidden();
+    }
+
+    public function test_coach_can_review_assigned_athlete_notes_and_photos_only(): void
+    {
+        Storage::fake('public');
+        [$organization, $coach, $athlete] = $this->team();
+
+        $noteId = $this->actingAs($coach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->postJson("/api/v1/coach/athletes/{$athlete->id}/notes", [
+                'body' => 'Reduce load if soreness stays high.',
+                'visibility' => 'private',
+                'is_pinned' => true,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.can_edit', true)
+            ->assertJsonPath('data.is_pinned', true)
+            ->json('data.id');
+
+        $this->assertDatabaseHas('coach_notes', ['id' => $noteId, 'coach_id' => $coach->id]);
+
+        $this->actingAs($coach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->patchJson("/api/v1/coach/athletes/{$athlete->id}/notes/{$noteId}", [
+                'body' => '  Updated recovery instruction.  ',
+                'is_pinned' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.body', 'Updated recovery instruction.')
+            ->assertJsonPath('data.is_pinned', false);
+
+        $photoId = $this->actingAs($coach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->post("/api/v1/coach/athletes/{$athlete->id}/photos", [
+                'photo' => UploadedFile::fake()->image('review.jpg', 800, 1000),
+                'taken_on' => today()->toDateString(),
+                'category' => 'progress',
+                'visibility' => 'athlete',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.visibility', 'athlete')
+            ->json('data.id');
+
+        $this->actingAs($coach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->getJson("/api/v1/coach/athletes/{$athlete->id}")
+            ->assertOk()
+            ->assertJsonPath('data.notes.0.id', $noteId)
+            ->assertJsonPath('data.photos.0.id', $photoId);
+
+        $otherCoach = User::factory()->create(['role' => 'coach']);
+        $this->join($organization, $otherCoach, 'coach');
+        $this->actingAs($otherCoach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->postJson("/api/v1/coach/athletes/{$athlete->id}/notes", [
+                'body' => 'Unauthorized note',
+                'visibility' => 'private',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($otherCoach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->deleteJson("/api/v1/coach/athletes/{$athlete->id}/notes/{$noteId}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('audit_logs', ['action' => 'coach_note.created', 'entity_id' => $noteId]);
     }
 
     public function test_coach_can_build_and_assign_a_program_through_the_mobile_api(): void
@@ -250,6 +374,58 @@ class ApiWorkflowTest extends TestCase
             ->withHeader('X-Organization-ID', (string) $organization->id)
             ->getJson("/api/v1/messages/{$conversation->id}")
             ->assertNotFound();
+    }
+
+    public function test_message_api_accepts_and_protects_attachments(): void
+    {
+        Storage::fake('public');
+        [$organization, $coach, $athlete] = $this->team();
+        $conversation = Conversation::create([
+            'organization_id' => $organization->id,
+            'type' => 'direct',
+            'subject' => 'Form review',
+        ]);
+        $conversation->participants()->attach([
+            $coach->id => ['role' => 'coach'],
+            $athlete->id => ['role' => 'athlete'],
+        ]);
+
+        $response = $this->actingAs($athlete, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->post("/api/v1/messages/{$conversation->id}", [
+                'body' => 'Latest form photo.',
+                'attachment' => UploadedFile::fake()->image('form.jpg', 640, 480),
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.attachments.0.type', 'image');
+
+        $media = MediaAsset::findOrFail($response->json('data.attachments.0.id'));
+        Storage::disk('public')->assertExists($media->path);
+
+        $this->actingAs($coach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->get('/api/v1/media/message-attachments/'.$media->id)
+            ->assertOk()
+            ->assertHeader('content-type', 'image/jpeg');
+
+        $outsider = User::factory()->create(['role' => 'athlete']);
+        $this->join($organization, $outsider, 'athlete');
+        $this->actingAs($outsider, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $organization->id)
+            ->get('/api/v1/media/message-attachments/'.$media->id)
+            ->assertForbidden();
+
+        $otherOrganization = Organization::create([
+            'name' => 'Other Message Team',
+            'slug' => 'other-message-team',
+            'status' => 'active',
+            'timezone' => 'Asia/Riyadh',
+        ]);
+        $this->join($otherOrganization, $coach, 'coach');
+        $this->actingAs($coach, 'sanctum')
+            ->withHeader('X-Organization-ID', (string) $otherOrganization->id)
+            ->get('/api/v1/media/message-attachments/'.$media->id)
+            ->assertForbidden();
     }
 
     public function test_api_errors_use_the_versioned_envelope(): void

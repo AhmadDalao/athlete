@@ -45,6 +45,21 @@ class ApiClient {
   Future<JsonMap> patch(String path, {Object? data}) =>
       _request(() => _dio.patch<Object?>(path, data: data));
 
+  Future<Map<String, String>> authHeaders() async {
+    final token = await _sessionStore.readToken();
+    final organizationId = await _sessionStore.readOrganizationId();
+
+    final headers = <String, String>{'Accept': 'application/json'};
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    if (organizationId != null) {
+      headers['X-Organization-ID'] = organizationId;
+    }
+
+    return headers;
+  }
+
   Future<void> delete(String path) async {
     try {
       await _dio.delete<Object?>(path);

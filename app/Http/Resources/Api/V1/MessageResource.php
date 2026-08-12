@@ -23,7 +23,7 @@ class MessageResource extends JsonResource
                 'name' => $attachment->original_name,
                 'mime_type' => $attachment->mime_type,
                 'size' => $attachment->size,
-                'url' => route('messages.attachments', $attachment),
+                'url' => route('api.v1.media.message-attachments', $attachment),
             ])->values() : [],
         ];
     }

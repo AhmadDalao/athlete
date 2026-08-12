@@ -72,3 +72,58 @@ The coach mobile workspace uses the same organization-scoped contract as the web
 6. Invite athletes through `/coach/invitations` and manage pending links through the resend/cancel actions.
 
 Every coach operation is checked against both the active `X-Organization-ID` and the authenticated coach's ownership. Mobile clients cannot override those boundaries.
+
+## Progress photos
+
+Athletes can list, upload, and delete their own progress photos. Coaches can upload photos for assigned athletes and choose `private`, `coaches`, or `athlete` visibility. A coach can edit or delete only records they created.
+
+```bash
+curl -X POST "https://athlete.ahmaddalao.com/api/v1/app/photos" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "X-Organization-ID: $ORGANIZATION_ID" \
+  -F "photo=@front.jpg" \
+  -F "taken_on=2026-08-11" \
+  -F "category=front" \
+  -F "notes=Monthly check-in"
+```
+
+Accepted image types are JPEG, PNG, and WebP. The maximum file size is 10 MB. Photo `url` values are protected API endpoints, so image requests must include the same bearer token and organization header as JSON requests.
+
+Coach review endpoints:
+
+- `POST /coach/athletes/{athlete}/notes`
+- `PATCH /coach/athletes/{athlete}/notes/{note}`
+- `DELETE /coach/athletes/{athlete}/notes/{note}`
+- `POST /coach/athletes/{athlete}/photos`
+- `DELETE /coach/athletes/{athlete}/photos/{photo}`
+
+Private coach notes are visible only to their author. Organization notes are visible to other authorized coaches assigned to the athlete. Every note and photo mutation is audited.
+
+## Message attachments
+
+`POST /messages/{conversation}` accepts JSON for text-only messages or `multipart/form-data` for an attachment. JPEG, PNG, WebP, and PDF files up to 10 MB are accepted. Either `body` or `attachment` is required.
+
+```bash
+curl -X POST "https://athlete.ahmaddalao.com/api/v1/messages/$CONVERSATION_ID" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "X-Organization-ID: $ORGANIZATION_ID" \
+  -F "body=Latest movement check" \
+  -F "attachment=@movement.jpg"
+```
+
+Attachment URLs are protected and only conversation participants can download them. Flutter currently selects image attachments; PDF upload remains available through the API and web clients.
+
+## Mobile feature endpoints
+
+| Area | Endpoints |
+| --- | --- |
+| Athlete progress | `GET/POST /app/progress` |
+| Athlete photos | `GET/POST /app/photos`, `DELETE /app/photos/{photo}` |
+| Coach athlete review | `GET /coach/athletes/{athlete}`, note and photo actions above |
+| Messaging | `GET /messages`, `GET/POST /messages/{conversation}` |
+| Profile | `GET/PUT /profile`, `PUT /profile/theme` |
+| Protected media | `GET /media/progress-photos/{photo}`, `GET /media/message-attachments/{media}` |
+
+## Media access
+
+API media URLs require authentication. Laravel rechecks the active organization, athlete assignment or conversation participation on every request. Clients must not strip authorization headers when loading an image URL.

@@ -265,6 +265,39 @@ paths:
         '200': { $ref: '#/components/responses/Success' }
         '201': { $ref: '#/components/responses/Created' }
         '422': { $ref: '#/components/responses/ValidationError' }
+  /app/photos:
+    get:
+      tags: [Athlete]
+      operationId: listAthleteProgressPhotos
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Athlete]
+      operationId: uploadAthleteProgressPhoto
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProgressPhotoUpload'
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /app/photos/{photo}:
+    delete:
+      tags: [Athlete]
+      operationId: deleteAthleteProgressPhoto
+      parameters:
+        - $ref: '#/components/parameters/PhotoPath'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /coach/home:
     get:
       tags: [Coach]
@@ -297,6 +330,78 @@ paths:
       responses:
         '200': { $ref: '#/components/responses/Success' }
         '403': { $ref: '#/components/responses/Forbidden' }
+  /coach/athletes/{athlete}/notes:
+    post:
+      tags: [Coach]
+      operationId: createCoachAthleteNote
+      parameters:
+        - $ref: '#/components/parameters/AthletePath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CoachNoteInput' }
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /coach/athletes/{athlete}/notes/{note}:
+    parameters:
+      - $ref: '#/components/parameters/AthletePath'
+      - $ref: '#/components/parameters/NotePath'
+    patch:
+      tags: [Coach]
+      operationId: updateCoachAthleteNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CoachNoteUpdateInput' }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [Coach]
+      operationId: deleteCoachAthleteNote
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /coach/athletes/{athlete}/photos:
+    post:
+      tags: [Coach]
+      operationId: uploadCoachAthleteProgressPhoto
+      parameters:
+        - $ref: '#/components/parameters/AthletePath'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/ProgressPhotoUpload'
+                - type: object
+                  required: [visibility]
+                  properties:
+                    visibility:
+                      type: string
+                      enum: [private, coaches, athlete]
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /coach/athletes/{athlete}/photos/{photo}:
+    delete:
+      tags: [Coach]
+      operationId: deleteCoachAthleteProgressPhoto
+      parameters:
+        - $ref: '#/components/parameters/AthletePath'
+        - $ref: '#/components/parameters/PhotoPath'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /coach/programs:
     get:
       tags: [Coach]
@@ -557,10 +662,47 @@ paths:
               required: [body]
               properties:
                 body: { type: string, maxLength: 5000 }
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                body: { type: [string, 'null'], maxLength: 5000 }
+                attachment:
+                  type: string
+                  format: binary
+                  description: JPEG, PNG, WebP, or PDF up to 10 MB. Body or attachment is required.
       responses:
         '201': { $ref: '#/components/responses/Created' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
+  /media/progress-photos/{photo}:
+    get:
+      tags: [Athlete]
+      operationId: downloadProgressPhoto
+      parameters:
+        - $ref: '#/components/parameters/PhotoPath'
+      responses:
+        '200':
+          description: Authorized inline progress image.
+          content:
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/png: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /media/message-attachments/{media}:
+    get:
+      tags: [Messaging]
+      operationId: downloadMessageAttachment
+      parameters:
+        - $ref: '#/components/parameters/MediaPath'
+      responses:
+        '200':
+          description: Authorized inline image or downloaded PDF attachment.
+          content:
+            application/octet-stream: { schema: { type: string, format: binary } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 components:
   securitySchemes:
     bearerAuth:
@@ -610,6 +752,26 @@ components:
       schema: { type: integer }
     ConversationPath:
       name: conversation
+      in: path
+      required: true
+      schema: { type: integer }
+    AthletePath:
+      name: athlete
+      in: path
+      required: true
+      schema: { type: integer }
+    NotePath:
+      name: note
+      in: path
+      required: true
+      schema: { type: integer }
+    PhotoPath:
+      name: photo
+      in: path
+      required: true
+      schema: { type: integer }
+    MediaPath:
+      name: media
       in: path
       required: true
       schema: { type: integer }
@@ -716,6 +878,8 @@ components:
         name: { type: string }
         email: { type: string, format: email }
         phone: { type: [string, 'null'] }
+        bio: { type: [string, 'null'] }
+        primary_goal: { type: [string, 'null'] }
         platform_role: { type: string }
         organization_role: { type: [string, 'null'] }
         current_organization_id: { type: [integer, 'null'] }
@@ -856,6 +1020,59 @@ components:
         - $ref: '#/components/schemas/ProgressEntry'
         - type: object
           required: [logged_on]
+    ProgressPhoto:
+      type: object
+      required: [id, category, visibility, taken_on, mime_type, url, can_delete]
+      properties:
+        id: { type: integer }
+        category: { type: string, enum: [progress, front, side, back, other] }
+        visibility: { type: string, enum: [private, coaches, athlete] }
+        taken_on: { type: string, format: date }
+        notes: { type: [string, 'null'] }
+        mime_type: { type: string, enum: [image/jpeg, image/png, image/webp] }
+        url: { type: string, format: uri }
+        uploaded_by:
+          oneOf: [{ $ref: '#/components/schemas/CompactUser' }, { type: 'null' }]
+        can_delete: { type: boolean }
+        created_at: { type: [string, 'null'], format: date-time }
+    ProgressPhotoUpload:
+      type: object
+      required: [photo, taken_on, category]
+      properties:
+        photo:
+          type: string
+          format: binary
+          description: JPEG, PNG, or WebP image up to 10 MB.
+        taken_on: { type: string, format: date }
+        category: { type: string, enum: [progress, front, side, back, other] }
+        notes: { type: [string, 'null'], maxLength: 1000 }
+    CoachNote:
+      type: object
+      required: [id, body, visibility, is_pinned, can_edit]
+      properties:
+        id: { type: integer }
+        body: { type: string }
+        visibility: { type: string, enum: [private, organization] }
+        is_pinned: { type: boolean }
+        coach:
+          oneOf: [{ $ref: '#/components/schemas/CompactUser' }, { type: 'null' }]
+        can_edit: { type: boolean }
+        created_at: { type: [string, 'null'], format: date-time }
+        updated_at: { type: [string, 'null'], format: date-time }
+    CoachNoteInput:
+      type: object
+      required: [body, visibility]
+      properties:
+        body: { type: string, maxLength: 5000 }
+        visibility: { type: string, enum: [private, organization] }
+        is_pinned: { type: boolean }
+    CoachNoteUpdateInput:
+      type: object
+      minProperties: 1
+      properties:
+        body: { type: string, maxLength: 5000 }
+        visibility: { type: string, enum: [private, organization] }
+        is_pinned: { type: boolean }
     ProgramInput:
       type: object
       required: [title, status, visibility]

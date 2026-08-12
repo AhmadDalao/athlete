@@ -45,6 +45,17 @@ final progressProvider = FutureProvider.autoDispose<JsonMap>((ref) async {
       .get('/app/progress', query: {'per_page': 100});
 });
 
+final progressPhotosProvider = FutureProvider.autoDispose<JsonMap>((ref) async {
+  return ref
+      .watch(apiClientProvider)
+      .get('/app/photos', query: {'per_page': 100});
+});
+
+final profileProvider = FutureProvider.autoDispose<JsonMap>((ref) async {
+  final envelope = await ref.watch(apiClientProvider).get('/profile');
+  return envelope.object('data');
+});
+
 final messagesProvider = FutureProvider.autoDispose<JsonMap>((ref) async {
   return ref.watch(apiClientProvider).get('/messages', query: {'per_page': 50});
 });

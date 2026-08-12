@@ -1,5 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:throughline_mobile/src/core/network/api_client.dart';
+import 'package:throughline_mobile/src/core/providers.dart';
 import 'package:throughline_mobile/src/core/theme/app_theme.dart';
 
 class ThroughlineMark extends StatelessWidget {
@@ -336,4 +339,50 @@ class StatusChip extends StatelessWidget {
       ),
     );
   }
+}
+
+class AuthenticatedImage extends ConsumerWidget {
+  const AuthenticatedImage({
+    super.key,
+    required this.url,
+    this.fit = BoxFit.cover,
+    this.borderRadius = const BorderRadius.all(Radius.circular(18)),
+  });
+
+  final String url;
+  final BoxFit fit;
+  final BorderRadius borderRadius;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => FutureBuilder(
+    future: ref.read(apiClientProvider).authHeaders(),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) {
+        return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+      }
+
+      return ClipRRect(
+        borderRadius: borderRadius,
+        child: CachedNetworkImage(
+          imageUrl: url,
+          cacheKey: '${snapshot.data!['X-Organization-ID'] ?? 'none'}:$url',
+          httpHeaders: snapshot.data!,
+          fit: fit,
+          placeholder: (_, _) => const ColoredBox(
+            color: ThroughlineColors.graphiteRaised,
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+          errorWidget: (_, _, _) => const ColoredBox(
+            color: ThroughlineColors.graphiteRaised,
+            child: Center(
+              child: Icon(
+                Icons.broken_image_outlined,
+                color: ThroughlineColors.muted,
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }

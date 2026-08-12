@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\MessageRequest;
 use App\Http\Resources\Api\V1\ConversationResource;
 use App\Http\Resources\Api\V1\MessageResource;
 use App\Models\Conversation;
+use App\Models\MediaAsset;
 use App\Models\Message;
 use App\Support\OrganizationContext;
 use Illuminate\Database\Eloquent\Builder;
@@ -55,9 +56,26 @@ class MessagingController extends Controller
         $conversation = $this->query($request)->findOrFail($conversation->id);
         $message = $conversation->messages()->create([
             'sender_id' => $request->user()->id,
-            'body' => trim($request->validated('body')),
+            'body' => trim((string) $request->validated('body')) ?: 'Attachment',
             'sent_at' => now(),
-        ])->load(['sender', 'attachments']);
+        ]);
+        if ($request->hasFile('attachment')) {
+            $attachment = $request->file('attachment');
+            $path = $attachment->store("message-attachments/{$conversation->id}", 'public');
+            MediaAsset::create([
+                'organization_id' => $request->user()->current_organization_id,
+                'uploaded_by' => $request->user()->id,
+                'attachable_type' => Message::class,
+                'attachable_id' => $message->id,
+                'type' => str_starts_with((string) $attachment->getMimeType(), 'image/') ? 'image' : 'document',
+                'disk' => 'public',
+                'path' => $path,
+                'mime_type' => $attachment->getMimeType(),
+                'original_name' => $attachment->getClientOriginalName(),
+                'size' => $attachment->getSize(),
+            ]);
+        }
+        $message->load(['sender', 'attachments']);
         $conversation->touch();
         $conversation->participants()->updateExistingPivot($request->user()->id, ['last_read_at' => now()]);
 

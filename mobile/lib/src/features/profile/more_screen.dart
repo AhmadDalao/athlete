@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:throughline_mobile/src/core/data/app_data_providers.dart';
 import 'package:throughline_mobile/src/core/providers.dart';
 import 'package:throughline_mobile/src/core/theme/app_theme.dart';
 import 'package:throughline_mobile/src/core/widgets/throughline_widgets.dart';
@@ -22,39 +23,82 @@ class MoreScreen extends ConsumerWidget {
         ),
         PremiumCard(
           accent: ThroughlineColors.lime,
-          child: Row(
+          child: Column(
             children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: ThroughlineColors.lime,
-                foregroundColor: ThroughlineColors.graphite,
-                child: Text(
-                  auth.user?.name.substring(0, 1).toUpperCase() ?? 'T',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      auth.user?.name ?? '',
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: ThroughlineColors.lime,
+                    foregroundColor: ThroughlineColors.graphite,
+                    child: Text(
+                      auth.user?.name.substring(0, 1).toUpperCase() ?? 'T',
                       style: const TextStyle(
+                        fontSize: 20,
                         fontWeight: FontWeight.w900,
-                        fontSize: 18,
                       ),
                     ),
-                    Text(
-                      auth.user?.email ?? '',
-                      style: const TextStyle(color: ThroughlineColors.muted),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          auth.user?.name ?? '',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18,
+                          ),
+                        ),
+                        Text(
+                          auth.user?.email ?? '',
+                          style: const TextStyle(
+                            color: ThroughlineColors.muted,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  IconButton.filledTonal(
+                    tooltip: 'Edit profile',
+                    onPressed: auth.user == null
+                        ? null
+                        : () => _editProfile(context, ref),
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
+                ],
               ),
+              if (auth.user?.primaryGoal?.isNotEmpty == true) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: ThroughlineColors.lime.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'PRIMARY GOAL',
+                        style: TextStyle(
+                          color: ThroughlineColors.muted,
+                          fontSize: 10,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        auth.user!.primaryGoal!,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -103,7 +147,8 @@ class MoreScreen extends ConsumerWidget {
             ),
           ],
           selected: {theme},
-          onSelectionChanged: (selection) => _setTheme(ref, selection.first),
+          onSelectionChanged: (selection) =>
+              _setTheme(context, ref, selection.first),
         ),
         if (auth.organizations.length > 1) ...[
           const SectionTitle('Organization'),
@@ -140,10 +185,148 @@ class MoreScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _setTheme(WidgetRef ref, ThemeMode mode) async {
+  Future<void> _setTheme(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeMode mode,
+  ) async {
     await ref.read(themeControllerProvider.notifier).setMode(mode);
-    await ref
-        .read(apiClientProvider)
-        .put('/profile/theme', data: {'theme': mode.name});
+    try {
+      await ref
+          .read(apiClientProvider)
+          .put('/profile/theme', data: {'theme': mode.name});
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Theme changed on this device, but could not sync: $error',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _editProfile(BuildContext context, WidgetRef ref) async {
+    final user = ref.read(authControllerProvider).user!;
+    final name = TextEditingController(text: user.name);
+    final phone = TextEditingController(text: user.phone ?? '');
+    final goal = TextEditingController(text: user.primaryGoal ?? '');
+    final bio = TextEditingController(text: user.bio ?? '');
+    var saving = false;
+
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.82,
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              22,
+              20,
+              MediaQuery.viewInsetsOf(context).bottom + 24,
+            ),
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Edit profile',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: name,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: phone,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'Phone'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: goal,
+                maxLines: 3,
+                decoration: const InputDecoration(labelText: 'Primary goal'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: bio,
+                maxLines: 5,
+                decoration: const InputDecoration(labelText: 'Bio'),
+              ),
+              const SizedBox(height: 18),
+              FilledButton(
+                onPressed: saving
+                    ? null
+                    : () async {
+                        setModalState(() => saving = true);
+                        try {
+                          await ref
+                              .read(apiClientProvider)
+                              .put(
+                                '/profile',
+                                data: {
+                                  'name': name.text.trim(),
+                                  'phone': phone.text.trim().isEmpty
+                                      ? null
+                                      : phone.text.trim(),
+                                  'primary_goal': goal.text.trim().isEmpty
+                                      ? null
+                                      : goal.text.trim(),
+                                  'bio': bio.text.trim().isEmpty
+                                      ? null
+                                      : bio.text.trim(),
+                                },
+                              );
+                          await ref
+                              .read(authControllerProvider.notifier)
+                              .refreshProfile();
+                          if (context.mounted) {
+                            Navigator.pop(context, true);
+                          }
+                        } catch (error) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(error.toString())),
+                            );
+                          }
+                        } finally {
+                          if (context.mounted) {
+                            setModalState(() => saving = false);
+                          }
+                        }
+                      },
+                child: saving
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save profile'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    name.dispose();
+    phone.dispose();
+    goal.dispose();
+    bio.dispose();
+    if (saved == true) ref.invalidate(profileProvider);
   }
 }

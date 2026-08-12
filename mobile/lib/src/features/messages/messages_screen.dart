@@ -1,5 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:throughline_mobile/src/core/data/app_data_providers.dart';
 import 'package:throughline_mobile/src/core/models/session_models.dart';
 import 'package:throughline_mobile/src/core/providers.dart';
@@ -123,6 +125,7 @@ class _ConversationSheetState extends ConsumerState<_ConversationSheet> {
   final _body = TextEditingController();
   late Future<JsonMap> _thread = _load();
   bool _sending = false;
+  XFile? _attachment;
 
   Future<JsonMap> _load() => ref
       .read(apiClientProvider)
@@ -204,6 +207,16 @@ class _ConversationSheetState extends ConsumerState<_ConversationSheet> {
                             ),
                             const SizedBox(height: 4),
                             Text(message.text('body')),
+                            if (message.maps('attachments').isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              ...message
+                                  .maps('attachments')
+                                  .map(
+                                    (attachment) => _MessageAttachment(
+                                      attachment: attachment,
+                                    ),
+                                  ),
+                            ],
                           ],
                         ),
                       ),
@@ -213,8 +226,35 @@ class _ConversationSheetState extends ConsumerState<_ConversationSheet> {
               },
             ),
           ),
+          if (_attachment != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.image_outlined, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _attachment!.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => setState(() => _attachment = null),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+            ),
           Row(
             children: [
+              IconButton.filledTonal(
+                tooltip: 'Attach image',
+                onPressed: _sending ? null : _pickAttachment,
+                icon: const Icon(Icons.add_photo_alternate_outlined),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: TextField(
                   controller: _body,
@@ -244,16 +284,82 @@ class _ConversationSheetState extends ConsumerState<_ConversationSheet> {
 
   Future<void> _send() async {
     final body = _body.text.trim();
-    if (body.isEmpty) return;
+    if (body.isEmpty && _attachment == null) return;
     setState(() => _sending = true);
     try {
+      final data = _attachment == null
+          ? <String, dynamic>{'body': body}
+          : FormData.fromMap({
+              'body': body,
+              'attachment': await MultipartFile.fromFile(
+                _attachment!.path,
+                filename: _attachment!.name,
+              ),
+            });
       await ref
           .read(apiClientProvider)
-          .post('/messages/${widget.conversationId}', data: {'body': body});
+          .post('/messages/${widget.conversationId}', data: data);
       _body.clear();
+      _attachment = null;
       setState(() => _thread = _load());
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+  Future<void> _pickAttachment() async {
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 88,
+      maxWidth: 1800,
+    );
+    if (file != null && mounted) setState(() => _attachment = file);
+  }
+}
+
+class _MessageAttachment extends StatelessWidget {
+  const _MessageAttachment({required this.attachment});
+
+  final JsonMap attachment;
+
+  @override
+  Widget build(BuildContext context) {
+    if (attachment.text('type') == 'image') {
+      return SizedBox(
+        height: 180,
+        width: 250,
+        child: AuthenticatedImage(url: attachment.text('url')),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: ThroughlineColors.muted.withValues(alpha: 0.3),
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.description_outlined, size: 18),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              attachment.text('name', 'Document'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
