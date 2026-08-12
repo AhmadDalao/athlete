@@ -4,7 +4,9 @@ Last updated: 2026-08-12
 
 Use this checklist before deploying or after pulling the rebuild onto Hostinger.
 
-## Test Accounts
+## Local Test Accounts
+
+These accounts are created by `php artisan migrate:fresh --seed` for local and staging QA only. Production passwords are managed independently and must not be reset to these shared development values.
 
 | Role | Email | Password | Expected landing |
 | --- | --- | --- | --- |

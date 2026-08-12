@@ -226,9 +226,11 @@ After deployment is accepted, update:
 
 - Date: 2026-08-12
 - Branch: `codex/throughline-flutter-refactor`
-- Commit: `ec66d77`
+- Commit: `2ee3f7f`
 - Runtime: PHP 8.2.30, Laravel 12.62.0, MySQL
-- Database backup: `/home/u867436826/backups/throughline/database-pre-1471aca-20260812-075634.sql.gz`
-- Code backup: `/home/u867436826/backups/throughline/code-pre-1471aca-20260812-075634.tar.gz`
-- Previous release: `/home/u867436826/domains/ahmaddalao.com/throughline-athlete-app.previous-ec66d77`
-- Live smoke: public pages, API status, owner/admin controls, coach roster/program/schedule/invitation/message pages, athlete home/progress/message/profile pages, and cross-role `403` denials passed.
+- Database backup: `/home/u867436826/backups/throughline/database-pre-2ee3f7f-20260812-102233.sql.gz` (37 tables)
+- Code backup: `/home/u867436826/backups/throughline/code-pre-2ee3f7f-20260812-102101.tar.gz`
+- Previous release: `/home/u867436826/domains/ahmaddalao.com/throughline-athlete-app.previous-2ee3f7f-20260812-102605`
+- Live assets: `app-zqW0Euuu.css`, `app-BfF64urB.js`
+- Automated checks: 91 PHP tests (672 assertions), Pint, Composer validation, ESLint, Vite build, npm audit, Flutter analyze, and Flutter tests passed.
+- Live smoke: public pages and legacy redirect passed; temporary owner, coach, and athlete QA accounts reached `/admin/dashboard`, `/coach`, and `/app` respectively and were removed after verification. No new production errors were logged.
