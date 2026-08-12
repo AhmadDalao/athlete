@@ -53,6 +53,56 @@ paths:
               schema:
                 $ref: '#/components/schemas/LoginEnvelope'
         '422': { $ref: '#/components/responses/ValidationError' }
+  /auth/password/forgot:
+    post:
+      tags: [Authentication]
+      operationId: requestPasswordReset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Enumeration-safe acknowledgement that a reset link may have been sent.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [message]
+                        properties:
+                          message: { type: string }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /auth/password/reset:
+    post:
+      tags: [Authentication]
+      operationId: resetPassword
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, email, password, password_confirmation]
+              properties:
+                token: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, format: password, minLength: 8 }
+                password_confirmation: { type: string, format: password, minLength: 8 }
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /auth/me:
     get:
       tags: [Authentication]

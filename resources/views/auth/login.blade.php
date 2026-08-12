@@ -17,6 +17,9 @@
             <div class="tl-eyebrow">Secure access</div>
             <h2 class="display-6 fw-bold mt-2">Log in to Throughline</h2>
             <p class="tl-muted mb-4">Use the account provided by your organization.</p>
+            @if (session('status'))
+                <div class="alert alert-success" role="status">{{ session('status') }}</div>
+            @endif
             <form method="POST" action="{{ route('login.store') }}" class="vstack gap-3">
                 @csrf
                 <div>
@@ -32,6 +35,9 @@
                     <input class="form-check-input" type="checkbox" name="remember" value="1">
                     <span class="form-check-label">Keep me signed in on this device</span>
                 </label>
+                <div class="text-end">
+                    <a class="small text-decoration-underline" href="{{ route('password.request') }}">Forgot your password?</a>
+                </div>
                 <button class="btn btn-tl btn-lg w-100" type="submit">Log in <i class="fa-solid fa-arrow-right"></i></button>
             </form>
             <p class="tl-muted small text-center mt-4 mb-0">Need an account? <a class="text-decoration-underline" href="{{ route('contact') }}">Request access</a>.</p>

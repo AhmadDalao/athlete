@@ -11,6 +11,14 @@ The Flutter app uses Laravel Sanctum bearer tokens and the versioned API at `/ap
 5. If the server returns `401`, clear local authentication and return to login.
 6. If the server returns `409 sync_conflict`, refresh the workout before replaying a local draft.
 
+## Password recovery
+
+- `POST /auth/password/forgot` accepts `email` and always returns the same success message, whether the account exists or not.
+- The email link opens the secure web reset form. This keeps mobile recovery reliable without depending on a deep-link configuration.
+- `POST /auth/password/reset` accepts `token`, `email`, `password`, and `password_confirmation` for future native deep-link handling.
+- A successful reset revokes every existing Sanctum token, forcing old mobile sessions to authenticate again.
+- Delivery attempts are recorded in the admin email log, and successful resets are recorded in the audit log.
+
 ## Flutter offline workout drafts
 
 - Workout edits are debounced into the local Drift database while the execution screen is open.
@@ -130,6 +138,7 @@ Attachment URLs are protected and only conversation participants can download th
 | Coach athlete review | `GET /coach/athletes/{athlete}`, note and photo actions above |
 | Messaging | `GET /messages`, `GET/POST /messages/{conversation}` |
 | Profile | `GET/PUT /profile`, `PUT /profile/theme` |
+| Password recovery | `POST /auth/password/forgot`, `POST /auth/password/reset` |
 | Protected media | `GET /media/progress-photos/{photo}`, `GET /media/message-attachments/{media}` |
 
 ## Media access

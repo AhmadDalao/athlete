@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:throughline_mobile/src/core/config/app_config.dart';
+import 'package:throughline_mobile/src/core/network/api_client.dart';
+import 'package:throughline_mobile/src/core/providers.dart';
 import 'package:throughline_mobile/src/core/theme/app_theme.dart';
 import 'package:throughline_mobile/src/core/widgets/throughline_widgets.dart';
 import 'package:throughline_mobile/src/features/auth/auth_controller.dart';
@@ -111,6 +113,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ? 'Enter your password.'
                                 : null,
                           ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: loading ? null : _showPasswordRecovery,
+                              child: const Text('Forgot password?'),
+                            ),
+                          ),
                           if (auth.error != null) ...[
                             const SizedBox(height: 14),
                             Text(
@@ -162,6 +171,124 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     await ref
         .read(authControllerProvider.notifier)
         .login(email: _email.text, password: _password.text);
+  }
+
+  Future<void> _showPasswordRecovery() async {
+    final email = TextEditingController(text: _email.text.trim());
+    final formKey = GlobalKey<FormState>();
+    var sending = false;
+    String? error;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            22,
+            22,
+            22,
+            MediaQuery.viewInsetsOf(context).bottom + 22,
+          ),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Reset password',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: sending
+                          ? null
+                          : () => Navigator.of(sheetContext).pop(),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'We will email a secure reset link if this address belongs to an active account.',
+                  style: TextStyle(color: ThroughlineColors.muted, height: 1.45),
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: email,
+                  keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.email],
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.alternate_email_rounded),
+                  ),
+                  validator: (value) => value == null || !value.contains('@')
+                      ? 'Enter a valid email.'
+                      : null,
+                ),
+                if (error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    error!,
+                    style: const TextStyle(color: ThroughlineColors.danger),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: sending
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) return;
+                          setSheetState(() {
+                            sending = true;
+                            error = null;
+                          });
+                          try {
+                            final envelope = await ref
+                                .read(apiClientProvider)
+                                .post(
+                                  '/auth/password/forgot',
+                                  data: {'email': email.text.trim()},
+                                );
+                            if (!sheetContext.mounted) return;
+                            Navigator.of(sheetContext).pop();
+                            if (!mounted) return;
+                            final data = (envelope['data'] as Map)
+                                .cast<String, dynamic>();
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(
+                                content: Text(data['message'] as String),
+                              ),
+                            );
+                          } on ApiFailure catch (failure) {
+                            setSheetState(() {
+                              sending = false;
+                              error = failure.message;
+                            });
+                          }
+                        },
+                  icon: sending
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.mail_outline_rounded),
+                  label: Text(sending ? 'Sending...' : 'Send reset link'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    email.dispose();
   }
 }
 

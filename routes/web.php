@@ -17,6 +17,7 @@ use App\Http\Controllers\Coach\ScheduleExportController;
 use App\Http\Controllers\DashboardRedirectController;
 use App\Http\Controllers\MessageAttachmentController;
 use App\Http\Controllers\OrganizationSelectionController;
+use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\ThemePreferenceController;
 use App\Livewire\Admin;
 use App\Livewire\Athlete;
@@ -33,6 +34,10 @@ Route::get('/contact', ContactForm::class)->name('contact');
 
 Route::get('/login', [AuthController::class, 'create'])->name('login');
 Route::post('/login', [AuthController::class, 'store'])->name('login.store');
+Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
+Route::post('/forgot-password', [PasswordResetController::class, 'sendLink'])->middleware('throttle:5,1')->name('password.email');
+Route::get('/reset-password/{token}', [PasswordResetController::class, 'reset'])->name('password.reset');
+Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:5,1')->name('password.update');
 Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 Route::get('/dashboard', DashboardRedirectController::class)->name('dashboard');
 
