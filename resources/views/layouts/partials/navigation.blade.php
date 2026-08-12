@@ -6,6 +6,7 @@
                 ['route' => 'admin.dashboard', 'active' => 'admin.dashboard', 'icon' => 'fa-table-cells-large', 'label' => 'Dashboard'],
                 ['route' => 'notifications', 'active' => 'notifications', 'icon' => 'fa-bell', 'label' => 'Notifications', 'permission' => 'notifications.read'],
                 ['route' => 'admin.organizations', 'active' => 'admin.organizations*', 'icon' => 'fa-building-shield', 'label' => 'Organizations', 'permission' => 'organizations.manage'],
+                ['route' => 'admin.reports', 'active' => 'admin.reports*', 'icon' => 'fa-chart-column', 'label' => 'Reports', 'permission' => 'reports.view'],
             ],
             'People' => [
                 ['route' => 'admin.users', 'active' => 'admin.users*', 'icon' => 'fa-users', 'label' => 'All users'],
@@ -16,7 +17,8 @@
             'Control' => [
                 ['route' => 'admin.permissions', 'active' => 'admin.permissions*', 'icon' => 'fa-shield-halved', 'label' => 'Permissions', 'permission' => 'admin.permissions'],
                 ['route' => 'admin.settings', 'active' => 'admin.settings*', 'icon' => 'fa-sliders', 'label' => 'Website control', 'permission' => 'admin.settings'],
-                ['route' => 'admin.audit', 'active' => 'admin.audit*', 'icon' => 'fa-clock-rotate-left', 'label' => 'Audit log'],
+                ['route' => 'admin.email-logs', 'active' => 'admin.email-logs*', 'icon' => 'fa-envelope-circle-check', 'label' => 'Email logs', 'permission' => 'admin.audit'],
+                ['route' => 'admin.audit', 'active' => 'admin.audit*', 'icon' => 'fa-clock-rotate-left', 'label' => 'Audit log', 'permission' => 'admin.audit'],
             ],
         ],
         'coach' => [

@@ -3,21 +3,21 @@
 namespace App\Livewire\Admin;
 
 use App\Livewire\Concerns\WithTableControls;
-use App\Models\AuditLog;
+use App\Models\EmailLog;
 use App\Models\Organization;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-class AuditLogTable extends Component
+class EmailLogsTable extends Component
 {
     use WithPagination;
     use WithTableControls;
 
-    public string $auditAction = 'all';
+    public string $status = 'all';
 
-    public string $auditEntity = 'all';
+    public string $type = 'all';
 
     public string $from = '';
 
@@ -32,7 +32,7 @@ class AuditLogTable extends Component
 
     public function updated($property): void
     {
-        if (in_array($property, ['auditAction', 'auditEntity', 'from', 'to'], true)) {
+        if (in_array($property, ['status', 'type', 'from', 'to'], true)) {
             $this->resetPage();
         }
     }
@@ -40,28 +40,33 @@ class AuditLogTable extends Component
     public function render()
     {
         $this->authorizeOrganization();
-        $baseQuery = fn (): Builder => AuditLog::query()->when(
+        $baseQuery = fn (): Builder => EmailLog::query()->when(
             $this->organizationId > 0,
             fn (Builder $query) => $query->forOrganization($this->organizationId),
         );
-        $auditQuery = $baseQuery()
-            ->with('user')
-            ->when($this->auditAction !== 'all', fn (Builder $query) => $query->where('action', $this->auditAction))
-            ->when($this->auditEntity !== 'all', fn (Builder $query) => $query->where('entity', $this->auditEntity))
+        $query = $baseQuery()
+            ->when($this->status !== 'all', fn (Builder $query) => $query->where('status', $this->status))
+            ->when($this->type !== 'all', fn (Builder $query) => $query->where('type', $this->type))
             ->when($this->from !== '', fn (Builder $query) => $query->whereDate('created_at', '>=', $this->from))
             ->when($this->to !== '', fn (Builder $query) => $query->whereDate('created_at', '<=', $this->to))
             ->when($this->search, fn (Builder $query) => $query->where(fn (Builder $query) => $query
-                ->where('summary', 'like', "%{$this->search}%")
-                ->orWhere('action', 'like', "%{$this->search}%")
-                ->orWhere('entity', 'like', "%{$this->search}%")
-                ->orWhereHas('user', fn (Builder $query) => $query->where('name', 'like', "%{$this->search}%"))))
+                ->where('recipient', 'like', "%{$this->search}%")
+                ->orWhere('subject', 'like', "%{$this->search}%")
+                ->orWhere('type', 'like', "%{$this->search}%")
+                ->orWhere('status', 'like', "%{$this->search}%")
+                ->orWhere('error', 'like', "%{$this->search}%")))
             ->latest();
 
-        return view('livewire.admin.audit-log-table', [
-            'auditLogs' => $this->paginateQuery($auditQuery),
-            'auditActions' => $baseQuery()->whereNotNull('action')->distinct()->orderBy('action')->pluck('action'),
-            'auditEntities' => $baseQuery()->whereNotNull('entity')->distinct()->orderBy('entity')->pluck('entity'),
-        ])->layout('layouts.app', ['title' => 'Audit log']);
+        return view('livewire.admin.email-logs-table', [
+            'emailLogs' => $this->paginateQuery($query),
+            'statuses' => $baseQuery()->whereNotNull('status')->distinct()->orderBy('status')->pluck('status'),
+            'types' => $baseQuery()->whereNotNull('type')->distinct()->orderBy('type')->pluck('type'),
+            'summary' => [
+                'total' => $baseQuery()->count(),
+                'sent' => $baseQuery()->where('status', 'sent')->count(),
+                'failed' => $baseQuery()->where('status', 'failed')->count(),
+            ],
+        ])->layout('layouts.app', ['title' => 'Email logs']);
     }
 
     private function authorizeOrganization(): void

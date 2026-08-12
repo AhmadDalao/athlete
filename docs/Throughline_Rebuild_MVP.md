@@ -1,280 +1,153 @@
-# Throughline Clean Rebuild MVP
+# Throughline Platform Guide
 
-Last updated: 2026-07-25
+Last updated: 2026-08-12
 
-## Decision
+## Architecture
 
-The overloaded React/Inertia/mobile/watch stack was archived. The active product is now a website-first Laravel MVP:
+Throughline is one multi-tenant coaching platform with two clients:
 
-- Laravel 12
-- Blade
-- Livewire
-- Bootstrap 5
-- FontAwesome
-- MySQL/SQLite compatible schema
-- Custom Throughline dark theme
-- Vite-compiled local Bootstrap and Font Awesome assets
-- No Redis
-- No native mobile
-- No watch/WHOOP/Stripe/OAuth in this slice
+- Web: Laravel 12, PHP 8.2, Blade, Livewire 4, Bootstrap 5, Font Awesome, and Vite.
+- Mobile: Flutter with Riverpod, GoRouter, Dio, SecureStorage, Drift, cached images, image picking, and native video playback.
+- Backend: Laravel services, policies/permissions, database notifications, database-backed jobs, scheduled commands, and Sanctum.
+- Data: MySQL on Hostinger and SQLite for automated tests.
+- Realtime model: Livewire AJAX and regular API refresh. No Redis, WebSockets, or fake realtime claims.
 
-This is intentional. The current priority is a direct coaching product that is easy to operate, deploy, and test on Hostinger.
+The previous React/Inertia application is archived. Production data is migrated forward; releases never use destructive fresh migrations.
 
-## Safety Archive
+## Roles And Tenancy
 
-Before replacing the old app, the previous state was preserved:
+- Platform owner: full access through `Gate::before`; cannot be locked out.
+- Platform admin: platform access according to explicit permissions.
+- Organization owner: all non-platform permissions inside owned organizations.
+- Organization admin: people, coaching, schedules, reports, and communication inside assigned organizations.
+- Coach: only assigned athletes, coach-owned programs, schedules, reports, invitations, and conversations.
+- Athlete: only personal assignments, workouts, progress, photos, notifications, and conversations.
 
-- Backup branch: `codex/archive-pre-rebuild-20260707-113556`
-- Backup tag: `codex/pre-rebuild-20260707-113556`
-- Local database backup: `storage/backups/database-pre-rebuild-20260707-113556.sqlite`
+Users can belong to multiple organizations and select an active organization. Organization-owned models use `BelongsToOrganization`; routes, Livewire actions, exports, and `/api/v1` requests enforce the same boundary.
 
-The backup directory is ignored by git and should not be pushed.
+## Web Routes
 
-## Login Accounts
+### Public And Auth
 
-Seeded local accounts:
+| Route | Purpose |
+| --- | --- |
+| `/`, `/features`, `/pricing`, `/contact` | Public marketing, pricing, and contact capture |
+| `/login`, `/forgot-password`, `/reset-password/{token}` | Authentication and recovery |
+| `/invites/{token}` | Invitation acceptance |
+| `/dashboard` | Role redirect only |
 
-| Role | Email | Password | Landing |
-| --- | --- | --- | --- |
-| Owner | `owner@throughline.test` | `password` | `/admin/dashboard` |
-| Admin | `admin@throughline.test` | `password` | `/admin/dashboard` |
-| Coach | `coach@throughline.test` | `password` | `/coach` |
-| Athlete | `athlete@throughline.test` | `password` | `/app` |
+### Admin
 
-Owner accounts have every permission and cannot be locked out.
-
-## Core Routes
-
-| Area | Route | Purpose |
+| Route | Purpose | Permission |
 | --- | --- | --- |
-| Public | `/` | Homepage with login and contact CTA |
-| Public | `/contact` | Livewire contact form saved to database |
-| Auth | `/login` | Email/password login |
-| Redirect | `/dashboard` | Sends users to the correct role area |
-| Admin | `/admin/dashboard` | Business operations dashboard |
-| Admin | `/admin/users` | User table and account creation |
-| Admin | `/admin/users/export` | Filtered user CSV export |
-| Admin | `/admin/users/{user}` | User profile, edit form, programs, logs, and audit trail |
-| Admin | `/admin/coaches` | Coach table |
-| Admin | `/admin/athletes` | Athlete table |
-| Admin | `/admin/invitations` | Invitation tracking |
-| Admin | `/admin/invitations/export` | Filtered invitation CSV export |
-| Admin | `/admin/contact-submissions` | Public contact inbox |
-| Admin | `/admin/contact-submissions/export` | Filtered contact CSV export |
-| Admin | `/admin/permissions` | Grouped permission control |
-| Admin | `/admin/settings` | Website, invite, and mail settings |
-| Admin | `/admin/audit-log` | Audit and email log table |
-| Admin | `/admin/audit-log/export` | Filtered audit/email CSV export |
-| Coach | `/coach` | Coach workspace summary |
-| Coach | `/coach/athletes` | Assigned athletes table |
-| Coach | `/coach/athletes/{athlete}` | Coach-scoped athlete profile |
-| Coach | `/coach/programs` | Program list and creation |
-| Coach | `/coach/programs/{program}` | Add sessions and exercises |
-| Coach | `/coach/invitations` | Invite athletes by email |
-| Athlete | `/app` | Athlete calendar and assigned programs |
-| Athlete | `/app/programs/{program}` | Assigned program detail |
-| Athlete | `/app/workouts/{session}` | Workout detail and completion |
-| Athlete | `/app/progress` | Manual progress log |
+| `/admin/dashboard` | Operations summary | `admin.access` |
+| `/admin/organizations` | Organization list, members, and exports | `organizations.manage` |
+| `/admin/users`, `/coaches`, `/athletes` | Account tables and details | `admin.access` |
+| `/admin/invitations` | Invitation operations and export | `invitations.manage` |
+| `/admin/reports` | Organization coaching delivery and adherence | `reports.view` |
+| `/admin/contact-submissions` | Public inquiry inbox | `admin.contacts` |
+| `/admin/permissions` | Grouped permissions and overrides | `admin.permissions` |
+| `/admin/settings` | Website, invitation, mail, and system control | `admin.settings` |
+| `/admin/email-logs` | Mail attempts, failures, filters, and export | `admin.audit` |
+| `/admin/audit-log` | Sensitive system action trail and export | `admin.audit` |
 
-## Permission Model
+Admin and coach list pages use the same Livewire contract: debounced search, AJAX filters, `10/25/50/100/All`, Bootstrap pagination, CSV export where operationally useful, and table-contained horizontal scrolling.
 
-Permissions live in `App\Support\PermissionCatalog`.
+### Coach
 
-Default role behavior:
+| Route | Purpose |
+| --- | --- |
+| `/coach` | Coach command board |
+| `/coach/athletes` and `/{athlete}` | Scoped roster and athlete source of truth |
+| `/coach/programs` and `/{program}` | Reusable program, phase, session, and exercise builder |
+| `/coach/exercises` | Exercise library |
+| `/coach/schedule` | Assigned workout schedule and rescheduling |
+| `/coach/reports` | Athlete adherence and execution reporting |
+| `/coach/invitations` | Athlete invitations |
+| `/coach/messages` | Organization-scoped conversations |
 
-- `owner`: every permission through `Gate::before`.
-- `admin`: admin access, audit, contact inbox, users, coaches, athletes, invitations.
-- `coach`: coach workspace, programs, assigned athlete records, invitations.
-- `athlete`: athlete app, own progress, own workout completion.
+### Athlete
 
-The current MVP route guards are role-safe:
+| Route | Purpose |
+| --- | --- |
+| `/app` | Today, calendar, active assignments, and coach context |
+| `/app/programs/{assignment}` | Assigned program, sessions, and media |
+| `/app/workouts/{workout}` | Set execution, timers, RPE, notes, and completion state |
+| `/app/progress` | Check-ins, charts, records, and photos |
+| `/app/messages` | Coach conversations |
+| `/app/profile` | Profile, organization, appearance, and account controls |
 
-- Coaches and athletes cannot open `/admin/dashboard`.
-- Athletes can only open programs/sessions assigned to them.
-- Coaches can only open their own programs.
+## Core Workflows
+
+1. Owner creates or manages an organization and its members.
+2. Coach invites an athlete or works with an existing organization member.
+3. Coach builds a reusable program template with phases, sessions, exercises, targets, rest, notes, images, and video URLs.
+4. Coach assigns the program; `ProgramScheduleService` generates dated scheduled workouts.
+5. Athlete opens the calendar and logs actual sets, reps, load, RPE, duration, notes, and status.
+6. Coach reviews adherence, progress entries, photos, set logs, and messages.
+7. Admin monitors organization delivery, email failures, permissions, public content, and audit history.
 
 ## Data Model
 
-The rebuild uses one compact migration:
+Identity and control:
 
-- `users`
-- `user_permissions`
-- `platform_settings`
-- `audit_logs`
-- `email_logs`
-- `contact_submissions`
+- `users`, `organizations`, `organization_memberships`
+- `user_permissions`, `membership_permission_overrides`
+- `platform_settings`, `organization_settings`
+- `audit_logs`, `email_logs`, `contact_submissions`
+
+Coaching:
+
+- `athlete_profiles`, `coach_profiles`, `coach_athlete_assignments`
 - `athlete_invitations`
-- `coach_athlete_assignments`
-- `training_programs`
-- `training_sessions`
-- `workout_logs`
-- `progress_entries`
+- `exercise_library`, `training_programs`, `program_phases`
+- `training_sessions`, `training_session_exercises`
+- `program_assignments`, `scheduled_workouts`
+- `workout_logs`, `workout_set_logs`
 
-This keeps the MVP direct. Memberships, files, payments, watch sync, and native app tables are intentionally postponed.
+Progress and communication:
 
-`workout_logs` now stores simple execution data: status, duration, RPE, notes, and a JSON set log for actual reps/load/RPE per prescribed set. That is enough for the MVP without rebuilding the old oversized set-log system.
+- `progress_entries`, `progress_photos`, `personal_records`, `coach_notes`
+- `conversations`, `conversation_participants`, `messages`, `media_assets`
+- Laravel database notifications and Sanctum personal access tokens
+
+The key chain is:
+
+`Organization -> Program Template -> Program Assignment -> Scheduled Workout -> Workout Log -> Set Logs`
+
+## API And Flutter
+
+The versioned API lives under `/api/v1` and uses consistent JSON envelopes with `data`, `meta`, `links`, and structured errors. The active organization is validated from `X-Organization-ID`. Sanctum tokens are stored only in Flutter SecureStorage.
+
+Flutter provides role-adaptive athlete and coach navigation, organization switching, login/logout, calendar, programs, workout execution, progress, invitations, roster, messaging, notifications, media, and profile controls. Workout drafts use Drift for unreliable connections and server timestamps for conflict handling.
+
+See `docs/openapi.yaml` and `docs/API_v1.md` for endpoint contracts.
 
 ## UI Rules
 
-- Dark premium Throughline identity across public, admin, coach, and athlete areas.
-- Records belong in tables.
-- Cards summarize only.
-- Tables use Livewire refresh, search, page size `10/25/50/100/All`, Bootstrap pagination, and horizontal overflow protection.
-- Normal users do not see an admin dashboard path.
-- `/dashboard` is only a role-aware redirect.
-
-## Modular Architecture
-
-The rebuild is separated by responsibility instead of putting an entire feature into one screen file.
-
-### PHP
-
-- `app/Livewire/Admin`, `Coach`, and `Athlete` contain role-specific screen controllers.
-- `app/Livewire/Concerns` contains shared Livewire table behavior.
-- `app/Livewire/Forms` owns reusable form state, validation, normalization, and payload mapping.
-- `app/Services` owns domain writes, transactions, delivery, and audit recording.
-- `app/Support` contains permission catalogs and training-media parsing.
-- Eloquent models own relationships, casts, and compact record-level calculations.
-
-The coach program editor is the reference implementation: the Livewire component coordinates the screen, form objects validate program/session data, `TrainingProgramManager` performs transactional writes, and `AuditLogger` records the operation.
-
-### Blade
-
-- `resources/views/layouts` owns the guest and authenticated shells.
-- `resources/views/components/tl` contains reusable Throughline cards, tables, media, hero, and training form components.
-- `resources/views/livewire` contains role-specific screen composition, not business persistence.
-
-### CSS
-
-- `resources/css/theme`: design tokens.
-- `resources/css/base`: global foundation.
-- `resources/css/layout`: shell and navigation.
-- `resources/css/components`: reusable surfaces, forms, tables, records, calendar, and training UI.
-- `resources/css/pages`: public and athlete-specific rules.
-- `resources/css/utilities`: responsive behavior.
-
-`resources/css/app.css` defines the explicit cascade order. Avoid adding another monolithic stylesheet.
-
-### JavaScript
-
-- `resources/js/app.js` is the single Vite entry point.
-- `resources/js/modules/alerts.js` manages dismissible status messages.
-- `resources/js/modules/mobile-navigation.js` manages offcanvas navigation behavior.
-- `resources/js/modules/observer.js` reconnects browser behavior after Livewire DOM updates.
-
-Livewire owns data refresh and AJAX interactions. Custom JavaScript is reserved for browser-only behavior.
-
-### Asset Build
-
-Bootstrap, Font Awesome, custom CSS, and JavaScript are bundled locally:
-
-```bash
-npm ci
-npm run build
-```
-
-The generated `public/build` directory must be included in every production release. The app no longer depends on Bootstrap or Font Awesome CDNs.
+- Theme modes: system, dark, and light.
+- Records live in tables; cards summarize.
+- Admin remains operational and dense without becoming cluttered.
+- Mobile navigation keeps primary athlete and coach actions visible.
+- No route names or language expose admin concepts to athletes.
+- Every major state has loading, empty, validation, permission-denied, and expired-session handling.
 
 ## Verification
 
-Current checks run clean:
+Run before every release:
 
 ```bash
 composer validate --strict
 ./vendor/bin/pint --test
-npm audit
-npm run build
 php artisan test
-php artisan optimize:clear
+npm run build
 php artisan route:cache
 php artisan view:cache
+cd mobile && flutter analyze --no-pub --suppress-analytics && flutter test --no-pub --suppress-analytics
 ```
 
-Current automated coverage:
+Use `scripts/hostinger-finalize-release.sh` only after an atomic release has been moved to its final application path. It refuses temporary release paths and verifies cached view roots.
 
-- Dashboard redirects by role.
-- Coach/athlete admin access is forbidden.
-- Athlete can only view own program.
-- Athlete can mark own workout completed with execution data.
-- Admin can open and export users.
-- Coach can open only assigned athlete profiles.
-- Admin can resend invitations and write email/audit logs.
-- Admin can export invitation records.
-- Admin can review contact submissions and export them.
-- Admin can filter and export audit/email logs.
-- Admin permissions and settings writes create audit logs.
-- Coach can update programs, edit sessions, and delete empty sessions.
-- Athlete can save progress check-ins and filter the progress table.
+## Deferred Integrations
 
-## Completed Rebuild Slices
-
-### Foundation
-
-- Archived old React/Inertia/mobile-heavy application.
-- Rebuilt public/auth/admin/coach/athlete shell with Laravel, Blade, Livewire, Bootstrap, FontAwesome, and a custom dark theme.
-- Added seeded owner/admin/coach/athlete accounts.
-- Added role-aware `/dashboard` redirect.
-
-### Control And Coaching
-
-- Rebuilt Website Control into a permission-protected owner workspace for branding, public copy, logo uploads, theme defaults, pricing display, feature visibility, invitation controls, and safe email sender identity.
-- Added public page visibility enforcement: disabled features, pricing, contact, request-access, and invitation workflows cannot be reached through stale links or direct routes.
-- Added uploaded logo support across public and authenticated shells while keeping the built-in Throughline mark as the fallback.
-- Added explicit `admin.settings` and `admin.permissions` enforcement in routes and Livewire actions so ordinary admins cannot elevate themselves through hidden endpoints.
-- Kept SMTP credentials outside database settings; Website Control only edits safe sender labels while Hostinger environment variables retain infrastructure secrets.
-- Added admin user detail/edit page.
-- Added filtered user CSV export.
-- Added coach athlete profile detail with programs, schedule, workout logs, and progress logs.
-- Added athlete workout execution logging for status, duration, RPE, notes, and set rows.
-- Added centralized invitation delivery service.
-- Added coach/admin invite resend and cancel actions.
-- Added email and audit logging for invitation actions.
-- Added invitation email subject/body settings with template tokens.
-- Added public pricing/membership settings for three editable plan cards.
-- Added public contact page headline, subheadline, and button label settings.
-- Added permissions defaults/clear shortcuts and audit logging.
-- Grouped settings into website identity, invitation control, and mail labels.
-- Added admin contact inbox with Livewire search, status filter, page size control, CSV export, and audit logging.
-- Added invitation CSV export that respects current search/status filters.
-- Added coach program update/archive controls.
-- Added coach session edit/delete controls. Empty sessions can be deleted; sessions with athlete logs are cancelled instead to protect history.
-- Added audit/email log filters for action, entity, status, type, date range, search, page size, and CSV export.
-- Improved athlete progress with summary stats, compact trend charts, date filters, and the table as the source of truth.
-- Added Hostinger deployment checklist: `docs/Hostinger_Deployment_Checklist.md`.
-- Added browser smoke checklist: `docs/Rebuild_Smoke_Checklist.md`.
-
-### Mobile Usability
-
-- Added a compact mobile top bar with a slide-out role navigation menu.
-- Added role-specific fixed bottom navigation for admin, coach, and athlete users.
-- Tightened mobile spacing, calendar cells, panels, stat cards, forms, and table overflow rules.
-- Added mobile-first athlete workout cards for the selected daily schedule.
-- Added mobile-first athlete program session cards.
-- Added mobile-first athlete workout execution cards for exercises and set logging while keeping desktop tables intact.
-- Added mobile-first coach program builder exercise cards for creating and editing sessions.
-- Added mobile-first coach athlete profile cards for programs, schedule, workout logs, and progress logs.
-- Added direct coach program creation from an athlete context.
-- Added program completion visibility for coach and athlete views.
-- Added validated session and exercise media URLs with inline image, YouTube, Vimeo, and direct-video rendering.
-- Added mobile exercise prescriptions with targets, coaching cues, media actions, and compact execution controls.
-
-## Production Release
-
-The clean rebuild is live at `https://athlete.ahmaddalao.com`.
-
-- Branch: `main`
-- Release commit: track the current deployed `origin/main`
-- Runtime: PHP 8.2.30 and Laravel 12.62.0
-- Public routes, role redirects, admin controls, coach workflows, athlete programs, progress, workout execution, media, Livewire refresh, and mobile overflow checks passed.
-- Coaches and athletes receive `403` from the admin workspace.
-- Production backups and the previous application release remain available for rollback.
-
-## Next Build Slice
-
-Build next in this order:
-
-1. Replace or deactivate all production seed credentials and create the permanent owner account.
-2. Run user acceptance testing with real coach and athlete workflows.
-3. Add memberships and payments only after coaching acceptance is signed off.
-
-Do not reintroduce native mobile, watch sync, Stripe, OAuth, or API complexity until the website MVP is stable.
+Payments, automated subscriptions, WHOOP, Health Connect, Apple Health, social login, and push notifications are deliberately outside the accepted core coaching release. They should be added only after web and Flutter coaching acceptance.

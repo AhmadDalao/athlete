@@ -108,6 +108,11 @@ class User extends Authenticatable
         return $this->hasMany(ScheduledWorkout::class, 'athlete_id');
     }
 
+    public function coachedScheduledWorkouts(): HasMany
+    {
+        return $this->hasMany(ScheduledWorkout::class, 'coach_id');
+    }
+
     public function progressEntries(): HasMany
     {
         return $this->hasMany(ProgressEntry::class, 'athlete_id');

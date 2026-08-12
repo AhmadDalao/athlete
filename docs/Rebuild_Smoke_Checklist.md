@@ -1,6 +1,6 @@
 # Throughline Rebuild Smoke Checklist
 
-Last updated: 2026-07-07
+Last updated: 2026-08-12
 
 Use this checklist before deploying or after pulling the rebuild onto Hostinger.
 
@@ -27,7 +27,10 @@ Use this checklist before deploying or after pulling the rebuild onto Hostinger.
 - Open a user detail page and confirm role/status/contact fields are visible.
 - Open `/admin/permissions`, select an admin, change permissions, and save.
 - Open `/admin/settings`, update homepage/contact/pricing copy, and confirm the public website changes.
-- Open `/admin/audit-log`, filter audit logs, switch email logs, and export CSV.
+- Open `/admin/reports`, change the date range/search/page size, and export the organization-scoped CSV.
+- Open `/admin/email-logs`, filter delivery status/type/date, and export CSV.
+- Open `/admin/audit-log`, filter action/entity/date, and export CSV.
+- Confirm an organization admin cannot open `/admin/email-logs` or `/admin/audit-log` without `admin.audit`.
 
 ## Coach
 
@@ -69,4 +72,5 @@ Test at 390px and 430px browser widths:
 - Livewire filters update without a full browser reload.
 - Exports download CSV files.
 - Audit/email logs are written for settings, permissions, invitations, and contact actions.
-- `php artisan test`, `./vendor/bin/pint --test`, `php artisan route:cache`, and `php artisan view:cache` all pass.
+- Flutter athlete/coach login, navigation, organization switching, calendar, workout, progress, and messaging load without overflow.
+- `php artisan test`, `./vendor/bin/pint --test`, `npm run build`, Flutter analyze/tests, `php artisan route:cache`, and `php artisan view:cache` all pass.

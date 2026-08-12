@@ -13,7 +13,9 @@ class LogExportController extends Controller
 {
     public function __invoke(Request $request): StreamedResponse
     {
-        $tab = $request->string('tab')->toString() === 'email' ? 'email' : 'audit';
+        $tab = $request->route('tab') === 'email' || $request->string('tab')->toString() === 'email'
+            ? 'email'
+            : 'audit';
 
         return $tab === 'email'
             ? $this->emailExport($request)

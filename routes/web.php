@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\InvitationExportController;
 use App\Http\Controllers\Admin\LogExportController;
 use App\Http\Controllers\Admin\OrganizationExportController;
 use App\Http\Controllers\Admin\OrganizationMemberExportController;
+use App\Http\Controllers\Admin\ReportExportController;
 use App\Http\Controllers\Admin\UserExportController;
 use App\Http\Controllers\Athlete\ProgressPhotoController as AthleteProgressPhotoController;
 use App\Http\Controllers\AuthController;
@@ -65,8 +66,12 @@ Route::middleware(['auth', 'organization'])->group(function (): void {
         Route::get('/invitations', Admin\InvitationsTable::class)->name('invitations');
         Route::get('/permissions', Admin\PermissionsPanel::class)->middleware('can:admin.permissions')->name('permissions');
         Route::get('/settings', Admin\SettingsPanel::class)->middleware('can:admin.settings')->name('settings');
+        Route::get('/reports/export', ReportExportController::class)->middleware('can:reports.view')->name('reports.export');
+        Route::get('/reports', Admin\Reports::class)->middleware('can:reports.view')->name('reports');
+        Route::get('/email-logs/export', LogExportController::class)->defaults('tab', 'email')->middleware('can:admin.audit')->name('email-logs.export');
+        Route::get('/email-logs', Admin\EmailLogsTable::class)->middleware('can:admin.audit')->name('email-logs');
         Route::get('/audit-log/export', LogExportController::class)->middleware('can:admin.audit')->name('audit.export');
-        Route::get('/audit-log', Admin\AuditLogTable::class)->name('audit');
+        Route::get('/audit-log', Admin\AuditLogTable::class)->middleware('can:admin.audit')->name('audit');
     });
 
     Route::middleware('can:coach.access')->prefix('coach')->name('coach.')->group(function (): void {
