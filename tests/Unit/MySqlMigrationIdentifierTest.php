@@ -76,6 +76,30 @@ class MySqlMigrationIdentifierTest extends TestCase
         }
     }
 
+    #[Test]
+    public function legacy_composite_indexes_get_foreign_key_support_before_replacement(): void
+    {
+        $source = $this->upMigrationSource();
+        $requiredOrder = [
+            ["index('coach_id', 'coach_assignments_coach_ix')", "dropUnique(['coach_id', 'athlete_id'])"],
+            ["index('athlete_id', 'progress_entries_athlete_ix')", "dropUnique(['athlete_id', 'logged_on'])"],
+            ["index('training_session_id', 'workout_logs_session_ix')", "dropUnique('workout_logs_training_session_id_athlete_id_unique')"],
+        ];
+
+        foreach ($requiredOrder as [$supportingIndex, $replacedUnique]) {
+            $indexPosition = strpos($source, $supportingIndex);
+            $replacementPosition = strpos($source, $replacedUnique);
+
+            $this->assertNotFalse($indexPosition, "Missing supporting index: {$supportingIndex}");
+            $this->assertNotFalse($replacementPosition, "Missing legacy index replacement: {$replacedUnique}");
+            $this->assertLessThan(
+                $replacementPosition,
+                $indexPosition,
+                "MySQL needs {$supportingIndex} before {$replacedUnique} is dropped.",
+            );
+        }
+    }
+
     private function upMigrationSource(): string
     {
         $source = file_get_contents(self::MIGRATION);

@@ -108,11 +108,13 @@ return new class extends Migration
         }
 
         Schema::table('coach_athlete_assignments', function (Blueprint $table): void {
+            $table->index('coach_id', 'coach_assignments_coach_ix');
             $table->dropUnique(['coach_id', 'athlete_id']);
             $table->unique(['organization_id', 'coach_id', 'athlete_id'], 'coach_athlete_assignments_org_pair_unique');
         });
 
         Schema::table('progress_entries', function (Blueprint $table): void {
+            $table->index('athlete_id', 'progress_entries_athlete_ix');
             $table->dropUnique(['athlete_id', 'logged_on']);
             $table->unique(['organization_id', 'athlete_id', 'logged_on'], 'progress_entries_org_athlete_day_unique');
         });
@@ -218,6 +220,7 @@ return new class extends Migration
         });
 
         Schema::table('workout_logs', function (Blueprint $table): void {
+            $table->index('training_session_id', 'workout_logs_session_ix');
             $table->dropUnique('workout_logs_training_session_id_athlete_id_unique');
             $table->foreignId('program_assignment_id')->nullable()->constrained(indexName: 'workout_logs_assignment_fk')->nullOnDelete();
             $table->foreignId('scheduled_workout_id')->nullable()->constrained(indexName: 'workout_logs_schedule_fk')->nullOnDelete();
@@ -524,11 +527,13 @@ return new class extends Migration
         Schema::table('progress_entries', function (Blueprint $table): void {
             $table->dropUnique('progress_entries_org_athlete_day_unique');
             $table->unique(['athlete_id', 'logged_on']);
+            $table->dropIndex('progress_entries_athlete_ix');
         });
 
         Schema::table('coach_athlete_assignments', function (Blueprint $table): void {
             $table->dropUnique('coach_athlete_assignments_org_pair_unique');
             $table->unique(['coach_id', 'athlete_id']);
+            $table->dropIndex('coach_assignments_coach_ix');
         });
 
         Schema::table('workout_logs', function (Blueprint $table): void {
@@ -538,6 +543,7 @@ return new class extends Migration
             $table->dropColumn(['scheduled_workout_id', 'program_assignment_id']);
             $table->dropColumn('sync_version');
             $table->unique(['training_session_id', 'athlete_id']);
+            $table->dropIndex('workout_logs_session_ix');
         });
 
         Schema::table('training_sessions', function (Blueprint $table): void {
