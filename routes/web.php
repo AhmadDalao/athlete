@@ -24,6 +24,7 @@ use App\Livewire\Athlete;
 use App\Livewire\Coach;
 use App\Livewire\Invite;
 use App\Livewire\Messaging\Inbox;
+use App\Livewire\NotificationCenter;
 use App\Livewire\Public\ContactForm;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +45,7 @@ Route::get('/dashboard', DashboardRedirectController::class)->name('dashboard');
 Route::middleware(['auth', 'organization'])->group(function (): void {
     Route::post('/appearance', ThemePreferenceController::class)->name('appearance.update');
     Route::post('/organizations/{organization}/select', OrganizationSelectionController::class)->name('organizations.select');
+    Route::get('/notifications', NotificationCenter::class)->middleware('can:notifications.read')->name('notifications');
     Route::middleware('can:admin.access')->prefix('admin')->name('admin.')->group(function (): void {
         Route::redirect('/', '/admin/dashboard')->name('root');
         Route::get('/dashboard', Admin\Dashboard::class)->name('dashboard');

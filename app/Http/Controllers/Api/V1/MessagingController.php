@@ -10,6 +10,7 @@ use App\Http\Resources\Api\V1\MessageResource;
 use App\Models\Conversation;
 use App\Models\MediaAsset;
 use App\Models\Message;
+use App\Services\UserNotificationService;
 use App\Support\OrganizationContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -51,7 +52,7 @@ class MessagingController extends Controller
         ]);
     }
 
-    public function store(MessageRequest $request, Conversation $conversation): JsonResponse
+    public function store(MessageRequest $request, Conversation $conversation, UserNotificationService $notifications): JsonResponse
     {
         $conversation = $this->query($request)->findOrFail($conversation->id);
         $message = $conversation->messages()->create([
@@ -78,6 +79,7 @@ class MessagingController extends Controller
         $message->load(['sender', 'attachments']);
         $conversation->touch();
         $conversation->participants()->updateExistingPivot($request->user()->id, ['last_read_at' => now()]);
+        $notifications->messageSent($message);
 
         return $this->success(new MessageResource($message), status: 201);
     }

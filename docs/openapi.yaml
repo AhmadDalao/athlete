@@ -16,6 +16,7 @@ tags:
   - name: Athlete
   - name: Coach
   - name: Messaging
+  - name: Notifications
 paths:
   /status:
     get:
@@ -677,6 +678,47 @@ paths:
       responses:
         '200': { $ref: '#/components/responses/Success' }
         '403': { $ref: '#/components/responses/Forbidden' }
+  /notifications:
+    get:
+      tags: [Notifications]
+      operationId: listNotifications
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Organization-scoped notifications with unread count in response metadata.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Notification' }
+                      meta:
+                        type: object
+                        properties:
+                          unread: { type: integer }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /notifications/{notification}/read:
+    patch:
+      tags: [Notifications]
+      operationId: markNotificationRead
+      parameters:
+        - $ref: '#/components/parameters/NotificationPath'
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /notifications/read-all:
+    post:
+      tags: [Notifications]
+      operationId: markAllNotificationsRead
+      responses:
+        '200': { $ref: '#/components/responses/Success' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /messages:
     get:
       tags: [Messaging]
@@ -805,6 +847,11 @@ components:
       in: path
       required: true
       schema: { type: integer }
+    NotificationPath:
+      name: notification
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
     AthletePath:
       name: athlete
       in: path
@@ -969,6 +1016,22 @@ components:
         email: { type: string, format: email }
         role: { type: string }
         avatar_url: { type: [string, 'null'], format: uri }
+    Notification:
+      type: object
+      required: [id, category, title, body, action, context, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        category: { type: string, enum: [program, schedule, workout, message, update] }
+        title: { type: string }
+        body: { type: string }
+        action:
+          type: object
+          properties:
+            type: { type: string }
+            id: { type: integer }
+        context: { type: object }
+        read_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
     Exercise:
       type: object
       properties:

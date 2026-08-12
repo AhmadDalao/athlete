@@ -129,6 +129,16 @@ curl -X POST "https://athlete.ahmaddalao.com/api/v1/messages/$CONVERSATION_ID" \
 
 Attachment URLs are protected and only conversation participants can download them. Flutter currently selects image attachments; PDF upload remains available through the API and web clients.
 
+## Notifications
+
+Notifications are database-backed and always scoped to the active `X-Organization-ID`. Program assignments, schedule changes, workout outcomes, and new messages create inbox records for the affected athlete or coach.
+
+- `GET /notifications?per_page=30` lists newest notifications and returns `meta.unread`.
+- `PATCH /notifications/{notification}/read` marks one accessible notification as read.
+- `POST /notifications/read-all` marks only the active organization's notifications as read.
+
+Trying to read a notification from another organization returns `404`; titles and message previews are never leaked across organizations. Flutter refreshes on demand, while the web inbox polls every 30 seconds. This is deliberate polling, not fake realtime.
+
 ## Mobile feature endpoints
 
 | Area | Endpoints |
@@ -137,6 +147,7 @@ Attachment URLs are protected and only conversation participants can download th
 | Athlete photos | `GET/POST /app/photos`, `DELETE /app/photos/{photo}` |
 | Coach athlete review | `GET /coach/athletes/{athlete}`, note and photo actions above |
 | Messaging | `GET /messages`, `GET/POST /messages/{conversation}` |
+| Notifications | `GET /notifications`, `PATCH /notifications/{notification}/read`, `POST /notifications/read-all` |
 | Profile | `GET/PUT /profile`, `PUT /profile/theme` |
 | Password recovery | `POST /auth/password/forgot`, `POST /auth/password/reset` |
 | Protected media | `GET /media/progress-photos/{photo}`, `GET /media/message-attachments/{media}` |

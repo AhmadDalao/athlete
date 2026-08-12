@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\CoachManagementController;
 use App\Http\Controllers\Api\V1\CoachReviewController;
 use App\Http\Controllers\Api\V1\MediaController;
 use App\Http\Controllers\Api\V1\MessagingController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\OrganizationController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ProgressController;
@@ -40,6 +41,11 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/profile', [ProfileController::class, 'show']);
         Route::put('/profile', [ProfileController::class, 'update']);
         Route::put('/profile/theme', [ProfileController::class, 'theme']);
+        Route::middleware('can:notifications.read')->group(function (): void {
+            Route::get('/notifications', [NotificationController::class, 'index']);
+            Route::patch('/notifications/{notification}/read', [NotificationController::class, 'read']);
+            Route::post('/notifications/read-all', [NotificationController::class, 'readAll']);
+        });
         Route::get('/media/progress-photos/{photo}', [MediaController::class, 'progressPhoto'])->name('api.v1.media.progress-photos');
 
         Route::middleware('can:messages.read')->group(function (): void {

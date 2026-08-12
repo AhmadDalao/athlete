@@ -13,7 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class ProgramScheduleService
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly UserNotificationService $notifications,
+    ) {}
 
     public function assign(
         TrainingProgram $program,
@@ -59,6 +62,7 @@ class ProgramScheduleService
                 $assignment->id,
                 "Assigned {$program->title} to {$athlete->name}.",
             );
+            $this->notifications->programAssigned($assignment);
 
             return $assignment->refresh();
         });
@@ -161,6 +165,7 @@ class ProgramScheduleService
             $workout->id,
             "Rescheduled {$workout->session->title} for {$workout->scheduled_for->toDateString()}.",
         );
+        $this->notifications->workoutRescheduled($workout);
 
         return $workout->refresh();
     }
@@ -187,6 +192,7 @@ class ProgramScheduleService
                 $assignment->id,
                 "Changed assignment status to {$status}.",
             );
+            $this->notifications->assignmentStatusChanged($assignment);
         });
     }
 }

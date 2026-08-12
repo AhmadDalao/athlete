@@ -7,6 +7,7 @@ use App\Models\MediaAsset;
 use App\Models\Message;
 use App\Models\User;
 use App\Services\ConversationService;
+use App\Services\UserNotificationService;
 use App\Support\OrganizationContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -61,7 +62,7 @@ class Inbox extends Component
         $this->conversationId = null;
     }
 
-    public function send(): void
+    public function send(UserNotificationService $notifications): void
     {
         abort_unless(Auth::user()->can('messages.send'), 403);
         $conversation = $this->selectedConversation();
@@ -95,6 +96,7 @@ class Inbox extends Component
 
         $this->reset(['body', 'attachment']);
         $this->markRead();
+        $notifications->messageSent($message);
         $this->dispatch('message-sent');
     }
 

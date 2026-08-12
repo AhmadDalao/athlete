@@ -12,7 +12,10 @@ use Illuminate\Validation\ValidationException;
 
 class WorkoutExecutionService
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly UserNotificationService $notifications,
+    ) {}
 
     public function save(ScheduledWorkout $workout, User $athlete, array $data, string $status): WorkoutLog
     {
@@ -87,6 +90,7 @@ class WorkoutExecutionService
                 "Saved {$workout->session->title} as {$status}.",
                 $athlete->id,
             );
+            $this->notifications->workoutSaved($workout, $status);
 
             return $log->fresh(['setLogs']);
         });

@@ -42,6 +42,10 @@ class CoachWorkflowTest extends TestCase
             $coach,
             '2026-08-11',
         );
+        $this->assertTrue(
+            $athlete->unreadNotifications()->where('data->category', 'program')->exists(),
+            'Assigning a program should notify the athlete.',
+        );
 
         Livewire::actingAs($coach)
             ->test(ProgramDetail::class, ['program' => $program])

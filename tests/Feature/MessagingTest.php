@@ -35,6 +35,10 @@ class MessagingTest extends TestCase
             'sender_id' => $coach->id,
             'body' => 'Training starts at 6 PM.',
         ]);
+        $this->assertTrue(
+            $athlete->unreadNotifications()->where('data->category', 'message')->exists(),
+            'The athlete should receive a message notification.',
+        );
 
         Livewire::actingAs($athlete)
             ->test(Inbox::class)
@@ -47,6 +51,10 @@ class MessagingTest extends TestCase
             'sender_id' => $athlete->id,
             'body' => 'Understood, coach.',
         ]);
+        $this->assertTrue(
+            $coach->unreadNotifications()->where('data->category', 'message')->exists(),
+            'The coach should receive a message notification.',
+        );
         $this->assertDatabaseCount('conversations', 1);
     }
 

@@ -55,7 +55,7 @@ class PermissionCatalog
     public static function defaultsForRole(string $role): array
     {
         return match ($role) {
-            'admin' => ['admin.access', 'admin.audit', 'admin.contacts', 'organizations.manage', 'users.manage', 'coaches.manage', 'athletes.manage', 'invitations.manage', 'reports.view'],
+            'admin' => ['admin.access', 'admin.audit', 'admin.contacts', 'organizations.manage', 'users.manage', 'coaches.manage', 'athletes.manage', 'invitations.manage', 'reports.view', 'notifications.read'],
             'coach' => static::defaultsForOrganizationRole('coach'),
             'athlete' => static::defaultsForOrganizationRole('athlete'),
             default => static::all(),

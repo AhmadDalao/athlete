@@ -4,6 +4,7 @@
         'admin' => [
             'Overview' => [
                 ['route' => 'admin.dashboard', 'active' => 'admin.dashboard', 'icon' => 'fa-table-cells-large', 'label' => 'Dashboard'],
+                ['route' => 'notifications', 'active' => 'notifications', 'icon' => 'fa-bell', 'label' => 'Notifications', 'permission' => 'notifications.read'],
                 ['route' => 'admin.organizations', 'active' => 'admin.organizations*', 'icon' => 'fa-building-shield', 'label' => 'Organizations', 'permission' => 'organizations.manage'],
             ],
             'People' => [
@@ -27,6 +28,7 @@
                 ['route' => 'coach.schedule', 'active' => 'coach.schedule*', 'icon' => 'fa-calendar-days', 'label' => 'Schedule', 'permission' => 'schedule.manage'],
                 ['route' => 'coach.reports', 'active' => 'coach.reports*', 'icon' => 'fa-chart-column', 'label' => 'Reports', 'permission' => 'reports.view'],
                 ['route' => 'coach.messages', 'active' => 'coach.messages*', 'icon' => 'fa-comments', 'label' => 'Messages', 'permission' => 'messages.read'],
+                ['route' => 'notifications', 'active' => 'notifications', 'icon' => 'fa-bell', 'label' => 'Notifications', 'permission' => 'notifications.read'],
                 ['route' => 'coach.invitations', 'active' => 'coach.invitations*', 'icon' => 'fa-user-plus', 'label' => 'Invitations'],
             ],
         ],
@@ -37,6 +39,7 @@
                 ['route' => 'app.home', 'active' => 'never', 'icon' => 'fa-calendar-days', 'label' => 'Calendar', 'fragment' => 'calendar'],
                 ['route' => 'app.progress', 'active' => 'app.progress*', 'icon' => 'fa-chart-line', 'label' => 'Progress'],
                 ['route' => 'app.messages', 'active' => 'app.messages*', 'icon' => 'fa-comments', 'label' => 'Messages', 'permission' => 'messages.read'],
+                ['route' => 'notifications', 'active' => 'notifications', 'icon' => 'fa-bell', 'label' => 'Notifications', 'permission' => 'notifications.read'],
                 ['route' => 'app.profile', 'active' => 'app.profile*', 'icon' => 'fa-user-gear', 'label' => 'Profile'],
             ],
         ],

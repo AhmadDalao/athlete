@@ -69,6 +69,10 @@ class ApiWorkflowTest extends TestCase
 
         $this->assertDatabaseHas('scheduled_workouts', ['id' => $workout->id, 'status' => 'completed']);
         $this->assertDatabaseHas('workout_set_logs', ['scheduled_workout_id' => $workout->id, 'actual_reps' => 5]);
+        $this->assertTrue(
+            $coach->unreadNotifications()->where('data->category', 'workout')->exists(),
+            'Completing a workout should notify the assigned coach.',
+        );
     }
 
     public function test_progress_api_upserts_daily_check_in_and_limits_page_size(): void

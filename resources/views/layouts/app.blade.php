@@ -10,6 +10,9 @@
         ? \App\Models\Organization::query()->where('status', 'active')->orderBy('name')->get()
         : $user?->organizations()->wherePivot('status', 'active')->where('organizations.status', 'active')->orderBy('name')->get();
     $activeOrganization = $availableOrganizations?->firstWhere('id', $user?->current_organization_id) ?? $availableOrganizations?->first();
+    $unreadNotificationCount = $user?->can('notifications.read')
+        ? $user->unreadNotifications()->where('data->organization_id', $activeOrganization?->id)->count()
+        : 0;
 @endphp
 <!doctype html>
 <html
@@ -41,6 +44,12 @@
     <header class="tl-mobile-header d-lg-none">
         <x-tl.brand :href="$user->landingPath()" compact :show-tagline="false" />
         <div class="d-flex align-items-center gap-2">
+            @can('notifications.read')
+                <a class="tl-icon-button position-relative" href="{{ route('notifications') }}" aria-label="Notifications">
+                    <i class="fa-regular fa-bell"></i>
+                    @if($unreadNotificationCount)<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-success">{{ min($unreadNotificationCount, 99) }}</span>@endif
+                </a>
+            @endcan
             <x-tl.theme-switch compact />
             <button class="tl-icon-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#tlSidebar" aria-controls="tlSidebar" aria-label="Open navigation">
                 <i class="fa-solid fa-bars-staggered"></i>
@@ -117,7 +126,12 @@
                         <kbd>⌘K</kbd>
                     </label>
                     <x-tl.theme-switch />
-                    <button class="tl-icon-button" type="button" aria-label="Notifications"><i class="fa-regular fa-bell"></i></button>
+                    @can('notifications.read')
+                        <a class="tl-icon-button position-relative" href="{{ route('notifications') }}" aria-label="Notifications">
+                            <i class="fa-regular fa-bell"></i>
+                            @if($unreadNotificationCount)<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-success">{{ min($unreadNotificationCount, 99) }}</span>@endif
+                        </a>
+                    @endcan
                     <div class="tl-topbar-user">
                         <span class="tl-user-avatar">{{ str($user->name)->substr(0, 2)->upper() }}</span>
                         <span><strong>{{ $user->name }}</strong><small>{{ $roleLabel }}</small></span>

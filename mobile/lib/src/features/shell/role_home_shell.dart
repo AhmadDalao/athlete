@@ -13,6 +13,7 @@ import 'package:throughline_mobile/src/features/coach/coach_programs_screen.dart
 import 'package:throughline_mobile/src/features/coach/coach_roster_screen.dart';
 import 'package:throughline_mobile/src/features/coach/coach_schedule_screen.dart';
 import 'package:throughline_mobile/src/features/messages/messages_screen.dart';
+import 'package:throughline_mobile/src/features/notifications/notifications_screen.dart';
 import 'package:throughline_mobile/src/features/profile/more_screen.dart';
 
 class RoleHomeShell extends ConsumerStatefulWidget {
@@ -28,6 +29,9 @@ class _RoleHomeShellState extends ConsumerState<RoleHomeShell> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
+    final notificationEnvelope = ref.watch(notificationsProvider).asData?.value;
+    final unreadNotifications =
+        notificationEnvelope?.object('meta')['unread'] as int? ?? 0;
     final user = auth.user;
     if (user == null) return const SizedBox.shrink();
     if (!user.supportsMobile) return _UnsupportedRole(userName: user.name);
@@ -86,6 +90,19 @@ class _RoleHomeShellState extends ConsumerState<RoleHomeShell> {
         ),
         title: const ThroughlineMark(compact: true),
         actions: [
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            ),
+            icon: Badge(
+              isLabelVisible: unreadNotifications > 0,
+              label: Text(
+                unreadNotifications > 99 ? '99+' : '$unreadNotifications',
+              ),
+              child: const Icon(Icons.notifications_none_rounded),
+            ),
+            tooltip: 'Notifications',
+          ),
           if (activeOrganization != null)
             Padding(
               padding: const EdgeInsets.only(right: 14),
@@ -110,6 +127,12 @@ class _RoleHomeShellState extends ConsumerState<RoleHomeShell> {
           setState(() => _index = value);
           Navigator.of(context).pop();
         },
+        onNotifications: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+          );
+        },
       ),
       body: IndexedStack(index: _index, children: pages),
       bottomNavigationBar: NavigationBar(
@@ -133,11 +156,13 @@ class _AppDrawer extends ConsumerWidget {
     required this.currentIndex,
     required this.destinations,
     required this.onSelect,
+    required this.onNotifications,
   });
 
   final int currentIndex;
   final List<_Destination> destinations;
   final ValueChanged<int> onSelect;
+  final VoidCallback onNotifications;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -168,27 +193,38 @@ class _AppDrawer extends ConsumerWidget {
             ),
             const Divider(height: 1),
             Expanded(
-              child: ListView.builder(
+              child: ListView(
                 padding: const EdgeInsets.all(12),
-                itemCount: destinations.length,
-                itemBuilder: (context, index) {
-                  final destination = destinations[index];
-                  return ListTile(
-                    selected: currentIndex == index,
-                    selectedTileColor: ThroughlineColors.lime.withValues(
-                      alpha: 0.14,
+                children: [
+                  for (var index = 0; index < destinations.length; index++)
+                    ListTile(
+                      selected: currentIndex == index,
+                      selectedTileColor: ThroughlineColors.lime.withValues(
+                        alpha: 0.14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      leading: Icon(destinations[index].icon),
+                      title: Text(
+                        destinations[index].label,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      onTap: () => onSelect(index),
                     ),
+                  const Divider(height: 24),
+                  ListTile(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    leading: Icon(destination.icon),
-                    title: Text(
-                      destination.label,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    leading: const Icon(Icons.notifications_none_rounded),
+                    title: const Text(
+                      'Notifications',
+                      style: TextStyle(fontWeight: FontWeight.w700),
                     ),
-                    onTap: () => onSelect(index),
-                  );
-                },
+                    onTap: onNotifications,
+                  ),
+                ],
               ),
             ),
             Padding(
