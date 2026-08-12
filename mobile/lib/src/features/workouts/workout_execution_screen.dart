@@ -9,6 +9,7 @@ import 'package:throughline_mobile/src/core/network/api_client.dart';
 import 'package:throughline_mobile/src/core/providers.dart';
 import 'package:throughline_mobile/src/core/theme/app_theme.dart';
 import 'package:throughline_mobile/src/core/widgets/throughline_widgets.dart';
+import 'package:throughline_mobile/src/features/auth/auth_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
@@ -29,11 +30,20 @@ class _WorkoutExecutionScreenState
   final _rpe = TextEditingController();
   final List<_SetDraft> _sets = [];
   bool _hydrated = false;
+  bool _hydrating = false;
   bool _saving = false;
+  bool _draftRestored = false;
   int? _syncVersion;
+  Timer? _draftTimer;
+
+  String get _draftKey {
+    final auth = ref.read(authControllerProvider);
+    return '${auth.user?.id ?? 0}:${auth.activeOrganizationId ?? 0}:${widget.workoutId}';
+  }
 
   @override
   void dispose() {
+    _draftTimer?.cancel();
     _notes.dispose();
     _duration.dispose();
     _rpe.dispose();
@@ -89,6 +99,34 @@ class _WorkoutExecutionScreenState
                 ),
               ),
               const SizedBox(height: 16),
+              if (_draftRestored) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: ThroughlineColors.cyan.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: ThroughlineColors.cyan.withValues(alpha: 0.28),
+                    ),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.offline_pin_rounded,
+                        color: ThroughlineColors.cyan,
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Unsynced work was restored from this device.',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               if (session.text('media_url').isNotEmpty) ...[
                 _MediaHero(url: session.text('media_url')),
                 const SizedBox(height: 16),
@@ -148,6 +186,7 @@ class _WorkoutExecutionScreenState
                   title: group.key,
                   sets: group.value,
                   onTimer: (seconds) => _showTimer(context, seconds),
+                  onChanged: _scheduleLocalDraft,
                 ),
               ),
             ],
@@ -184,15 +223,53 @@ class _WorkoutExecutionScreenState
     );
   }
 
-  void _hydrate(JsonMap workout) {
-    if (_hydrated || !mounted) return;
+  Future<void> _hydrate(JsonMap workout) async {
+    if (_hydrated || _hydrating || !mounted) return;
+    _hydrating = true;
     final execution = workout.object('execution');
-    final existingSets = execution.maps('sets');
+    var source = execution;
+    final serverSyncVersion = execution['sync_version'] as int?;
+    try {
+      final localDraft = await ref
+          .read(appDatabaseProvider)
+          .workoutDraft(_draftKey);
+      if (localDraft != null) {
+        final decoded = jsonDecode(localDraft.payload);
+        if (decoded is Map<String, dynamic> &&
+            decoded['sync_version'] == serverSyncVersion) {
+          source = decoded;
+          _draftRestored = true;
+        } else {
+          await ref.read(appDatabaseProvider).removeWorkoutDraft(_draftKey);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'A stale local draft was removed because this workout changed elsewhere.',
+                ),
+              ),
+            );
+          }
+        }
+      }
+    } on Object {
+      try {
+        await ref.read(appDatabaseProvider).removeWorkoutDraft(_draftKey);
+      } on Object {
+        // A damaged local cache must never block the server workout.
+      }
+    }
+    if (!mounted) {
+      _hydrating = false;
+      return;
+    }
+
+    final existingSets = source.maps('sets');
     final exercises = workout.object('session').maps('exercises');
-    _notes.text = execution.text('notes');
-    _duration.text = execution['duration_minutes']?.toString() ?? '';
-    _rpe.text = execution['rpe']?.toString() ?? '';
-    _syncVersion = execution['sync_version'] as int?;
+    _notes.text = source.text('notes');
+    _duration.text = source['duration_minutes']?.toString() ?? '';
+    _rpe.text = source['rpe']?.toString() ?? '';
+    _syncVersion = serverSyncVersion;
 
     for (
       var exerciseIndex = 0;
@@ -215,6 +292,15 @@ class _WorkoutExecutionScreenState
         );
       }
     }
+    _notes.addListener(_scheduleLocalDraft);
+    _duration.addListener(_scheduleLocalDraft);
+    _rpe.addListener(_scheduleLocalDraft);
+    for (final set in _sets) {
+      set.actualReps.addListener(_scheduleLocalDraft);
+      set.actualLoad.addListener(_scheduleLocalDraft);
+      set.rpe.addListener(_scheduleLocalDraft);
+    }
+    _hydrating = false;
     setState(() => _hydrated = true);
   }
 
@@ -227,20 +313,17 @@ class _WorkoutExecutionScreenState
   }
 
   Future<void> _save(String status) async {
+    _draftTimer?.cancel();
     setState(() => _saving = true);
-    final payload = <String, dynamic>{
-      'status': status,
-      'notes': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
-      'duration_minutes': int.tryParse(_duration.text),
-      'rpe': int.tryParse(_rpe.text),
-      'sync_version': _syncVersion,
-      'sets': _sets.map((set) => set.toJson()).toList(),
-    };
+    final payload = _payload(status);
     try {
-      await ref
+      final response = await ref
           .read(apiClientProvider)
           .put('/app/workouts/${widget.workoutId}/execution', data: payload);
-      await ref.read(appDatabaseProvider).removeWorkoutDraft(widget.workoutId);
+      final execution = response.object('data').object('execution');
+      _syncVersion = execution['sync_version'] as int? ?? _syncVersion;
+      await ref.read(appDatabaseProvider).removeWorkoutDraft(_draftKey);
+      _draftRestored = false;
       ref.invalidate(workoutProvider(widget.workoutId));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -263,12 +346,7 @@ class _WorkoutExecutionScreenState
           );
         }
       } else {
-        await ref
-            .read(appDatabaseProvider)
-            .saveWorkoutDraft(
-              workoutId: widget.workoutId,
-              payload: jsonEncode(payload),
-            );
+        await _persistLocalDraft(payload);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -283,6 +361,31 @@ class _WorkoutExecutionScreenState
       if (mounted) setState(() => _saving = false);
     }
   }
+
+  JsonMap _payload(String status) => {
+    'status': status,
+    'notes': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+    'duration_minutes': int.tryParse(_duration.text),
+    'rpe': int.tryParse(_rpe.text),
+    'sync_version': _syncVersion,
+    'sets': _sets.map((set) => set.toJson()).toList(),
+  };
+
+  void _scheduleLocalDraft() {
+    if (!_hydrated || _saving) return;
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 500), () {
+      unawaited(_persistLocalDraft(_payload('partial')).catchError((_) {}));
+    });
+  }
+
+  Future<void> _persistLocalDraft(JsonMap payload) => ref
+      .read(appDatabaseProvider)
+      .saveWorkoutDraft(
+        scopeKey: _draftKey,
+        workoutId: widget.workoutId,
+        payload: jsonEncode(payload),
+      );
 
   Future<void> _showTimer(BuildContext context, int seconds) =>
       showModalBottomSheet<void>(
@@ -377,10 +480,12 @@ class _ExerciseSection extends StatefulWidget {
     required this.title,
     required this.sets,
     required this.onTimer,
+    required this.onChanged,
   });
   final String title;
   final List<_SetDraft> sets;
   final ValueChanged<int> onTimer;
+  final VoidCallback onChanged;
 
   @override
   State<_ExerciseSection> createState() => _ExerciseSectionState();
@@ -486,8 +591,10 @@ class _ExerciseSectionState extends State<_ExerciseSection> {
                     width: 36,
                     child: Checkbox(
                       value: set.completed,
-                      onChanged: (value) =>
-                          setState(() => set.completed = value ?? false),
+                      onChanged: (value) {
+                        setState(() => set.completed = value ?? false);
+                        widget.onChanged();
+                      },
                     ),
                   ),
                   Expanded(

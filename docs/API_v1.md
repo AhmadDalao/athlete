@@ -11,6 +11,14 @@ The Flutter app uses Laravel Sanctum bearer tokens and the versioned API at `/ap
 5. If the server returns `401`, clear local authentication and return to login.
 6. If the server returns `409 sync_conflict`, refresh the workout before replaying a local draft.
 
+## Flutter offline workout drafts
+
+- Workout edits are debounced into the local Drift database while the execution screen is open.
+- Draft keys include user, active organization, and workout IDs so accounts cannot overwrite each other's local work.
+- A draft is restored only when its `sync_version` matches the current server execution.
+- Successful saves remove the local draft. Network failures keep it for the next attempt.
+- A stale draft is discarded rather than overwriting a workout changed on another device.
+
 ## Response contract
 
 Successful responses always include:

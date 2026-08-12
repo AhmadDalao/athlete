@@ -9,6 +9,17 @@ class $WorkoutDraftsTable extends WorkoutDrafts
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $WorkoutDraftsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _scopeKeyMeta = const VerificationMeta(
+    'scopeKey',
+  );
+  @override
+  late final GeneratedColumn<String> scopeKey = GeneratedColumn<String>(
+    'scope_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _workoutIdMeta = const VerificationMeta(
     'workoutId',
   );
@@ -18,7 +29,7 @@ class $WorkoutDraftsTable extends WorkoutDrafts
     aliasedName,
     false,
     type: DriftSqlType.int,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _payloadMeta = const VerificationMeta(
     'payload',
@@ -56,6 +67,7 @@ class $WorkoutDraftsTable extends WorkoutDrafts
   );
   @override
   List<GeneratedColumn> get $columns => [
+    scopeKey,
     workoutId,
     payload,
     serverUpdatedAt,
@@ -73,11 +85,21 @@ class $WorkoutDraftsTable extends WorkoutDrafts
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('scope_key')) {
+      context.handle(
+        _scopeKeyMeta,
+        scopeKey.isAcceptableOrUnknown(data['scope_key']!, _scopeKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scopeKeyMeta);
+    }
     if (data.containsKey('workout_id')) {
       context.handle(
         _workoutIdMeta,
         workoutId.isAcceptableOrUnknown(data['workout_id']!, _workoutIdMeta),
       );
+    } else if (isInserting) {
+      context.missing(_workoutIdMeta);
     }
     if (data.containsKey('payload')) {
       context.handle(
@@ -108,11 +130,15 @@ class $WorkoutDraftsTable extends WorkoutDrafts
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {workoutId};
+  Set<GeneratedColumn> get $primaryKey => {scopeKey};
   @override
   WorkoutDraft map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return WorkoutDraft(
+      scopeKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}scope_key'],
+      )!,
       workoutId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}workout_id'],
@@ -139,11 +165,13 @@ class $WorkoutDraftsTable extends WorkoutDrafts
 }
 
 class WorkoutDraft extends DataClass implements Insertable<WorkoutDraft> {
+  final String scopeKey;
   final int workoutId;
   final String payload;
   final DateTime? serverUpdatedAt;
   final DateTime updatedAt;
   const WorkoutDraft({
+    required this.scopeKey,
     required this.workoutId,
     required this.payload,
     this.serverUpdatedAt,
@@ -152,6 +180,7 @@ class WorkoutDraft extends DataClass implements Insertable<WorkoutDraft> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['scope_key'] = Variable<String>(scopeKey);
     map['workout_id'] = Variable<int>(workoutId);
     map['payload'] = Variable<String>(payload);
     if (!nullToAbsent || serverUpdatedAt != null) {
@@ -163,6 +192,7 @@ class WorkoutDraft extends DataClass implements Insertable<WorkoutDraft> {
 
   WorkoutDraftsCompanion toCompanion(bool nullToAbsent) {
     return WorkoutDraftsCompanion(
+      scopeKey: Value(scopeKey),
       workoutId: Value(workoutId),
       payload: Value(payload),
       serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
@@ -178,6 +208,7 @@ class WorkoutDraft extends DataClass implements Insertable<WorkoutDraft> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return WorkoutDraft(
+      scopeKey: serializer.fromJson<String>(json['scopeKey']),
       workoutId: serializer.fromJson<int>(json['workoutId']),
       payload: serializer.fromJson<String>(json['payload']),
       serverUpdatedAt: serializer.fromJson<DateTime?>(json['serverUpdatedAt']),
@@ -188,6 +219,7 @@ class WorkoutDraft extends DataClass implements Insertable<WorkoutDraft> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'scopeKey': serializer.toJson<String>(scopeKey),
       'workoutId': serializer.toJson<int>(workoutId),
       'payload': serializer.toJson<String>(payload),
       'serverUpdatedAt': serializer.toJson<DateTime?>(serverUpdatedAt),
@@ -196,11 +228,13 @@ class WorkoutDraft extends DataClass implements Insertable<WorkoutDraft> {
   }
 
   WorkoutDraft copyWith({
+    String? scopeKey,
     int? workoutId,
     String? payload,
     Value<DateTime?> serverUpdatedAt = const Value.absent(),
     DateTime? updatedAt,
   }) => WorkoutDraft(
+    scopeKey: scopeKey ?? this.scopeKey,
     workoutId: workoutId ?? this.workoutId,
     payload: payload ?? this.payload,
     serverUpdatedAt: serverUpdatedAt.present
@@ -210,6 +244,7 @@ class WorkoutDraft extends DataClass implements Insertable<WorkoutDraft> {
   );
   WorkoutDraft copyWithCompanion(WorkoutDraftsCompanion data) {
     return WorkoutDraft(
+      scopeKey: data.scopeKey.present ? data.scopeKey.value : this.scopeKey,
       workoutId: data.workoutId.present ? data.workoutId.value : this.workoutId,
       payload: data.payload.present ? data.payload.value : this.payload,
       serverUpdatedAt: data.serverUpdatedAt.present
@@ -222,6 +257,7 @@ class WorkoutDraft extends DataClass implements Insertable<WorkoutDraft> {
   @override
   String toString() {
     return (StringBuffer('WorkoutDraft(')
+          ..write('scopeKey: $scopeKey, ')
           ..write('workoutId: $workoutId, ')
           ..write('payload: $payload, ')
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
@@ -232,11 +268,12 @@ class WorkoutDraft extends DataClass implements Insertable<WorkoutDraft> {
 
   @override
   int get hashCode =>
-      Object.hash(workoutId, payload, serverUpdatedAt, updatedAt);
+      Object.hash(scopeKey, workoutId, payload, serverUpdatedAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is WorkoutDraft &&
+          other.scopeKey == this.scopeKey &&
           other.workoutId == this.workoutId &&
           other.payload == this.payload &&
           other.serverUpdatedAt == this.serverUpdatedAt &&
@@ -244,54 +281,73 @@ class WorkoutDraft extends DataClass implements Insertable<WorkoutDraft> {
 }
 
 class WorkoutDraftsCompanion extends UpdateCompanion<WorkoutDraft> {
+  final Value<String> scopeKey;
   final Value<int> workoutId;
   final Value<String> payload;
   final Value<DateTime?> serverUpdatedAt;
   final Value<DateTime> updatedAt;
+  final Value<int> rowid;
   const WorkoutDraftsCompanion({
+    this.scopeKey = const Value.absent(),
     this.workoutId = const Value.absent(),
     this.payload = const Value.absent(),
     this.serverUpdatedAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   WorkoutDraftsCompanion.insert({
-    this.workoutId = const Value.absent(),
+    required String scopeKey,
+    required int workoutId,
     required String payload,
     this.serverUpdatedAt = const Value.absent(),
     required DateTime updatedAt,
-  }) : payload = Value(payload),
+    this.rowid = const Value.absent(),
+  }) : scopeKey = Value(scopeKey),
+       workoutId = Value(workoutId),
+       payload = Value(payload),
        updatedAt = Value(updatedAt);
   static Insertable<WorkoutDraft> custom({
+    Expression<String>? scopeKey,
     Expression<int>? workoutId,
     Expression<String>? payload,
     Expression<DateTime>? serverUpdatedAt,
     Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (scopeKey != null) 'scope_key': scopeKey,
       if (workoutId != null) 'workout_id': workoutId,
       if (payload != null) 'payload': payload,
       if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   WorkoutDraftsCompanion copyWith({
+    Value<String>? scopeKey,
     Value<int>? workoutId,
     Value<String>? payload,
     Value<DateTime?>? serverUpdatedAt,
     Value<DateTime>? updatedAt,
+    Value<int>? rowid,
   }) {
     return WorkoutDraftsCompanion(
+      scopeKey: scopeKey ?? this.scopeKey,
       workoutId: workoutId ?? this.workoutId,
       payload: payload ?? this.payload,
       serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
     );
   }
 
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (scopeKey.present) {
+      map['scope_key'] = Variable<String>(scopeKey.value);
+    }
     if (workoutId.present) {
       map['workout_id'] = Variable<int>(workoutId.value);
     }
@@ -304,16 +360,21 @@ class WorkoutDraftsCompanion extends UpdateCompanion<WorkoutDraft> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
   @override
   String toString() {
     return (StringBuffer('WorkoutDraftsCompanion(')
+          ..write('scopeKey: $scopeKey, ')
           ..write('workoutId: $workoutId, ')
           ..write('payload: $payload, ')
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -332,17 +393,21 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 
 typedef $$WorkoutDraftsTableCreateCompanionBuilder =
     WorkoutDraftsCompanion Function({
-      Value<int> workoutId,
+      required String scopeKey,
+      required int workoutId,
       required String payload,
       Value<DateTime?> serverUpdatedAt,
       required DateTime updatedAt,
+      Value<int> rowid,
     });
 typedef $$WorkoutDraftsTableUpdateCompanionBuilder =
     WorkoutDraftsCompanion Function({
+      Value<String> scopeKey,
       Value<int> workoutId,
       Value<String> payload,
       Value<DateTime?> serverUpdatedAt,
       Value<DateTime> updatedAt,
+      Value<int> rowid,
     });
 
 class $$WorkoutDraftsTableFilterComposer
@@ -354,6 +419,11 @@ class $$WorkoutDraftsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get scopeKey => $composableBuilder(
+    column: $table.scopeKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get workoutId => $composableBuilder(
     column: $table.workoutId,
     builder: (column) => ColumnFilters(column),
@@ -384,6 +454,11 @@ class $$WorkoutDraftsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get scopeKey => $composableBuilder(
+    column: $table.scopeKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get workoutId => $composableBuilder(
     column: $table.workoutId,
     builder: (column) => ColumnOrderings(column),
@@ -414,6 +489,9 @@ class $$WorkoutDraftsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get scopeKey =>
+      $composableBuilder(column: $table.scopeKey, builder: (column) => column);
+
   GeneratedColumn<int> get workoutId =>
       $composableBuilder(column: $table.workoutId, builder: (column) => column);
 
@@ -460,27 +538,35 @@ class $$WorkoutDraftsTableTableManager
               $$WorkoutDraftsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<String> scopeKey = const Value.absent(),
                 Value<int> workoutId = const Value.absent(),
                 Value<String> payload = const Value.absent(),
                 Value<DateTime?> serverUpdatedAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => WorkoutDraftsCompanion(
+                scopeKey: scopeKey,
                 workoutId: workoutId,
                 payload: payload,
                 serverUpdatedAt: serverUpdatedAt,
                 updatedAt: updatedAt,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> workoutId = const Value.absent(),
+                required String scopeKey,
+                required int workoutId,
                 required String payload,
                 Value<DateTime?> serverUpdatedAt = const Value.absent(),
                 required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
               }) => WorkoutDraftsCompanion.insert(
+                scopeKey: scopeKey,
                 workoutId: workoutId,
                 payload: payload,
                 serverUpdatedAt: serverUpdatedAt,
                 updatedAt: updatedAt,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
