@@ -134,15 +134,25 @@ $PHP_BIN artisan db:seed --force
 
 Do not seed over real production users after launch. Seeded credentials are local QA credentials and must never remain unchanged on the public server.
 
+## Atomic Release Swap
+
+If the upload is prepared in a temporary directory such as `throughline-athlete-app.release-<commit>`, do not run `config:cache` or `view:cache` there. Laravel stores absolute filesystem paths in its cache files. Caching before the directory swap leaves production pointing at the old temporary path and causes `View [...] not found` errors even when the Blade files exist.
+
+The safe order is:
+
+1. Prepare dependencies and run migrations from the temporary release.
+2. Swap the temporary directory into the final production path.
+3. Reconnect the production `.env`, storage symlink, and public build.
+4. Run the finalization script from the final production path.
+
 ## Cache Production
 
 ```bash
-PHP_BIN=/opt/alt/php82/usr/bin/php
-$PHP_BIN artisan optimize:clear
-$PHP_BIN artisan config:cache
-$PHP_BIN artisan route:cache
-$PHP_BIN artisan view:cache
+cd /home/u867436826/domains/ahmaddalao.com/throughline-athlete-app
+PHP_BIN=/opt/alt/php82/usr/bin/php ./scripts/hostinger-finalize-release.sh
 ```
+
+The script refuses temporary release paths and verifies that every cached Blade view path exists after caching.
 
 ## Smoke Test
 
@@ -214,11 +224,11 @@ After deployment is accepted, update:
 
 ## Verified Release
 
-- Date: 2026-07-25
-- Branch: `main`
-- Commit: track the current deployed `origin/main`
+- Date: 2026-08-12
+- Branch: `codex/throughline-flutter-refactor`
+- Commit: `ec66d77`
 - Runtime: PHP 8.2.30, Laravel 12.62.0, MySQL
-- Database backup: `/home/u867436826/backups/throughline/database-20260724-211901.sql.gz`
-- Code backup: `/home/u867436826/backups/throughline/code-20260724-211901.tar.gz`
-- Previous release: `/home/u867436826/domains/ahmaddalao.com/throughline-athlete-app.pre-aa923a6.20260724-212557`
-- Live smoke: public, owner, coach, athlete, permissions, settings, programs, progress, workout media, Livewire calendar, and role denials passed.
+- Database backup: `/home/u867436826/backups/throughline/database-pre-1471aca-20260812-075634.sql.gz`
+- Code backup: `/home/u867436826/backups/throughline/code-pre-1471aca-20260812-075634.tar.gz`
+- Previous release: `/home/u867436826/domains/ahmaddalao.com/throughline-athlete-app.previous-ec66d77`
+- Live smoke: public pages, API status, owner/admin controls, coach roster/program/schedule/invitation/message pages, athlete home/progress/message/profile pages, and cross-role `403` denials passed.
