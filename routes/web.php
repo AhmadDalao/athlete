@@ -54,6 +54,7 @@ Route::middleware(['auth', 'organization'])->group(function (): void {
         Route::get('/organizations/export', OrganizationExportController::class)->middleware('can:organizations.manage')->name('organizations.export');
         Route::get('/organizations', Admin\OrganizationsTable::class)->middleware('can:organizations.manage')->name('organizations');
         Route::get('/organizations/{organization}/members/export', OrganizationMemberExportController::class)->middleware('can:organizations.manage')->name('organizations.members.export');
+        Route::get('/organizations/{organization}/members/{membership}/permissions', Admin\OrganizationMemberPermissions::class)->middleware('can:users.manage')->name('organizations.members.permissions');
         Route::get('/organizations/{organization}', Admin\OrganizationDetail::class)->middleware('can:organizations.manage')->name('organizations.show');
         Route::get('/users', Admin\UsersTable::class)->middleware('can:users.manage')->name('users');
         Route::get('/users/export', UserExportController::class)->name('users.export');
@@ -81,15 +82,15 @@ Route::middleware(['auth', 'organization'])->group(function (): void {
         Route::get('/athletes/{athlete}/photos/{photo}', ProgressPhotoController::class)->middleware('can:progress.review')->name('athletes.photos.view');
         Route::get('/athletes/{athlete}', Coach\AthleteDetail::class)->middleware('can:athletes.view')->name('athletes.show');
         Route::get('/programs/export', ProgramExportController::class)->middleware('can:programs.manage')->name('programs.export');
-        Route::get('/programs', Coach\ProgramsTable::class)->name('programs');
-        Route::get('/programs/{program}', Coach\ProgramDetail::class)->name('programs.show');
+        Route::get('/programs', Coach\ProgramsTable::class)->middleware('can:programs.manage')->name('programs');
+        Route::get('/programs/{program}', Coach\ProgramDetail::class)->middleware('can:programs.manage')->name('programs.show');
         Route::get('/exercises/export', ExerciseExportController::class)->middleware('can:exercises.manage')->name('exercises.export');
         Route::get('/exercises', Coach\ExerciseLibraryTable::class)->middleware('can:exercises.manage')->name('exercises');
         Route::get('/schedule/export', ScheduleExportController::class)->middleware('can:schedule.manage')->name('schedule.export');
         Route::get('/schedule', Coach\ScheduleTable::class)->middleware('can:schedule.manage')->name('schedule');
         Route::get('/reports/export', CoachReportExportController::class)->middleware('can:reports.view')->name('reports.export');
         Route::get('/reports', Coach\Reports::class)->middleware('can:reports.view')->name('reports');
-        Route::get('/invitations', Coach\InvitationsPanel::class)->name('invitations');
+        Route::get('/invitations', Coach\InvitationsPanel::class)->middleware('can:invitations.manage')->name('invitations');
         Route::get('/messages', Inbox::class)->middleware('can:messages.read')->name('messages');
     });
 

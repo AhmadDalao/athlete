@@ -191,18 +191,35 @@ class User extends Authenticatable
 
     public function isCoach(): bool
     {
-        return $this->role === 'coach' || $this->activeOrganizationMembership()?->role === 'coach';
+        if ($this->isPlatformAdmin()) {
+            return false;
+        }
+
+        $membership = $this->activeOrganizationMembership();
+
+        return $membership ? $membership->role === 'coach' : $this->role === 'coach';
     }
 
     public function isAthlete(): bool
     {
-        return $this->role === 'athlete' || $this->activeOrganizationMembership()?->role === 'athlete';
+        if ($this->isPlatformAdmin()) {
+            return false;
+        }
+
+        $membership = $this->activeOrganizationMembership();
+
+        return $membership ? $membership->role === 'athlete' : $this->role === 'athlete';
     }
 
     public function hasPermission(string $permission): bool
     {
         if ($this->isPlatformOwner()) {
             return true;
+        }
+
+        if ($this->isPlatformAdmin()) {
+            return in_array($permission, PermissionCatalog::defaultsForRole($this->role), true)
+                || $this->permissions()->where('permission', $permission)->exists();
         }
 
         $membership = $this->activeOrganizationMembership();
@@ -221,6 +238,8 @@ class User extends Authenticatable
             if (in_array($permission, PermissionCatalog::defaultsForOrganizationRole($membership->role), true)) {
                 return true;
             }
+
+            return false;
         }
 
         if (in_array($permission, PermissionCatalog::defaultsForRole($this->role), true)) {

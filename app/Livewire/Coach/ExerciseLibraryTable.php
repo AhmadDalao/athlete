@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Coach;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Livewire\Concerns\WithTableControls;
 use App\Models\Exercise;
 use App\Queries\Coach\ExerciseQuery;
@@ -12,6 +13,7 @@ use Livewire\WithPagination;
 
 class ExerciseLibraryTable extends Component
 {
+    use AuthorizesComponentAccess;
     use WithPagination;
     use WithTableControls;
 
@@ -132,6 +134,11 @@ class ExerciseLibraryTable extends Component
     protected function allowedSortFields(): array
     {
         return ['name', 'section', 'movement_type', 'status', 'updated_at'];
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['exercises.manage'];
     }
 
     /** @return array<string, array<int, string>> */

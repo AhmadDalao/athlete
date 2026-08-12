@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Livewire\Concerns\WithTableControls;
 use App\Models\EmailLog;
 use App\Models\Organization;
@@ -12,6 +13,7 @@ use Livewire\WithPagination;
 
 class EmailLogsTable extends Component
 {
+    use AuthorizesComponentAccess;
     use WithPagination;
     use WithTableControls;
 
@@ -82,5 +84,10 @@ class EmailLogsTable extends Component
             ->where('organization_id', $this->organizationId)
             ->where('status', 'active')
             ->exists(), 403);
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['admin.audit'];
     }
 }

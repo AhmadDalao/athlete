@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Livewire\Concerns\WithTableControls;
 use App\Models\AthleteProfile;
 use App\Models\AuditLog;
@@ -19,6 +20,7 @@ use Livewire\WithPagination;
 
 class OrganizationsTable extends Component
 {
+    use AuthorizesComponentAccess;
     use WithPagination;
     use WithTableControls;
 
@@ -136,6 +138,11 @@ class OrganizationsTable extends Component
     protected function allowedSortFields(): array
     {
         return ['name', 'status', 'plan_key', 'created_at'];
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['organizations.manage'];
     }
 
     private function ensureRoleProfile(Organization $organization, User $user, string $role): void

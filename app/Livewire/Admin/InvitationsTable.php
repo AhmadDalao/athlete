@@ -3,8 +3,8 @@
 namespace App\Livewire\Admin;
 
 use App\Livewire\Concerns\WithTableControls;
-use App\Models\AthleteInvitation;
 use App\Models\AuditLog;
+use App\Queries\Admin\ManagedInvitationQuery;
 use App\Services\InvitationDeliveryService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -17,6 +17,16 @@ class InvitationsTable extends Component
 
     public string $status = 'all';
 
+    public function boot(): void
+    {
+        $this->authorizeAccess();
+    }
+
+    public function mount(): void
+    {
+        $this->authorizeAccess();
+    }
+
     public function updatedStatus(): void
     {
         $this->resetPage();
@@ -24,13 +34,15 @@ class InvitationsTable extends Component
 
     public function cancel(int $inviteId): void
     {
-        $invite = AthleteInvitation::findOrFail($inviteId);
+        $this->authorizeAccess();
+        $invite = ManagedInvitationQuery::findVisibleOrFail(Auth::user(), $inviteId);
         $invite->update([
             'status' => 'cancelled',
             'cancelled_at' => now(),
         ]);
 
         AuditLog::create([
+            'organization_id' => $invite->organization_id,
             'user_id' => Auth::id(),
             'action' => 'invite.cancelled',
             'entity' => 'athlete_invitation',
@@ -42,10 +54,14 @@ class InvitationsTable extends Component
 
     public function resend(int $inviteId, InvitationDeliveryService $delivery): void
     {
-        $invite = AthleteInvitation::where('status', 'pending')->findOrFail($inviteId);
+        $this->authorizeAccess();
+        $invite = ManagedInvitationQuery::visibleTo(Auth::user())
+            ->where('status', 'pending')
+            ->findOrFail($inviteId);
         $sent = $delivery->send($invite);
 
         AuditLog::create([
+            'organization_id' => $invite->organization_id,
             'user_id' => Auth::id(),
             'action' => 'invite.resent',
             'entity' => 'athlete_invitation',
@@ -59,7 +75,9 @@ class InvitationsTable extends Component
 
     public function render()
     {
-        $query = AthleteInvitation::with('coach')
+        $this->authorizeAccess();
+        $query = ManagedInvitationQuery::visibleTo(Auth::user())
+            ->with('coach')
             ->when($this->status !== 'all', fn ($query) => $query->where('status', $this->status))
             ->when($this->search, fn ($query) => $query->where(fn ($query) => $query
                 ->where('email', 'like', "%{$this->search}%")
@@ -70,5 +88,10 @@ class InvitationsTable extends Component
         return view('livewire.admin.invitations-table', [
             'invitations' => $this->paginateQuery($query),
         ])->layout('layouts.app', ['title' => 'Invitations']);
+    }
+
+    private function authorizeAccess(): void
+    {
+        abort_unless(Auth::user()?->can('invitations.manage'), 403);
     }
 }

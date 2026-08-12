@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Livewire\Concerns\WithTableControls;
 use App\Models\Organization;
 use App\Queries\Admin\OperationsReportQuery;
@@ -11,6 +12,7 @@ use Livewire\WithPagination;
 
 class Reports extends Component
 {
+    use AuthorizesComponentAccess;
     use WithPagination;
     use WithTableControls;
 
@@ -48,5 +50,10 @@ class Reports extends Component
             'coaches' => $this->paginateQuery(OperationsReportQuery::coaches($organization->id, $this->from, $this->to, $this->search)),
             'summary' => OperationsReportQuery::summary($organization->id, $this->from, $this->to),
         ])->layout('layouts.app', ['title' => 'Operations reports']);
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['reports.view'];
     }
 }

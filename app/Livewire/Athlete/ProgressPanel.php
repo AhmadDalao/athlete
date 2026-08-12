@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Athlete;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Livewire\Concerns\WithTableControls;
 use App\Models\PersonalRecord;
 use App\Models\ProgressEntry;
@@ -18,6 +19,7 @@ use Livewire\WithPagination;
 
 class ProgressPanel extends Component
 {
+    use AuthorizesComponentAccess;
     use WithFileUploads;
     use WithPagination;
     use WithTableControls;
@@ -73,6 +75,7 @@ class ProgressPanel extends Component
 
     public function save(): void
     {
+        abort_unless(Auth::user()->can('progress.manage'), 403);
         $data = $this->validate([
             'loggedOn' => ['required', 'date', 'before_or_equal:today'],
             'weight' => ['nullable', 'numeric', 'min:20', 'max:400'],
@@ -110,6 +113,7 @@ class ProgressPanel extends Component
 
     public function uploadPhoto(): void
     {
+        abort_unless(Auth::user()->can('photos.manage'), 403);
         $data = $this->validate([
             'photo' => ['required', 'image', 'max:10240'],
             'photoTakenOn' => ['required', 'date', 'before_or_equal:today'],
@@ -136,6 +140,7 @@ class ProgressPanel extends Component
 
     public function deletePhoto(int $photoId): void
     {
+        abort_unless(Auth::user()->can('photos.manage'), 403);
         $photo = ProgressPhoto::query()->where('athlete_id', Auth::id())->findOrFail($photoId);
         Storage::disk('public')->delete(array_filter([$photo->path, $photo->thumbnail_path]));
         $photo->delete();
@@ -191,6 +196,11 @@ class ProgressPanel extends Component
             ->where('athlete_id', Auth::id())
             ->when($this->from !== '', fn (Builder $query) => $query->whereDate('logged_on', '>=', $this->from))
             ->when($this->to !== '', fn (Builder $query) => $query->whereDate('logged_on', '<=', $this->to));
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['athlete.access'];
     }
 
     private function formatNumber(mixed $value, int $precision): string

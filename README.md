@@ -90,6 +90,7 @@ For active frontend work, run `npm run dev` in a second terminal.
 composer validate --strict
 ./vendor/bin/pint --test
 npm audit
+npm run lint
 npm run build
 php artisan test
 php artisan view:cache

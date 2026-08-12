@@ -18,6 +18,11 @@ class SettingsPanel extends Component
 
     public $logo = null;
 
+    public function boot(): void
+    {
+        $this->authorizeSettings();
+    }
+
     public function mount(): void
     {
         abort_unless(Auth::user()?->can('admin.settings'), 403);

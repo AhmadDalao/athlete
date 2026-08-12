@@ -151,6 +151,93 @@ class PlatformFoundationTest extends TestCase
         $this->assertSame($south->id, $athlete->fresh()->current_organization_id);
     }
 
+    public function test_active_organization_membership_is_authoritative_for_role_and_permissions(): void
+    {
+        $organization = Organization::create([
+            'name' => 'Role Boundary Team',
+            'slug' => 'role-boundary-team',
+            'status' => 'active',
+        ]);
+        $user = User::factory()->create([
+            'role' => 'coach',
+            'current_organization_id' => $organization->id,
+        ]);
+        $user->permissions()->create(['permission' => 'programs.manage']);
+        OrganizationMembership::create([
+            'organization_id' => $organization->id,
+            'user_id' => $user->id,
+            'role' => 'athlete',
+            'status' => 'active',
+            'joined_at' => now(),
+        ]);
+
+        $user = $user->fresh();
+
+        $this->assertTrue($user->isAthlete());
+        $this->assertFalse($user->isCoach());
+        $this->assertTrue($user->hasPermission('athlete.access'));
+        $this->assertFalse($user->hasPermission('coach.access'));
+        $this->assertFalse($user->hasPermission('programs.manage'));
+        $this->assertSame(route('app.home'), $user->landingPath());
+
+        $this->actingAs($user)->get(route('coach.home'))->assertForbidden();
+        $this->actingAs($user)->get(route('app.home'))->assertOk();
+    }
+
+    public function test_switching_organizations_switches_the_users_effective_role(): void
+    {
+        $user = User::factory()->create(['role' => 'athlete']);
+        $coachOrganization = Organization::create(['name' => 'Coach Team', 'slug' => 'coach-team', 'status' => 'active']);
+        $athleteOrganization = Organization::create(['name' => 'Athlete Team', 'slug' => 'athlete-team', 'status' => 'active']);
+
+        OrganizationMembership::create([
+            'organization_id' => $coachOrganization->id,
+            'user_id' => $user->id,
+            'role' => 'coach',
+            'status' => 'active',
+            'joined_at' => now(),
+        ]);
+        OrganizationMembership::create([
+            'organization_id' => $athleteOrganization->id,
+            'user_id' => $user->id,
+            'role' => 'athlete',
+            'status' => 'active',
+            'joined_at' => now(),
+        ]);
+
+        $user->forceFill(['current_organization_id' => $coachOrganization->id])->saveQuietly();
+        $this->assertTrue($user->fresh()->isCoach());
+        $this->assertSame(route('coach.home'), $user->fresh()->landingPath());
+
+        $user->forceFill(['current_organization_id' => $athleteOrganization->id])->saveQuietly();
+        $this->assertTrue($user->fresh()->isAthlete());
+        $this->assertFalse($user->fresh()->isCoach());
+        $this->assertSame(route('app.home'), $user->fresh()->landingPath());
+    }
+
+    public function test_platform_admin_access_is_not_downgraded_by_an_organization_membership(): void
+    {
+        $organization = Organization::create(['name' => 'Platform Team', 'slug' => 'platform-team', 'status' => 'active']);
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'current_organization_id' => $organization->id,
+        ]);
+        OrganizationMembership::create([
+            'organization_id' => $organization->id,
+            'user_id' => $admin->id,
+            'role' => 'athlete',
+            'status' => 'active',
+            'joined_at' => now(),
+        ]);
+
+        $admin = $admin->fresh();
+
+        $this->assertTrue($admin->isAdmin());
+        $this->assertFalse($admin->isAthlete());
+        $this->assertTrue($admin->hasPermission('admin.access'));
+        $this->assertSame(route('admin.dashboard'), $admin->landingPath());
+    }
+
     public function test_demo_seed_data_is_attached_to_the_default_organization(): void
     {
         $this->seed();

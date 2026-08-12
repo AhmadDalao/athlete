@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Models\AthleteInvitation;
 use App\Models\AuditLog;
 use App\Models\CoachAthleteAssignment;
@@ -16,6 +17,8 @@ use Livewire\Component;
 
 class Dashboard extends Component
 {
+    use AuthorizesComponentAccess;
+
     public function render()
     {
         $actor = Auth::user();
@@ -44,5 +47,10 @@ class Dashboard extends Component
                 : collect(),
             'canViewAudit' => $actor->hasPermission('admin.audit'),
         ])->layout('layouts.app', ['title' => 'Admin dashboard']);
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['admin.access'];
     }
 }

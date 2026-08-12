@@ -21,8 +21,19 @@ class InvitationsPanel extends Component
 
     public string $email = '';
 
+    public function boot(): void
+    {
+        $this->authorizeAccess();
+    }
+
+    public function mount(): void
+    {
+        $this->authorizeAccess();
+    }
+
     public function invite(InvitationDeliveryService $delivery): void
     {
+        $this->authorizeAccess();
         abort_unless(PlatformSetting::enabled('invitations_enabled', true), 423, 'Athlete invitations are currently paused.');
 
         $data = $this->validate([
@@ -32,6 +43,7 @@ class InvitationsPanel extends Component
 
         $token = Str::random(48);
         $invite = AthleteInvitation::create([
+            'organization_id' => Auth::user()->current_organization_id,
             'coach_id' => Auth::id(),
             'name' => $data['name'] ?: null,
             'email' => $data['email'],
@@ -43,6 +55,7 @@ class InvitationsPanel extends Component
         $sent = $delivery->send($invite);
 
         AuditLog::create([
+            'organization_id' => $invite->organization_id,
             'user_id' => Auth::id(),
             'action' => 'invite.created',
             'entity' => 'athlete_invitation',
@@ -57,13 +70,15 @@ class InvitationsPanel extends Component
 
     public function cancel(int $inviteId): void
     {
-        $invite = AthleteInvitation::where('coach_id', Auth::id())->findOrFail($inviteId);
+        $this->authorizeAccess();
+        $invite = $this->invitations()->findOrFail($inviteId);
         $invite->update([
             'status' => 'cancelled',
             'cancelled_at' => now(),
         ]);
 
         AuditLog::create([
+            'organization_id' => $invite->organization_id,
             'user_id' => Auth::id(),
             'action' => 'invite.cancelled',
             'entity' => 'athlete_invitation',
@@ -75,12 +90,14 @@ class InvitationsPanel extends Component
 
     public function resend(int $inviteId, InvitationDeliveryService $delivery): void
     {
+        $this->authorizeAccess();
         abort_unless(PlatformSetting::enabled('invitations_enabled', true), 423, 'Athlete invitations are currently paused.');
 
-        $invite = AthleteInvitation::where('coach_id', Auth::id())->where('status', 'pending')->findOrFail($inviteId);
+        $invite = $this->invitations()->where('status', 'pending')->findOrFail($inviteId);
         $sent = $delivery->send($invite);
 
         AuditLog::create([
+            'organization_id' => $invite->organization_id,
             'user_id' => Auth::id(),
             'action' => 'invite.resent',
             'entity' => 'athlete_invitation',
@@ -94,7 +111,8 @@ class InvitationsPanel extends Component
 
     public function render()
     {
-        $query = AthleteInvitation::where('coach_id', Auth::id())
+        $this->authorizeAccess();
+        $query = $this->invitations()
             ->when($this->search, fn ($query) => $query->where(fn ($query) => $query
                 ->where('email', 'like', "%{$this->search}%")
                 ->orWhere('name', 'like', "%{$this->search}%")))
@@ -103,5 +121,18 @@ class InvitationsPanel extends Component
         return view('livewire.coach.invitations-panel', [
             'invitations' => $this->paginateQuery($query),
         ])->layout('layouts.app', ['title' => 'Invitations']);
+    }
+
+    private function authorizeAccess(): void
+    {
+        abort_unless(Auth::user()?->can('invitations.manage'), 403);
+    }
+
+    private function invitations()
+    {
+        return AthleteInvitation::query()
+            ->withoutGlobalScope('organization')
+            ->where('organization_id', Auth::user()->current_organization_id)
+            ->where('coach_id', Auth::id());
     }
 }

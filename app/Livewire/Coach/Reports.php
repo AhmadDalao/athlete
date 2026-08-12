@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Coach;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Livewire\Concerns\WithTableControls;
 use App\Queries\Coach\CoachReportQuery;
 use Illuminate\Support\Facades\Auth;
@@ -10,6 +11,7 @@ use Livewire\WithPagination;
 
 class Reports extends Component
 {
+    use AuthorizesComponentAccess;
     use WithPagination;
     use WithTableControls;
 
@@ -38,5 +40,10 @@ class Reports extends Component
             'athletes' => $this->paginateQuery(CoachReportQuery::athletes($coachId, $this->from, $this->to, $this->search)),
             'summary' => CoachReportQuery::summary($coachId, $this->from, $this->to),
         ])->layout('layouts.app', ['title' => 'Reports']);
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['reports.view'];
     }
 }

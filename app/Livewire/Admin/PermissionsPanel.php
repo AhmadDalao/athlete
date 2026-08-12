@@ -14,6 +14,11 @@ class PermissionsPanel extends Component
 
     public array $selectedPermissions = [];
 
+    public function boot(): void
+    {
+        abort_unless(Auth::user()?->can('admin.permissions'), 403);
+    }
+
     public function mount(): void
     {
         abort_unless(Auth::user()?->can('admin.permissions'), 403);
@@ -29,7 +34,7 @@ class PermissionsPanel extends Component
 
     public function loadPermissions(): void
     {
-        $user = $this->selectedUserId ? User::with('permissions')->find($this->selectedUserId) : null;
+        $user = $this->selectedUserId ? $this->platformUsers()->with('permissions')->find($this->selectedUserId) : null;
         $this->selectedPermissions = $user?->permissions->pluck('permission')->values()->all() ?? [];
     }
 
@@ -37,7 +42,7 @@ class PermissionsPanel extends Component
     {
         abort_unless(Auth::user()?->can('admin.permissions'), 403);
 
-        $user = User::findOrFail($this->selectedUserId);
+        $user = $this->platformUsers()->findOrFail($this->selectedUserId);
 
         if ($user->isOwner()) {
             session()->flash('status', 'Owner permissions are locked to full access.');
@@ -67,7 +72,7 @@ class PermissionsPanel extends Component
     {
         abort_unless(Auth::user()?->can('admin.permissions'), 403);
 
-        $user = User::findOrFail($this->selectedUserId);
+        $user = $this->platformUsers()->findOrFail($this->selectedUserId);
 
         if ($user->isOwner()) {
             $this->selectedPermissions = PermissionCatalog::all();
@@ -82,7 +87,7 @@ class PermissionsPanel extends Component
     {
         abort_unless(Auth::user()?->can('admin.permissions'), 403);
 
-        $user = User::findOrFail($this->selectedUserId);
+        $user = $this->platformUsers()->findOrFail($this->selectedUserId);
 
         if ($user->isOwner()) {
             $this->selectedPermissions = PermissionCatalog::all();
@@ -96,8 +101,13 @@ class PermissionsPanel extends Component
     public function render()
     {
         return view('livewire.admin.permissions-panel', [
-            'users' => User::whereIn('role', ['owner', 'admin', 'coach'])->orderBy('role')->orderBy('name')->get(),
+            'users' => $this->platformUsers()->orderBy('role')->orderBy('name')->get(),
             'groups' => PermissionCatalog::groups(),
         ])->layout('layouts.app', ['title' => 'Permissions']);
+    }
+
+    private function platformUsers()
+    {
+        return User::query()->whereIn('role', ['owner', 'admin']);
     }
 }

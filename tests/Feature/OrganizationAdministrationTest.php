@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Livewire\Admin\OrganizationDetail;
+use App\Livewire\Admin\OrganizationMemberPermissions;
 use App\Livewire\Admin\OrganizationsTable;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
@@ -132,6 +133,82 @@ class OrganizationAdministrationTest extends TestCase
         $csv = $response->streamedContent();
         $this->assertStringContainsString('first-athlete@example.com', $csv);
         $this->assertStringNotContainsString('second-athlete@example.com', $csv);
+    }
+
+    public function test_organization_admin_can_apply_audited_member_permission_overrides(): void
+    {
+        $organizationAdmin = User::factory()->create(['role' => 'athlete']);
+        $coach = User::factory()->create(['role' => 'coach']);
+        $organization = $this->organization('Permission Team', User::factory()->create(['role' => 'coach']));
+        OrganizationMembership::create([
+            'organization_id' => $organization->id,
+            'user_id' => $organizationAdmin->id,
+            'role' => 'organization_admin',
+            'status' => 'active',
+            'joined_at' => now(),
+        ]);
+        $membership = OrganizationMembership::create([
+            'organization_id' => $organization->id,
+            'user_id' => $coach->id,
+            'role' => 'coach',
+            'status' => 'active',
+            'joined_at' => now(),
+        ]);
+        $organizationAdmin->forceFill(['current_organization_id' => $organization->id])->saveQuietly();
+        $coach->forceFill(['current_organization_id' => $organization->id])->saveQuietly();
+
+        Livewire::actingAs($organizationAdmin)
+            ->test(OrganizationMemberPermissions::class, ['organization' => $organization, 'membership' => $membership])
+            ->set('access.messages__send', 'deny')
+            ->set('access.photos__manage', 'allow')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertFalse($coach->fresh()->hasPermission('messages.send'));
+        $this->assertTrue($coach->fresh()->hasPermission('photos.manage'));
+        $this->assertDatabaseHas('membership_permission_overrides', [
+            'organization_membership_id' => $membership->id,
+            'permission' => 'messages.send',
+            'allowed' => false,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'organization_id' => $organization->id,
+            'action' => 'organization.member_permissions',
+            'entity_id' => $membership->id,
+        ]);
+    }
+
+    public function test_organization_admin_cannot_manage_another_organizations_member_permissions(): void
+    {
+        $admin = User::factory()->create(['role' => 'athlete']);
+        $first = $this->organization('Admin Team', User::factory()->create(['role' => 'coach']));
+        $second = $this->organization('Foreign Team', User::factory()->create(['role' => 'coach']));
+        OrganizationMembership::create(['organization_id' => $first->id, 'user_id' => $admin->id, 'role' => 'organization_admin', 'status' => 'active', 'joined_at' => now()]);
+        $foreignMembership = OrganizationMembership::create(['organization_id' => $second->id, 'user_id' => User::factory()->create()->id, 'role' => 'athlete', 'status' => 'active', 'joined_at' => now()]);
+        $admin->forceFill(['current_organization_id' => $first->id])->saveQuietly();
+
+        Livewire::actingAs($admin)
+            ->test(OrganizationMemberPermissions::class, ['organization' => $second, 'membership' => $foreignMembership])
+            ->assertForbidden();
+    }
+
+    public function test_changing_a_member_role_removes_stale_permission_overrides(): void
+    {
+        $platformOwner = User::factory()->create(['role' => 'owner']);
+        $organization = $this->organization('Role Reset Team', User::factory()->create(['role' => 'coach']));
+        $member = User::factory()->create(['role' => 'coach']);
+        $membership = OrganizationMembership::create(['organization_id' => $organization->id, 'user_id' => $member->id, 'role' => 'coach', 'status' => 'active', 'joined_at' => now()]);
+        $membership->permissionOverrides()->create(['permission' => 'programs.manage', 'allowed' => false]);
+
+        Livewire::actingAs($platformOwner)
+            ->test(OrganizationDetail::class, ['organization' => $organization])
+            ->set("membershipRoles.{$membership->id}", 'athlete')
+            ->call('saveMemberRole', $membership->id)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseMissing('membership_permission_overrides', [
+            'organization_membership_id' => $membership->id,
+        ]);
     }
 
     private function organization(string $name, User $owner): Organization

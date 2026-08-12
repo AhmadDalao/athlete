@@ -34,6 +34,11 @@ class ProgramsTable extends Component
 
     public string $listStatus = 'all';
 
+    public function boot(): void
+    {
+        abort_unless(Auth::user()?->can('programs.manage'), 403);
+    }
+
     public function mount(): void
     {
         $requestedAthleteId = request()->integer('athlete');

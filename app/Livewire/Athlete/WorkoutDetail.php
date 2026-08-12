@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Athlete;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Models\ScheduledWorkout;
 use App\Models\TrainingSessionExercise;
 use App\Queries\Athlete\AthleteWorkspaceQuery;
@@ -12,6 +13,8 @@ use Livewire\Component;
 
 class WorkoutDetail extends Component
 {
+    use AuthorizesComponentAccess;
+
     public ScheduledWorkout $workout;
 
     public string $notes = '';
@@ -55,6 +58,8 @@ class WorkoutDetail extends Component
 
     public function mark(string $status, WorkoutExecutionService $execution): void
     {
+        abort_unless(Auth::user()->can('workouts.complete'), 403);
+        abort_unless(AthleteWorkspaceQuery::canOpenWorkout($this->workout, (int) Auth::id()), 403);
         $data = $this->validate([
             'notes' => ['nullable', 'string', 'max:1500'],
             'durationMinutes' => ['nullable', 'integer', 'min:1', 'max:600'],
@@ -81,6 +86,7 @@ class WorkoutDetail extends Component
 
     public function render()
     {
+        abort_unless(AthleteWorkspaceQuery::canOpenWorkout($this->workout, (int) Auth::id()), 403);
         $session = $this->workout->session;
         $exerciseSource = $session->prescribedExercises->isNotEmpty()
             ? $session->prescribedExercises
@@ -94,6 +100,11 @@ class WorkoutDetail extends Component
                 $exercise instanceof TrainingSessionExercise ? $exercise->media_url : ($exercise['media_url'] ?? null)
             ))->all(),
         ])->layout('layouts.app', ['title' => $session->title]);
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['athlete.access'];
     }
 
     private function defaultSetLogs(): array

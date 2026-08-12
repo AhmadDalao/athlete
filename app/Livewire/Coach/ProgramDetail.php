@@ -43,6 +43,11 @@ class ProgramDetail extends Component
 
     public string $assignmentNotes = '';
 
+    public function boot(): void
+    {
+        abort_unless(Auth::user()?->can('programs.manage'), 403);
+    }
+
     public function mount(TrainingProgram $program): void
     {
         abort_unless($program->coach_id === Auth::id() || Auth::user()->isAdmin(), 403);

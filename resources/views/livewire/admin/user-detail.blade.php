@@ -6,6 +6,9 @@
     >
         <x-slot:actions>
             <a class="btn btn-outline-tl" href="{{ route('admin.users') }}"><i class="fa-solid fa-arrow-left"></i> Back to users</a>
+            @if(!$platformMode && $membershipId)
+                <a class="btn btn-outline-tl" href="{{ route('admin.organizations.members.permissions', ['organization' => $organizationId, 'membership' => $membershipId]) }}"><i class="fa-solid fa-key"></i> Permissions</a>
+            @endif
         </x-slot:actions>
     </x-tl.page-hero>
 

@@ -38,6 +38,7 @@ class InvitationDeliveryService
             });
 
             EmailLog::create([
+                'organization_id' => $invitation->organization_id,
                 'recipient' => $invitation->email,
                 'subject' => $subject,
                 'type' => 'athlete_invite',
@@ -47,6 +48,7 @@ class InvitationDeliveryService
             return true;
         } catch (\Throwable $exception) {
             EmailLog::create([
+                'organization_id' => $invitation->organization_id,
                 'recipient' => $invitation->email,
                 'subject' => $subject,
                 'type' => 'athlete_invite',

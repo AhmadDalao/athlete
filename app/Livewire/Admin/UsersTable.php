@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Livewire\Concerns\WithTableControls;
 use App\Models\AthleteProfile;
 use App\Models\AuditLog;
@@ -18,6 +19,7 @@ use Livewire\WithPagination;
 
 class UsersTable extends Component
 {
+    use AuthorizesComponentAccess;
     use WithPagination;
     use WithTableControls;
 
@@ -198,6 +200,15 @@ class UsersTable extends Component
     protected function constrainedRole(): ?string
     {
         return null;
+    }
+
+    protected function componentPermissions(): array
+    {
+        $role = $this->constrainedRole();
+
+        return $role
+            ? ['users.manage', ManagedUserQuery::permissionForRole($role)]
+            : ['users.manage'];
     }
 
     private function ensureRoleProfile(int $organizationId, User $user, string $role): void

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Livewire\Concerns\WithTableControls;
 use App\Models\AuditLog;
 use App\Models\ContactSubmission;
@@ -11,6 +12,7 @@ use Livewire\WithPagination;
 
 class ContactSubmissionsTable extends Component
 {
+    use AuthorizesComponentAccess;
     use WithPagination;
     use WithTableControls;
 
@@ -54,5 +56,10 @@ class ContactSubmissionsTable extends Component
         return view('livewire.admin.contact-submissions-table', [
             'submissions' => $this->paginateQuery($query),
         ])->layout('layouts.app', ['title' => 'Contact submissions']);
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['admin.contacts'];
     }
 }

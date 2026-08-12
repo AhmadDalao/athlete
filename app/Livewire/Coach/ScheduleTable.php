@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Coach;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Livewire\Concerns\WithTableControls;
 use App\Models\ScheduledWorkout;
 use App\Models\User;
@@ -15,6 +16,7 @@ use Livewire\WithPagination;
 
 class ScheduleTable extends Component
 {
+    use AuthorizesComponentAccess;
     use WithPagination;
     use WithTableControls;
 
@@ -99,6 +101,11 @@ class ScheduleTable extends Component
     protected function allowedSortFields(): array
     {
         return ['scheduled_for', 'status', 'updated_at'];
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['schedule.manage'];
     }
 
     private function coachWorkouts(): Builder

@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Support\OrganizationContext;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Auth;
@@ -10,6 +11,7 @@ use Livewire\WithPagination;
 
 class NotificationCenter extends Component
 {
+    use AuthorizesComponentAccess;
     use WithPagination;
 
     public string $filter = 'all';
@@ -71,5 +73,10 @@ class NotificationCenter extends Component
                 : route('app.messages', ['conversation' => $id]),
             default => $user->landingPath(),
         };
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['notifications.read'];
     }
 }

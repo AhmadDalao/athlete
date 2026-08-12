@@ -1,0 +1,36 @@
+.tl-access-group {
+    border: 1px solid var(--tl-line);
+    border-radius: 1.1rem;
+    background: color-mix(in srgb, var(--tl-panel-2) 92%, transparent);
+    padding: 1rem;
+}
+
+.tl-access-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-top: 1px solid var(--tl-line);
+    padding-top: 0.9rem;
+}
+
+.tl-access-row:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.tl-access-select {
+    width: 9rem;
+    flex: 0 0 auto;
+}
+
+@media (max-width: 575.98px) {
+    .tl-access-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .tl-access-select {
+        width: 100%;
+    }
+}

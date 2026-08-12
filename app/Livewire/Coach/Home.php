@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Coach;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Models\AthleteInvitation;
 use App\Models\ScheduledWorkout;
 use App\Models\TrainingProgram;
@@ -11,6 +12,8 @@ use Livewire\Component;
 
 class Home extends Component
 {
+    use AuthorizesComponentAccess;
+
     public function render()
     {
         $coach = Auth::user();
@@ -38,5 +41,10 @@ class Home extends Component
                 ->limit(8)
                 ->get(),
         ])->layout('layouts.app', ['title' => 'Coach home']);
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['coach.access'];
     }
 }

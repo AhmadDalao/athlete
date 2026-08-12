@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Livewire\Concerns\WithTableControls;
 use App\Models\AuditLog;
 use App\Models\Organization;
@@ -12,6 +13,7 @@ use Livewire\WithPagination;
 
 class AuditLogTable extends Component
 {
+    use AuthorizesComponentAccess;
     use WithPagination;
     use WithTableControls;
 
@@ -77,5 +79,10 @@ class AuditLogTable extends Component
             ->where('organization_id', $this->organizationId)
             ->where('status', 'active')
             ->exists(), 403);
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['admin.audit'];
     }
 }

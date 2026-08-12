@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Livewire\Concerns\WithTableControls;
 use App\Models\AthleteProfile;
 use App\Models\AuditLog;
@@ -18,6 +19,7 @@ use Livewire\WithPagination;
 
 class OrganizationDetail extends Component
 {
+    use AuthorizesComponentAccess;
     use WithPagination;
     use WithTableControls;
 
@@ -160,6 +162,10 @@ class OrganizationDetail extends Component
         $role = $this->membershipRoles[$membershipId] ?? $membership->role;
         validator(['role' => $role], ['role' => ['required', Rule::in(['organization_admin', 'coach', 'athlete'])]])->validate();
 
+        if ($membership->role !== $role) {
+            $membership->permissionOverrides()->delete();
+        }
+
         $membership->update(['role' => $role]);
         $this->ensureRoleProfile($membership->user, $role);
         $this->audit('organization.member_role', "Changed {$membership->user->email} role to {$role}.");
@@ -194,6 +200,11 @@ class OrganizationDetail extends Component
     private function membership(int $membershipId): OrganizationMembership
     {
         return $this->organization->memberships()->with('user')->findOrFail($membershipId);
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['organizations.manage'];
     }
 
     private function ensureRoleProfile(User $user, string $role): void
@@ -261,13 +272,16 @@ class OrganizationDetail extends Component
         return view('livewire.admin.organization-detail', [
             'memberships' => $memberships,
             'counts' => $counts,
-            'recentAudit' => AuditLog::query()
-                ->withoutGlobalScope('organization')
-                ->where('entity', 'organization')
-                ->where('entity_id', $this->organization->id)
-                ->latest()
-                ->limit(15)
-                ->get(),
+            'recentAudit' => Auth::user()->can('admin.audit')
+                ? AuditLog::query()
+                    ->withoutGlobalScope('organization')
+                    ->where('organization_id', $this->organization->id)
+                    ->where('entity', 'organization')
+                    ->where('entity_id', $this->organization->id)
+                    ->latest()
+                    ->limit(15)
+                    ->get()
+                : collect(),
         ])->layout('layouts.app', ['title' => $this->organization->name]);
     }
 }

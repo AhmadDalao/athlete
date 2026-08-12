@@ -2,12 +2,15 @@
 
 namespace App\Livewire\Athlete;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Models\AthleteProfile;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class Profile extends Component
 {
+    use AuthorizesComponentAccess;
+
     public string $name = '';
 
     public string $phone = '';
@@ -86,5 +89,10 @@ class Profile extends Component
         return view('livewire.athlete.profile', [
             'organizations' => Auth::user()->organizations()->wherePivot('status', 'active')->get(),
         ])->layout('layouts.app', ['title' => 'Profile']);
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['athlete.access'];
     }
 }

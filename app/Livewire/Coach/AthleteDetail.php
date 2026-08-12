@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Coach;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Models\CoachNote;
 use App\Models\ProgressPhoto;
 use App\Models\User;
@@ -18,6 +19,7 @@ use Livewire\WithPagination;
 
 class AthleteDetail extends Component
 {
+    use AuthorizesComponentAccess;
     use WithFileUploads;
     use WithPagination;
 
@@ -85,6 +87,7 @@ class AthleteDetail extends Component
 
     public function addNote(AuditLogger $audit): void
     {
+        $this->authorizeAthlete();
         abort_unless(Auth::user()->can('athletes.notes'), 403);
 
         $data = $this->validate([
@@ -109,6 +112,7 @@ class AthleteDetail extends Component
 
     public function toggleNotePinned(int $noteId, AuditLogger $audit): void
     {
+        $this->authorizeAthlete();
         abort_unless(Auth::user()->can('athletes.notes'), 403);
         $note = $this->ownedNote($noteId);
         $note->update(['is_pinned' => ! $note->is_pinned]);
@@ -117,6 +121,7 @@ class AthleteDetail extends Component
 
     public function deleteNote(int $noteId, AuditLogger $audit): void
     {
+        $this->authorizeAthlete();
         abort_unless(Auth::user()->can('athletes.notes'), 403);
         $note = $this->ownedNote($noteId);
         $note->delete();
@@ -125,6 +130,7 @@ class AthleteDetail extends Component
 
     public function uploadPhoto(AuditLogger $audit): void
     {
+        $this->authorizeAthlete();
         abort_unless(Auth::user()->can('progress.review'), 403);
 
         $data = $this->validate([
@@ -155,6 +161,7 @@ class AthleteDetail extends Component
 
     public function deletePhoto(int $photoId, AuditLogger $audit): void
     {
+        $this->authorizeAthlete();
         abort_unless(Auth::user()->can('progress.review'), 403);
         $photo = ProgressPhoto::query()
             ->where('athlete_id', $this->athlete->id)
@@ -168,6 +175,7 @@ class AthleteDetail extends Component
 
     public function render()
     {
+        $this->authorizeAthlete();
         $coachId = (int) Auth::id();
         $query = $this->activeQuery($coachId);
         $records = $this->paginate($query);
@@ -213,6 +221,16 @@ class AthleteDetail extends Component
             ->where('athlete_id', $this->athlete->id)
             ->where('coach_id', Auth::id())
             ->findOrFail($noteId);
+    }
+
+    private function authorizeAthlete(): void
+    {
+        abort_unless(AthleteProfileQuery::isAssignedTo($this->athlete, (int) Auth::id()), 403);
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['athletes.view'];
     }
 
     /** @return list<string> */

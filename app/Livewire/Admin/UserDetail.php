@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Models\AthleteProfile;
 use App\Models\AuditLog;
 use App\Models\CoachProfile;
@@ -15,6 +16,8 @@ use Livewire\Component;
 
 class UserDetail extends Component
 {
+    use AuthorizesComponentAccess;
+
     public User $user;
 
     public string $name = '';
@@ -135,6 +138,7 @@ class UserDetail extends Component
     {
         $actor = Auth::user();
         $this->user = ManagedUserQuery::findVisibleOrFail($actor, $this->user->id);
+        ManagedUserQuery::authorizeRole($actor, ManagedUserQuery::displayRole($actor, $this->user));
         $this->platformMode = $actor->isPlatformAdmin();
         $this->organizationId = $this->platformMode ? 0 : ManagedUserQuery::organizationId($actor);
         $organizationId = $this->platformMode ? null : $this->organizationId;
@@ -165,6 +169,11 @@ class UserDetail extends Component
         ])->layout('layouts.app', ['title' => $this->user->name]);
     }
 
+    protected function componentPermissions(): array
+    {
+        return ['users.manage', 'coaches.manage', 'athletes.manage'];
+    }
+
     private function updateMembership(User $actor): void
     {
         $organizationId = ManagedUserQuery::organizationId($actor);
@@ -188,6 +197,10 @@ class UserDetail extends Component
         ManagedUserQuery::authorizeRole($actor, $data['role']);
 
         DB::transaction(function () use ($actor, $membership, $data, $organizationId): void {
+            if ($membership->role !== $data['role']) {
+                $membership->permissionOverrides()->delete();
+            }
+
             $membership->update($data);
 
             if ($data['role'] === 'coach') {

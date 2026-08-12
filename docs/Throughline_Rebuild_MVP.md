@@ -25,6 +25,8 @@ The previous React/Inertia application is archived. Production data is migrated 
 
 Users can belong to multiple organizations and select an active organization. Organization-owned models use `BelongsToOrganization`; routes, Livewire actions, exports, and `/api/v1` requests enforce the same boundary.
 
+Organization membership is authoritative for organization roles and permissions. Role defaults are resolved from the active membership, then explicit allow/deny overrides are applied. Changing a membership role clears stale overrides. Platform owner/admin permissions remain global; platform staff accounts cannot be converted through athlete invitations.
+
 ## Web Routes
 
 ### Public And Auth
@@ -42,6 +44,7 @@ Users can belong to multiple organizations and select an active organization. Or
 | --- | --- | --- |
 | `/admin/dashboard` | Operations summary | `admin.access` |
 | `/admin/organizations` | Organization list, members, and exports | `organizations.manage` |
+| `/admin/organizations/{organization}/members/{membership}/permissions` | Membership defaults and explicit allow/deny overrides | `users.manage` |
 | `/admin/users` and user details/export | Platform accounts or current-organization members | `users.manage` |
 | `/admin/coaches` | Current scope coach table | `coaches.manage` |
 | `/admin/athletes` | Current scope athlete table | `athletes.manage` |
@@ -84,7 +87,7 @@ Platform owners/admins manage global accounts. Organization owners/admins see on
 ## Core Workflows
 
 1. Owner creates or manages an organization and its members.
-2. Coach invites an athlete or works with an existing organization member.
+2. Coach invites an athlete or works with an existing organization member. A new invite creates an athlete account; an existing account must confirm its current password. Acceptance creates the athlete membership, profile, and coach assignment in the invitation's organization without rewriting the account's global role.
 3. Coach builds a reusable program template with phases, sessions, exercises, targets, rest, notes, images, and video URLs.
 4. Coach assigns the program; `ProgramScheduleService` generates dated scheduled workouts.
 5. Athlete opens the calendar and logs actual sets, reps, load, RPE, duration, notes, and status.
@@ -144,6 +147,7 @@ Run before every release:
 composer validate --strict
 ./vendor/bin/pint --test
 php artisan test
+npm run lint
 npm run build
 php artisan route:cache
 php artisan view:cache

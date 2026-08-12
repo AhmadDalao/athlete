@@ -100,6 +100,7 @@
                             @else
                                 <div class="d-flex gap-2 flex-wrap">
                                     <button class="btn btn-outline-tl btn-sm" type="button" wire:click="saveMemberRole({{ $membership->id }})">Save role</button>
+                                    <a class="btn btn-outline-tl btn-sm" href="{{ route('admin.organizations.members.permissions', [$organization, $membership]) }}"><i class="fa-solid fa-key"></i> Permissions</a>
                                     <button class="btn btn-outline-tl btn-sm" type="button" wire:click="toggleMemberStatus({{ $membership->id }})" wire:confirm="Change this member's organization access?">{{ $membership->status === 'active' ? 'Disable' : 'Activate' }}</button>
                                 </div>
                             @endif

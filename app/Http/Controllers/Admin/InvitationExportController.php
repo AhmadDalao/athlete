@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AthleteInvitation;
+use App\Queries\Admin\ManagedInvitationQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -15,7 +15,7 @@ class InvitationExportController extends Controller
         $status = $request->string('status')->toString();
         $search = $request->string('search')->toString();
 
-        $invitations = AthleteInvitation::query()
+        $invitations = ManagedInvitationQuery::visibleTo($request->user())
             ->with('coach')
             ->when(in_array($status, ['pending', 'accepted', 'cancelled'], true), fn (Builder $query) => $query->where('status', $status))
             ->when($search !== '', function (Builder $query) use ($search): void {

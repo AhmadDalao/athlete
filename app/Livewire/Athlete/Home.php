@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Athlete;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Models\ProgramAssignment;
 use App\Models\ProgressEntry;
 use App\Models\ScheduledWorkout;
@@ -14,6 +15,8 @@ use Throwable;
 
 class Home extends Component
 {
+    use AuthorizesComponentAccess;
+
     #[Url(as: 'date', history: true)]
     public string $selectedDate;
 
@@ -131,5 +134,10 @@ class Home extends Component
         } catch (Throwable) {
             return false;
         }
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['athlete.access'];
     }
 }

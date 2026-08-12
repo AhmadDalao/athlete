@@ -29,6 +29,8 @@ Use this checklist before deploying or after pulling the rebuild onto Hostinger.
 - Confirm disabling a multi-organization member changes only the active organization membership.
 - Confirm organization owners cannot be disabled or demoted from the people screens.
 - Open `/admin/permissions`, select an admin, change permissions, and save.
+- Open an organization member's permission page, deny one role-default permission, and confirm the matching page/action returns `403` for that member only.
+- Change that member's organization role and confirm stale permission overrides are cleared.
 - Open `/admin/settings`, update homepage/contact/pricing copy, and confirm the public website changes.
 - Open `/admin/reports`, change the date range/search/page size, and export the organization-scoped CSV.
 - Open `/admin/email-logs`, filter delivery status/type/date, and export CSV.
@@ -44,6 +46,9 @@ Use this checklist before deploying or after pulling the rebuild onto Hostinger.
 - Add a session with exercises, sets, reps, rest, load, notes, and media URL.
 - Edit the session, add/remove exercise rows, then save.
 - Open `/coach/invitations`, create an invite, resend it, then cancel it.
+- Accept a new-user invite and confirm the athlete membership, profile, and coach assignment belong to the inviting organization.
+- Accept an existing-user invite with the current account password and confirm no duplicate account or global role rewrite occurs.
+- Confirm an incorrect existing-account password, inactive coach, expired invite, and cross-organization invite mutation are rejected.
 
 ## Athlete
 
@@ -76,4 +81,4 @@ Test at 390px and 430px browser widths:
 - Exports download CSV files.
 - Audit/email logs are written for settings, permissions, invitations, and contact actions.
 - Flutter athlete/coach login, navigation, organization switching, calendar, workout, progress, and messaging load without overflow.
-- `php artisan test`, `./vendor/bin/pint --test`, `npm run build`, Flutter analyze/tests, `php artisan route:cache`, and `php artisan view:cache` all pass.
+- `php artisan test`, `./vendor/bin/pint --test`, `npm run lint`, `npm run build`, Flutter analyze/tests, `php artisan route:cache`, and `php artisan view:cache` all pass.

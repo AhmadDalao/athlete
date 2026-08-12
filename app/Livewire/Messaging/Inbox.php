@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Messaging;
 
+use App\Livewire\Concerns\AuthorizesComponentAccess;
 use App\Models\Conversation;
 use App\Models\MediaAsset;
 use App\Models\Message;
@@ -17,6 +18,7 @@ use Livewire\WithFileUploads;
 
 class Inbox extends Component
 {
+    use AuthorizesComponentAccess;
     use WithFileUploads;
 
     public string $search = '';
@@ -155,5 +157,10 @@ class Inbox extends Component
         }
 
         return $this->conversationQuery()->findOrFail($this->conversationId);
+    }
+
+    protected function componentPermissions(): array
+    {
+        return ['messages.read'];
     }
 }
