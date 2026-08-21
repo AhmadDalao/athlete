@@ -20,7 +20,7 @@ class CoachWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_template_session_is_normalized_and_added_to_existing_athlete_schedule(): void
+    public function test_preset_session_is_normalized_without_changing_existing_athlete_plan(): void
     {
         [$organization, $coach, $athlete] = $this->coachTeam();
         $program = TrainingProgram::create([
@@ -35,6 +35,12 @@ class CoachWorkflowTest extends TestCase
             'organization_id' => $organization->id,
             'title' => 'Foundation',
             'sort_order' => 1,
+        ]);
+        $program->sessions()->create([
+            'organization_id' => $organization->id,
+            'title' => 'Baseline session',
+            'status' => 'scheduled',
+            'day_offset' => 0,
         ]);
         $assignment = app(ProgramScheduleService::class)->assign(
             $program,
@@ -65,7 +71,7 @@ class CoachWorkflowTest extends TestCase
             ->call('createSession')
             ->assertHasNoErrors();
 
-        $session = $program->sessions()->firstOrFail();
+        $session = $program->sessions()->where('title', 'Lower strength')->firstOrFail();
         $this->assertSame($organization->id, $session->organization_id);
         $this->assertDatabaseHas('training_session_exercises', [
             'organization_id' => $organization->id,
@@ -78,15 +84,14 @@ class CoachWorkflowTest extends TestCase
             'unit' => 'kg',
             'rest_seconds' => 120,
         ]);
-        $this->assertDatabaseHas('scheduled_workouts', [
+        $this->assertDatabaseMissing('scheduled_workouts', [
             'program_assignment_id' => $assignment->id,
             'training_session_id' => $session->id,
-            'athlete_id' => $athlete->id,
-            'coach_id' => $coach->id,
-            'status' => 'scheduled',
         ]);
-        $this->assertSame('2026-08-13', $assignment->fresh()->ends_on->toDateString());
-        $this->assertSame('2026-08-13', $assignment->scheduledWorkouts()->firstOrFail()->scheduled_for->toDateString());
+        $this->assertFalse($assignment->program->is_template);
+        $this->assertSame($program->id, $assignment->program->source_program_id);
+        $this->assertSame('2026-08-11', $assignment->fresh()->ends_on->toDateString());
+        $this->assertSame('2026-08-11', $assignment->scheduledWorkouts()->firstOrFail()->scheduled_for->toDateString());
     }
 
     public function test_exercise_library_is_editable_by_owner_and_visible_as_a_filtered_export(): void

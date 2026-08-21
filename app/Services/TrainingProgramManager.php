@@ -77,11 +77,12 @@ class TrainingProgramManager
     {
         return DB::transaction(function () use ($program, $sessionId, $payload): TrainingSession {
             $session = $program->sessions()->whereKey($sessionId)->firstOrFail();
+            $hasExecutionHistory = $this->snapshotExecutionHistory($session);
             $exercises = $payload['exercises'] ?? [];
             unset($payload['exercises']);
             $session->update($payload);
             $this->syncExercises($session, $exercises);
-            $this->schedule->syncSession($session);
+            $this->schedule->syncSession($session, ! $hasExecutionHistory);
             $this->audit->record(
                 'session.updated',
                 'training_session',
@@ -168,5 +169,45 @@ class TrainingProgramManager
                 'movement_type' => filled($exercise['movement_type'] ?? null) ? $exercise['movement_type'] : null,
             ]);
         }
+    }
+
+    private function snapshotExecutionHistory(TrainingSession $session): bool
+    {
+        $session->loadMissing(['prescribedExercises', 'logs.setLogs', 'scheduledWorkouts.logs']);
+        if ($session->logs->isEmpty()) {
+            return false;
+        }
+
+        $snapshot = $session->replicate();
+        $snapshot->title = $session->title.' (history)';
+        $snapshot->status = 'cancelled';
+        $snapshot->save();
+
+        $exerciseMap = [];
+        foreach ($session->prescribedExercises as $exercise) {
+            $copy = $exercise->replicate();
+            $copy->training_session_id = $snapshot->id;
+            $copy->save();
+            $exerciseMap[$exercise->id] = $copy->id;
+        }
+
+        foreach ($session->logs as $log) {
+            $log->update(['training_session_id' => $snapshot->id]);
+            foreach ($log->setLogs as $setLog) {
+                if ($setLog->training_session_exercise_id && isset($exerciseMap[$setLog->training_session_exercise_id])) {
+                    $setLog->update([
+                        'training_session_exercise_id' => $exerciseMap[$setLog->training_session_exercise_id],
+                    ]);
+                }
+            }
+        }
+
+        foreach ($session->scheduledWorkouts as $workout) {
+            if ($workout->logs->isNotEmpty()) {
+                $workout->update(['training_session_id' => $snapshot->id]);
+            }
+        }
+
+        return true;
     }
 }

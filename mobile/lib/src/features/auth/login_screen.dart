@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:throughline_mobile/src/core/config/app_config.dart';
 import 'package:throughline_mobile/src/core/network/api_client.dart';
 import 'package:throughline_mobile/src/core/providers.dart';
 import 'package:throughline_mobile/src/core/theme/app_theme.dart';
@@ -19,6 +18,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _obscure = true;
+  bool _keepSignedIn = false;
+  bool _useBiometrics = false;
+  bool _biometricAvailable = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometrics();
+  }
 
   @override
   void dispose() {
@@ -113,6 +121,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ? 'Enter your password.'
                                 : null,
                           ),
+                          CheckboxListTile(
+                            value: _keepSignedIn,
+                            contentPadding: EdgeInsets.zero,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            title: const Text('Keep me signed in'),
+                            subtitle: const Text(
+                              'Keep this device connected for up to 90 days.',
+                            ),
+                            onChanged: loading
+                                ? null
+                                : (value) => setState(() {
+                                    _keepSignedIn = value ?? false;
+                                    if (!_keepSignedIn) _useBiometrics = false;
+                                  }),
+                          ),
+                          if (_biometricAvailable)
+                            CheckboxListTile(
+                              value: _useBiometrics,
+                              contentPadding: EdgeInsets.zero,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              secondary: const Icon(Icons.fingerprint_rounded),
+                              title: const Text('Use biometric unlock'),
+                              subtitle: const Text(
+                                'Require your fingerprint or face when reopening the app.',
+                              ),
+                              onChanged: loading || !_keepSignedIn
+                                  ? null
+                                  : (value) => setState(
+                                      () => _useBiometrics = value ?? false,
+                                    ),
+                            ),
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
@@ -148,14 +187,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
-                  Text(
-                    'API: ${AppConfig.apiBaseUrl}',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: ThroughlineColors.muted,
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -170,7 +201,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     await ref
         .read(authControllerProvider.notifier)
-        .login(email: _email.text, password: _password.text);
+        .login(
+          email: _email.text,
+          password: _password.text,
+          keepSignedIn: _keepSignedIn,
+          useBiometrics: _useBiometrics,
+        );
+  }
+
+  Future<void> _checkBiometrics() async {
+    final available = await ref
+        .read(biometricAuthenticatorProvider)
+        .isAvailable();
+    if (mounted) setState(() => _biometricAvailable = available);
   }
 
   Future<void> _showPasswordRecovery() async {
@@ -217,7 +260,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 8),
                 const Text(
                   'We will email a secure reset link if this address belongs to an active account.',
-                  style: TextStyle(color: ThroughlineColors.muted, height: 1.45),
+                  style: TextStyle(
+                    color: ThroughlineColors.muted,
+                    height: 1.45,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 TextFormField(

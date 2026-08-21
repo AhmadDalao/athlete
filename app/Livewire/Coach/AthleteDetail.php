@@ -7,6 +7,7 @@ use App\Models\CoachNote;
 use App\Models\ProgressPhoto;
 use App\Models\User;
 use App\Queries\Coach\AthleteProfileQuery;
+use App\Services\AthleteProgressSummaryService;
 use App\Services\AuditLogger;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -173,7 +174,7 @@ class AthleteDetail extends Component
         $audit->record('progress_photo.deleted', 'progress_photo', $photoId, "Deleted a coach-uploaded progress photo for {$this->athlete->name}.");
     }
 
-    public function render()
+    public function render(AthleteProgressSummaryService $progressSummary)
     {
         $this->authorizeAthlete();
         $coachId = (int) Auth::id();
@@ -183,6 +184,12 @@ class AthleteDetail extends Component
         return view('livewire.coach.athlete-detail', [
             'assignment' => $this->athlete->athleteAssignments()->with('coach')->where('coach_id', $coachId)->first(),
             'records' => $records,
+            'progressSummary' => $progressSummary->forCoach(
+                Auth::user(),
+                $this->athlete,
+                $this->from ?: null,
+                $this->to ?: null,
+            ),
             'counts' => [
                 'programs' => AthleteProfileQuery::assignments($coachId, $this->athlete->id)->count(),
                 'schedule' => AthleteProfileQuery::schedule($coachId, $this->athlete->id)->count(),

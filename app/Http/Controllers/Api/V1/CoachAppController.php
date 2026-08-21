@@ -15,6 +15,7 @@ use App\Models\ScheduledWorkout;
 use App\Models\TrainingProgram;
 use App\Models\User;
 use App\Queries\Coach\AthleteProfileQuery;
+use App\Services\AthleteProgressSummaryService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -58,12 +59,14 @@ class CoachAppController extends Controller
         return $this->paginated($athletes, CompactUserResource::class);
     }
 
-    public function athlete(Request $request, User $athlete): JsonResponse
-    {
+    public function athlete(
+        Request $request,
+        User $athlete,
+        AthleteProgressSummaryService $progressSummary,
+    ): JsonResponse {
         abort_unless($this->athleteQuery($request->user())->whereKey($athlete->id)->exists(), 403);
         $assignments = ProgramAssignment::query()
             ->where('athlete_id', $athlete->id)
-            ->whereHas('program', fn (Builder $query) => $query->where('coach_id', $request->user()->id))
             ->with(['athlete', 'program.coach', 'program.phases', 'scheduledWorkouts.session.prescribedExercises', 'scheduledWorkouts.executionLog.setLogs'])
             ->latest('starts_on')
             ->get();
@@ -100,28 +103,57 @@ class CoachAppController extends Controller
                 'can_edit' => $note->coach_id === $request->user()->id,
                 'created_at' => $note->created_at?->toIso8601String(),
             ]),
+            'progress_summary' => $progressSummary->forCoach(
+                $request->user(),
+                $athlete,
+                $request->query('from'),
+                $request->query('to'),
+            ),
         ]);
     }
 
     public function programs(Request $request): JsonResponse
     {
+        $kind = (string) $request->query('kind', 'all');
         $programs = TrainingProgram::query()
             ->where('coach_id', $request->user()->id)
+            ->when($kind === 'preset', fn (Builder $query) => $query->where('is_template', true))
+            ->when($kind === 'athlete_plan', fn (Builder $query) => $query->where('is_template', false))
             ->withCount(['sessions', 'assignments'])
-            ->with(['phases'])
+            ->with([
+                'phases',
+                'athlete',
+                'source',
+                'assignments.scheduledWorkouts.logs',
+                'athletePlans.assignments.scheduledWorkouts.logs',
+            ])
             ->latest()
             ->paginate($this->pageSize($request->query('per_page')));
 
-        return $this->success(collect($programs->items())->map(fn (TrainingProgram $program): array => [
-            'id' => $program->id,
-            'title' => $program->title,
-            'goal' => $program->goal,
-            'status' => $program->status,
-            'estimated_weeks' => $program->estimated_weeks,
-            'sessions_count' => $program->sessions_count,
-            'assignments_count' => $program->assignments_count,
-            'updated_at' => $program->updated_at?->toIso8601String(),
-        ]), [
+        return $this->success(collect($programs->items())->map(function (TrainingProgram $program): array {
+            $assignment = $program->is_template ? null : $program->assignments->first();
+
+            return [
+                'id' => $program->id,
+                'kind' => $program->is_template ? 'preset' : 'athlete_plan',
+                'source_program_id' => $program->source_program_id,
+                'source_title' => $program->source?->title,
+                'athlete' => $program->athlete?->only(['id', 'name', 'email']),
+                'title' => $program->title,
+                'goal' => $program->goal,
+                'status' => $program->status,
+                'assignment_status' => $assignment?->status,
+                'publication_state' => $program->is_template ? 'preset' : ($assignment?->published_at ? 'published' : 'draft'),
+                'published_at' => $assignment?->published_at?->toIso8601String(),
+                'completion' => $program->completionStats(),
+                'estimated_weeks' => $program->estimated_weeks,
+                'sessions_count' => $program->sessions_count,
+                'assignments_count' => $program->is_template
+                    ? $program->athletePlans->flatMap->assignments->count()
+                    : $program->assignments_count,
+                'updated_at' => $program->updated_at?->toIso8601String(),
+            ];
+        }), [
             'current_page' => $programs->currentPage(),
             'last_page' => $programs->lastPage(),
             'per_page' => $programs->perPage(),

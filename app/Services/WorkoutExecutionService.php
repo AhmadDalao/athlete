@@ -23,9 +23,26 @@ class WorkoutExecutionService
             throw ValidationException::withMessages(['status' => 'Invalid workout status.']);
         }
 
+        if ($status === 'completed' && ! ($data['confirmedComplete'] ?? false)) {
+            throw ValidationException::withMessages(['confirmedComplete' => 'Confirm that today’s training is finished.']);
+        }
+
         $rows = collect($data['setLogs'] ?? [])->values();
-        if ($status === 'completed' && $rows->isNotEmpty() && $rows->contains(fn (array $row): bool => ! ($row['completed'] ?? false))) {
-            throw ValidationException::withMessages(['setLogs' => 'Complete every prescribed set, or save the workout as partial.']);
+        if ($status === 'completed') {
+            $workout->loadMissing('session.prescribedExercises');
+            $expectedSets = $workout->session->prescribedExercises->flatMap(
+                fn ($exercise) => collect(range(1, max(1, (int) $exercise->target_sets)))
+                    ->map(fn (int $set): string => "{$exercise->id}:{$set}")
+            )->sort()->values();
+            $completedSets = $rows
+                ->filter(fn (array $row): bool => (bool) ($row['completed'] ?? false))
+                ->map(fn (array $row): string => ((int) ($row['exercise_id'] ?? 0)).':'.((int) ($row['set'] ?? 0)))
+                ->sort()
+                ->values();
+
+            if ($expectedSets->all() !== $completedSets->all()) {
+                throw ValidationException::withMessages(['setLogs' => 'Complete every prescribed set, or save the workout as partial.']);
+            }
         }
 
         return DB::transaction(function () use ($workout, $athlete, $data, $status, $rows): WorkoutLog {
@@ -33,6 +50,7 @@ class WorkoutExecutionService
                 'scheduled_workout_id' => $workout->id,
                 'athlete_id' => $athlete->id,
             ]);
+            $previousStatus = $log->exists ? $log->status : null;
             $log->fill([
                 'organization_id' => $workout->organization_id,
                 'training_session_id' => $workout->training_session_id,
@@ -90,7 +108,9 @@ class WorkoutExecutionService
                 "Saved {$workout->session->title} as {$status}.",
                 $athlete->id,
             );
-            $this->notifications->workoutSaved($workout, $status);
+            if ($previousStatus !== $status) {
+                $this->notifications->workoutSaved($workout, $status);
+            }
 
             return $log->fresh(['setLogs']);
         });

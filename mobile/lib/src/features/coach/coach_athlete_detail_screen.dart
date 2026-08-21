@@ -8,6 +8,7 @@ import 'package:throughline_mobile/src/core/models/session_models.dart';
 import 'package:throughline_mobile/src/core/providers.dart';
 import 'package:throughline_mobile/src/core/theme/app_theme.dart';
 import 'package:throughline_mobile/src/core/widgets/throughline_widgets.dart';
+import 'package:throughline_mobile/src/features/coach/coach_program_detail_screen.dart';
 
 class CoachAthleteDetailScreen extends ConsumerWidget {
   const CoachAthleteDetailScreen({super.key, required this.athleteId});
@@ -33,10 +34,20 @@ class CoachAthleteDetailScreen extends ConsumerWidget {
           final athlete = data.object('athlete');
           final profile = data.object('profile');
           final programs = data.maps('programs');
+          final workouts =
+              programs
+                  .expand((assignment) => assignment.maps('workouts'))
+                  .toList()
+                ..sort(
+                  (left, right) => right
+                      .text('scheduled_for')
+                      .compareTo(left.text('scheduled_for')),
+                );
           final progress = data.maps('progress');
           final photos = data.maps('photos');
           final records = data.maps('records');
           final notes = data.maps('notes');
+          final summary = data.object('progress_summary');
           return RefreshIndicator(
             onRefresh: () =>
                 ref.refresh(coachAthleteProvider(athleteId).future),
@@ -46,6 +57,10 @@ class CoachAthleteDetailScreen extends ConsumerWidget {
                   eyebrow: 'Athlete source of truth',
                   title: athlete.text('name', 'Athlete'),
                   body: athlete.text('email'),
+                ),
+                _ProgressSummaryPanel(
+                  athleteId: athleteId,
+                  initialSummary: summary,
                 ),
                 PremiumCard(
                   accent: ThroughlineColors.lime,
@@ -125,6 +140,88 @@ class CoachAthleteDetailScreen extends ConsumerWidget {
                             ),
                           ),
                           StatusChip(assignment.text('status', 'active')),
+                          if (assignment['can_edit'] == true)
+                            IconButton(
+                              onPressed: () => Navigator.push<void>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => CoachProgramDetailScreen(
+                                    programId: program['id'] as int,
+                                  ),
+                                ),
+                              ),
+                              icon: const Icon(Icons.chevron_right_rounded),
+                              tooltip: 'Open athlete plan',
+                            ),
+                        ],
+                      ),
+                    );
+                  }),
+                const SectionTitle('Workout drill-down'),
+                if (workouts.isEmpty)
+                  const EmptyPanel(
+                    title: 'No scheduled workouts',
+                    body: 'Published plan sessions appear here.',
+                  )
+                else
+                  ...workouts.take(30).map((workout) {
+                    final session = workout.object('session');
+                    final execution = workout.object('execution');
+                    final sets = execution.maps('sets');
+                    return PremiumCard(
+                      padding: EdgeInsets.zero,
+                      child: ExpansionTile(
+                        title: Text(
+                          session.text('title', 'Workout'),
+                          style: const TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                        subtitle: Text(
+                          '${workout.text('scheduled_for')} · ${workout.text('status')}',
+                        ),
+                        trailing: StatusChip(
+                          execution.text(
+                            'status',
+                            workout.text('status', 'scheduled'),
+                          ),
+                        ),
+                        childrenPadding: const EdgeInsets.fromLTRB(
+                          18,
+                          0,
+                          18,
+                          18,
+                        ),
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'RPE ${execution.text('rpe', '—')} · ${execution.text('duration_minutes', '—')} min · ${sets.where((set) => set['completed'] == true).length}/${sets.length} sets',
+                            ),
+                          ),
+                          if (execution.text('notes').isNotEmpty)
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(execution.text('notes')),
+                              ),
+                            ),
+                          ...sets.map(
+                            (set) => ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              leading: Icon(
+                                set['completed'] == true
+                                    ? Icons.check_circle_rounded
+                                    : Icons.radio_button_unchecked,
+                              ),
+                              title: Text(
+                                '${set.text('exercise_name')} · set ${set.text('set_number')}',
+                              ),
+                              subtitle: Text(
+                                '${set.text('actual_reps', '—')} reps × ${set.text('actual_load', '—')} · RPE ${set.text('rpe', '—')}',
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     );
@@ -570,6 +667,192 @@ class _ProfileValue extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w900)),
+      ],
+    ),
+  );
+}
+
+class _ProgressSummaryPanel extends ConsumerStatefulWidget {
+  const _ProgressSummaryPanel({
+    required this.athleteId,
+    required this.initialSummary,
+  });
+
+  final int athleteId;
+  final JsonMap initialSummary;
+
+  @override
+  ConsumerState<_ProgressSummaryPanel> createState() =>
+      _ProgressSummaryPanelState();
+}
+
+class _ProgressSummaryPanelState extends ConsumerState<_ProgressSummaryPanel> {
+  DateTime? _from;
+  DateTime? _to;
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _from != null || _to != null;
+    final result = filtered
+        ? ref.watch(
+            coachAthleteProgressProvider((
+              athleteId: widget.athleteId,
+              from: _date(_from),
+              to: _date(_to),
+            )),
+          )
+        : null;
+    final summary = result?.valueOrNull ?? widget.initialSummary;
+    final adherence = summary.object('adherence');
+    final sets = summary.object('sets');
+    final averages = summary.object('averages');
+    final counts = summary.object('counts');
+    final workouts = summary.maps('workout_trend');
+    final period = summary.object('period');
+
+    return PremiumCard(
+      accent: ThroughlineColors.emerald,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Performance ${period.text('from')} to ${period.text('to')}',
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+              if (result?.isLoading == true)
+                const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 18,
+            runSpacing: 14,
+            children: [
+              _SummaryMetric(
+                label: 'Adherence',
+                value: '${adherence.text('percent', '0')}%',
+              ),
+              _SummaryMetric(
+                label: 'Sets',
+                value: '${sets.text('percent', '0')}%',
+              ),
+              _SummaryMetric(label: 'Load', value: sets.text('volume', '0')),
+              _SummaryMetric(
+                label: 'Avg RPE',
+                value: averages.text('rpe', '—'),
+              ),
+              _SummaryMetric(
+                label: 'Duration',
+                value: averages['duration_minutes'] == null
+                    ? '—'
+                    : '${averages['duration_minutes']} min',
+              ),
+              _SummaryMetric(
+                label: 'Recovery',
+                value:
+                    'E ${averages.text('energy', '—')} · S ${averages.text('sleep_quality', '—')}',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${counts.text('check_ins', '0')} check-ins · ${counts.text('records', '0')} records · ${counts.text('photos', '0')} photos',
+            style: const TextStyle(color: ThroughlineColors.muted),
+          ),
+          if (workouts.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ...workouts.reversed
+                .take(4)
+                .map(
+                  (workout) => Padding(
+                    padding: const EdgeInsets.only(top: 5),
+                    child: Text(
+                      '${workout.text('date')} · ${workout.text('status')} · ${workout.text('sets_completed', '0')}/${workout.text('sets_total', '0')} sets · load ${workout.text('volume', '0')}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ),
+          ],
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _pickDate(true),
+                icon: const Icon(Icons.first_page_rounded),
+                label: Text(_from == null ? 'From' : _date(_from)!),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _pickDate(false),
+                icon: const Icon(Icons.last_page_rounded),
+                label: Text(_to == null ? 'To' : _date(_to)!),
+              ),
+              if (filtered)
+                TextButton(
+                  onPressed: () => setState(() {
+                    _from = null;
+                    _to = null;
+                  }),
+                  child: const Text('Last 90 days'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickDate(bool start) async {
+    final initial = start ? _from : _to;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked == null) return;
+    setState(() {
+      if (start) {
+        _from = picked;
+      } else {
+        _to = picked;
+      }
+    });
+  }
+
+  String? _date(DateTime? date) =>
+      date == null ? null : DateFormat('yyyy-MM-dd').format(date);
+}
+
+class _SummaryMetric extends StatelessWidget {
+  const _SummaryMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: 92,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            color: ThroughlineColors.muted,
+            fontSize: 10,
+            letterSpacing: 1.1,
+          ),
+        ),
         Text(value, style: const TextStyle(fontWeight: FontWeight.w900)),
       ],
     ),

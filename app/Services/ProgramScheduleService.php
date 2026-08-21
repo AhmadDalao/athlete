@@ -25,16 +25,39 @@ class ProgramScheduleService
         string $startsOn,
         ?string $notes = null,
     ): ProgramAssignment {
+        if ($program->is_template) {
+            return app(ProgramPersonalizationService::class)->personalize(
+                $program,
+                $athlete,
+                $assigner,
+                $startsOn,
+                $notes,
+                true,
+            );
+        }
+
+        $assignment = $this->createDraftAssignment($program, $athlete, $assigner, $startsOn, $notes);
+
+        return $this->publish($assignment, $assigner);
+    }
+
+    public function createDraftAssignment(
+        TrainingProgram $program,
+        User $athlete,
+        User $assigner,
+        string $startsOn,
+        ?string $notes = null,
+    ): ProgramAssignment {
         if (! $program->organization_id || ! $athlete->organizationMemberships()
             ->where('organization_id', $program->organization_id)
             ->where('role', 'athlete')
             ->where('status', 'active')
             ->exists()) {
-            throw ValidationException::withMessages(['assignmentAthleteId' => 'The athlete is outside the active organization.']);
+            throw ValidationException::withMessages(['athlete_id' => 'The athlete is outside the active organization.']);
         }
 
-        if ($program->assignments()->where('athlete_id', $athlete->id)->whereIn('status', ['active', 'paused'])->exists()) {
-            throw ValidationException::withMessages(['assignmentAthleteId' => 'This athlete already has an active assignment for the template.']);
+        if ($program->assignments()->where('athlete_id', $athlete->id)->whereIn('status', ['draft', 'active', 'paused'])->exists()) {
+            throw ValidationException::withMessages(['athlete_id' => 'This athlete already has a current assignment for this plan.']);
         }
 
         return DB::transaction(function () use ($program, $athlete, $assigner, $startsOn, $notes): ProgramAssignment {
@@ -48,19 +71,43 @@ class ProgramScheduleService
                 'organization_id' => $program->organization_id,
                 'athlete_id' => $athlete->id,
                 'assigned_by' => $assigner->id,
-                'status' => 'active',
+                'status' => 'draft',
                 'starts_on' => $start->toDateString(),
                 'ends_on' => $start->addDays($lastOffset)->toDateString(),
                 'timezone' => $timezone,
                 'notes' => filled($notes) ? trim((string) $notes) : null,
             ]);
 
+            $this->audit->record(
+                'program.assignment_drafted',
+                'program_assignment',
+                $assignment->id,
+                "Prepared {$program->title} for {$athlete->name}.",
+            );
+
+            return $assignment->refresh();
+        });
+    }
+
+    public function publish(ProgramAssignment $assignment, User $publisher): ProgramAssignment
+    {
+        $assignment->loadMissing(['program', 'athlete']);
+        if ($assignment->program->coach_id !== $publisher->id) {
+            abort(403);
+        }
+        if ($assignment->published_at) {
+            throw ValidationException::withMessages(['assignment' => 'This athlete plan is already published.']);
+        }
+
+        return DB::transaction(function () use ($assignment): ProgramAssignment {
+            $assignment->update(['status' => 'active', 'published_at' => now()]);
+            $assignment->program->update(['status' => 'active']);
             $this->generate($assignment);
             $this->audit->record(
                 'program.assigned',
                 'program_assignment',
                 $assignment->id,
-                "Assigned {$program->title} to {$athlete->name}.",
+                "Published {$assignment->program->title} for {$assignment->athlete->name}.",
             );
             $this->notifications->programAssigned($assignment);
 
@@ -99,7 +146,7 @@ class ProgramScheduleService
         return $created;
     }
 
-    public function syncSession(TrainingSession $session): void
+    public function syncSession(TrainingSession $session, bool $createMissing = true): void
     {
         if (! $session->organization_id) {
             return;
@@ -127,7 +174,7 @@ class ProgramScheduleService
                     'coach_notes' => $session->coach_notes,
                 ]);
 
-            } else {
+            } elseif ($createMissing) {
                 $assignment->scheduledWorkouts()->create([
                     'organization_id' => $assignment->organization_id,
                     'training_session_id' => $session->id,
@@ -177,6 +224,9 @@ class ProgramScheduleService
         }
 
         DB::transaction(function () use ($assignment, $status): void {
+            if ($assignment->status === 'draft') {
+                throw ValidationException::withMessages(['status' => 'Publish this athlete plan before changing its status.']);
+            }
             $assignment->update(['status' => $status]);
 
             if (in_array($status, ['cancelled', 'completed'], true)) {

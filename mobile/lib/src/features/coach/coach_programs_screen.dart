@@ -7,11 +7,19 @@ import 'package:throughline_mobile/src/core/widgets/throughline_widgets.dart';
 import 'package:throughline_mobile/src/features/coach/coach_program_detail_screen.dart';
 import 'package:throughline_mobile/src/features/coach/coach_program_editor_screen.dart';
 
-class CoachProgramsScreen extends ConsumerWidget {
+class CoachProgramsScreen extends ConsumerStatefulWidget {
   const CoachProgramsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CoachProgramsScreen> createState() =>
+      _CoachProgramsScreenState();
+}
+
+class _CoachProgramsScreenState extends ConsumerState<CoachProgramsScreen> {
+  String _kind = 'preset';
+
+  @override
+  Widget build(BuildContext context) {
     final result = ref.watch(coachProgramsProvider);
     return result.when(
       loading: () => const LoadingPanel(),
@@ -24,27 +32,48 @@ class CoachProgramsScreen extends ConsumerWidget {
         ],
       ),
       data: (envelope) {
-        final programs = envelope.maps('data');
+        final programs = envelope
+            .maps('data')
+            .where((program) => program.text('kind') == _kind)
+            .toList();
         return RefreshIndicator(
           onRefresh: () => ref.refresh(coachProgramsProvider.future),
           child: ContentColumn(
             children: [
               PageIntro(
                 eyebrow: 'Program library',
-                title: 'Build once. Assign well.',
+                title: 'Build once. Personalize safely.',
                 body:
-                    'Create reusable programs, build sessions, and assign them to your athletes.',
+                    'Presets remain reusable. Every athlete plan is an isolated copy you edit before publishing.',
                 action: FilledButton.icon(
                   onPressed: () => _createProgram(context, ref),
                   icon: const Icon(Icons.add_rounded),
                   label: const Text('New program'),
                 ),
               ),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(
+                    value: 'preset',
+                    icon: Icon(Icons.library_books_outlined),
+                    label: Text('Presets'),
+                  ),
+                  ButtonSegment(
+                    value: 'athlete_plan',
+                    icon: Icon(Icons.person_outline_rounded),
+                    label: Text('Athlete plans'),
+                  ),
+                ],
+                selected: {_kind},
+                onSelectionChanged: (selection) =>
+                    setState(() => _kind = selection.first),
+              ),
               if (programs.isEmpty)
-                const EmptyPanel(
-                  title: 'No programs',
-                  body:
-                      'Create the first reusable program in the web coach workspace.',
+                EmptyPanel(
+                  title: _kind == 'preset' ? 'No presets' : 'No athlete plans',
+                  body: _kind == 'preset'
+                      ? 'Create a reusable preset from the New program action.'
+                      : 'Open a preset and personalize it for an athlete.',
                 )
               else
                 ...programs.map(
@@ -63,7 +92,9 @@ class CoachProgramsScreen extends ConsumerWidget {
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
-                          '${program.text('goal', 'No goal')}\n${program['sessions_count'] ?? 0} sessions · ${program['assignments_count'] ?? 0} assigned',
+                          _kind == 'preset'
+                              ? '${program.text('goal', 'No goal')}\n${program['sessions_count'] ?? 0} sessions · ${program['assignments_count'] ?? 0} athlete plans'
+                              : '${program.object('athlete').text('name', 'Athlete')} · ${program.text('assignment_status', 'draft')} · ${program.text('publication_state', 'draft')}\n${program['sessions_count'] ?? 0} sessions · ${program.object('completion').text('percent', '0')}% complete',
                         ),
                       ),
                       isThreeLine: true,

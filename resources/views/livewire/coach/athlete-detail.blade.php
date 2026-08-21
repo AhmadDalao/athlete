@@ -20,6 +20,24 @@
         <div class="col-6 col-xl-3"><x-tl.metric-card icon="fa-solid fa-chart-line" label="Progress logs" :value="$counts['progress']" tone="blue" /></div>
     </div>
 
+    <x-tl.section-card eyebrow="Performance window" :title="$progressSummary['period']['from'].' to '.$progressSummary['period']['to']" subtitle="Use the date filters below to recalculate adherence, workload, recovery, records, and photos.">
+        <div class="row g-3">
+            <div class="col-6 col-xl-2"><x-tl.metric-card icon="fa-solid fa-bullseye" label="Adherence" :value="$progressSummary['adherence']['percent'].'%'" tone="lime" /></div>
+            <div class="col-6 col-xl-2"><x-tl.metric-card icon="fa-solid fa-list-check" label="Sets complete" :value="$progressSummary['sets']['percent'].'%'" tone="emerald" /></div>
+            <div class="col-6 col-xl-2"><x-tl.metric-card icon="fa-solid fa-weight-hanging" label="Training load" :value="number_format($progressSummary['sets']['volume'])" tone="gold" /></div>
+            <div class="col-6 col-xl-2"><x-tl.metric-card icon="fa-solid fa-gauge-high" label="Average RPE" :value="$progressSummary['averages']['rpe'] ?? '-'" tone="blue" /></div>
+            <div class="col-6 col-xl-2"><x-tl.metric-card icon="fa-solid fa-clock" label="Avg duration" :value="$progressSummary['averages']['duration_minutes'] ? $progressSummary['averages']['duration_minutes'].' min' : '-'" tone="lime" /></div>
+            <div class="col-6 col-xl-2"><x-tl.metric-card icon="fa-solid fa-heart-pulse" label="Check-ins" :value="$progressSummary['counts']['check_ins']" tone="emerald" /></div>
+        </div>
+        <div class="d-flex flex-wrap gap-3 mt-3 tl-muted">
+            <span>{{ $progressSummary['adherence']['completed'] }}/{{ $progressSummary['adherence']['total'] }} workouts completed</span>
+            <span>{{ $progressSummary['adherence']['partial'] }} partial</span>
+            <span>{{ $progressSummary['adherence']['missed'] }} missed or skipped</span>
+            <span>{{ $progressSummary['counts']['records'] }} records</span>
+            <span>{{ $progressSummary['counts']['photos'] }} progress photos</span>
+        </div>
+    </x-tl.section-card>
+
     <nav class="tl-record-tabs mb-3" aria-label="Athlete record sections">
         @foreach([
             'programs' => ['fa-dumbbell', 'Programs'],
@@ -131,7 +149,7 @@
                 <thead><tr><th>Program</th><th>Goal</th><th>Status</th><th>Dates</th><th>Scheduled</th><th>Logs</th><th>Progress</th><th>Action</th></tr></thead>
                 <tbody>@forelse($records as $programAssignment)
                     @php($completion = $programAssignment->completionStats())
-                    <tr><td><a class="tl-table-primary-link" href="{{ route('coach.programs.show', $programAssignment->program) }}">{{ $programAssignment->program->title }}</a></td><td>{{ $programAssignment->program->goal ?: '-' }}</td><td><span class="tl-badge {{ $programAssignment->status === 'active' ? 'green' : 'gray' }}">{{ $programAssignment->status }}</span></td><td>{{ $programAssignment->starts_on?->format('Y-m-d') }} to {{ $programAssignment->ends_on?->format('Y-m-d') ?: 'open' }}</td><td>{{ $programAssignment->scheduled_workouts_count }}</td><td>{{ $programAssignment->workout_logs_count }}</td><td><strong>{{ $completion['percent'] }}%</strong><br><span class="tl-muted">{{ $completion['completed'] }}/{{ $completion['total'] }}</span></td><td><a class="btn btn-outline-tl btn-sm" href="{{ route('coach.programs.show', $programAssignment->program) }}">Open</a></td></tr>
+                    <tr><td>@if($programAssignment->program->coach_id === auth()->id())<a class="tl-table-primary-link" href="{{ route('coach.programs.show', $programAssignment->program) }}">{{ $programAssignment->program->title }}</a>@else<strong>{{ $programAssignment->program->title }}</strong>@endif<span class="d-block tl-muted">Coach {{ $programAssignment->program->coach?->name ?: 'Unknown' }}</span></td><td>{{ $programAssignment->program->goal ?: '-' }}</td><td><span class="tl-badge {{ $programAssignment->status === 'active' ? 'green' : 'gray' }}">{{ $programAssignment->status }}</span></td><td>{{ $programAssignment->starts_on?->format('Y-m-d') }} to {{ $programAssignment->ends_on?->format('Y-m-d') ?: 'open' }}</td><td>{{ $programAssignment->scheduled_workouts_count }}</td><td>{{ $programAssignment->workout_logs_count }}</td><td><strong>{{ $completion['percent'] }}%</strong><br><span class="tl-muted">{{ $completion['completed'] }}/{{ $completion['total'] }}</span></td><td>@if($programAssignment->program->coach_id === auth()->id())<a class="btn btn-outline-tl btn-sm" href="{{ route('coach.programs.show', $programAssignment->program) }}">Edit plan</a>@else<span class="tl-muted">Read only</span>@endif</td></tr>
                 @empty<tr><td colspan="8" class="tl-muted">No program assignments match these filters.</td></tr>@endforelse</tbody>
             @elseif($tab === 'schedule')
                 <thead><tr><th>Date</th><th>Session</th><th>Program</th><th>Focus</th><th>Status</th><th>Execution</th><th>Action</th></tr></thead>

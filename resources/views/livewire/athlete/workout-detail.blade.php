@@ -91,7 +91,7 @@
             <button class="btn btn-outline-tl" type="button" wire:click="mark('skipped')" wire:loading.attr="disabled">Skip</button>
             <button class="btn btn-outline-danger" type="button" wire:click="mark('missed')" wire:loading.attr="disabled">Mark missed</button>
             <button class="btn btn-outline-tl" type="button" wire:click="mark('partial')" wire:loading.attr="disabled">Save partial</button>
-            <button class="btn btn-tl" type="button" wire:click="mark('completed')" wire:loading.attr="disabled"><span wire:loading.remove wire:target="mark">Complete workout</span><span wire:loading wire:target="mark">Saving…</span></button>
+            <button class="btn btn-tl" type="button" wire:click="mark('completed')" wire:confirm="Confirm that every prescribed set is complete and finish today’s training?" wire:loading.attr="disabled"><span wire:loading.remove wire:target="mark">Confirm workout complete</span><span wire:loading wire:target="mark">Saving…</span></button>
         </div>
     </x-tl.section-card>
 </div>

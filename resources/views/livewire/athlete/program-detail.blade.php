@@ -14,6 +14,27 @@
         <x-tl.section-card title="Coach note" subtitle="Context attached to this assignment."><p class="mb-0">{{ $assignment->notes }}</p></x-tl.section-card>
     @endif
 
+    @if($assignment->program->phases->isNotEmpty())
+        <x-tl.section-card title="Program phases" subtitle="The progression your coach planned across this assignment.">
+            <div class="row g-3">
+                @foreach($assignment->program->phases as $phase)
+                    <div class="col-md-6 col-xl-4">
+                        <div class="tl-program-card h-100">
+                            <div class="d-flex justify-content-between align-items-start gap-3">
+                                <div>
+                                    <div class="tl-eyebrow">Phase {{ $loop->iteration }}</div>
+                                    <strong>{{ $phase->title }}</strong>
+                                </div>
+                                <span class="tl-badge green">{{ $phase->duration_weeks ?: '-' }} weeks</span>
+                            </div>
+                            <p class="tl-muted small mb-0 mt-3">{{ $phase->description ?: 'No phase notes.' }}</p>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </x-tl.section-card>
+    @endif
+
     <x-tl.table-card title="Workout schedule" subtitle="Every dated workout generated from this program assignment." :count="$workouts->total()" icon="fa-solid fa-calendar-check">
         <div class="d-md-none vstack gap-2">
             @forelse($workouts as $workout)

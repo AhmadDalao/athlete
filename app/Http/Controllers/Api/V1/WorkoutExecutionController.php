@@ -54,6 +54,7 @@ class WorkoutExecutionController extends Controller
                 'notes' => $set['notes'] ?? null,
                 'completed' => $set['completed'],
             ])->all(),
+            'confirmedComplete' => (bool) ($validated['confirmed_complete'] ?? false),
         ], $validated['status']);
 
         return $this->success(new WorkoutResource($workout->fresh()->load([

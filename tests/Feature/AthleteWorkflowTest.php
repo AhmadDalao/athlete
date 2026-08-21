@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Livewire\Athlete\Home;
 use App\Livewire\Athlete\Profile;
 use App\Livewire\Athlete\ProgressPanel;
+use App\Models\CoachAthleteAssignment;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\ProgramAssignment;
@@ -108,6 +109,14 @@ class AthleteWorkflowTest extends TestCase
 
     private function assignedProgram(Organization $organization, User $coach, User $athlete, string $title, string $startsOn): ProgramAssignment
     {
+        CoachAthleteAssignment::firstOrCreate([
+            'organization_id' => $organization->id,
+            'coach_id' => $coach->id,
+            'athlete_id' => $athlete->id,
+        ], [
+            'status' => 'active',
+            'started_at' => today()->toDateString(),
+        ]);
         $program = TrainingProgram::create([
             'organization_id' => $organization->id,
             'coach_id' => $coach->id,

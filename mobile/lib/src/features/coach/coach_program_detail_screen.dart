@@ -26,6 +26,12 @@ class CoachProgramDetailScreen extends ConsumerWidget {
               icon: const Icon(Icons.edit_rounded),
               tooltip: 'Edit program',
             ),
+          if (result.valueOrNull?.text('kind') == 'preset')
+            IconButton(
+              onPressed: () => _duplicate(context, ref),
+              icon: const Icon(Icons.copy_all_outlined),
+              tooltip: 'Duplicate preset',
+            ),
         ],
       ),
       body: result.when(
@@ -42,15 +48,18 @@ class CoachProgramDetailScreen extends ConsumerWidget {
           final phases = program.maps('phases');
           final sessions = program.maps('sessions');
           final assignments = program.maps('assignments');
+          final isPreset = program.text('kind', 'preset') == 'preset';
           return RefreshIndicator(
             onRefresh: () =>
                 ref.refresh(coachProgramProvider(programId).future),
             child: ContentColumn(
               children: [
                 PageIntro(
-                  eyebrow: 'Program template',
+                  eyebrow: isPreset ? 'Reusable preset' : 'Athlete plan',
                   title: program.text('title', 'Program'),
-                  body: program.text('goal', 'No goal has been set.'),
+                  body: isPreset
+                      ? '${program.text('goal', 'No goal has been set.')} Existing athlete plans never auto-sync.'
+                      : '${program.object('athlete').text('name', 'Athlete')} · from ${program.text('source_title', 'legacy program')}',
                 ),
                 PremiumCard(
                   accent: ThroughlineColors.cyan,
@@ -79,7 +88,7 @@ class CoachProgramDetailScreen extends ConsumerWidget {
                   ),
                 ),
                 if (phases.isEmpty)
-                  const EmptyPanel(
+                  EmptyPanel(
                     title: 'No phases',
                     body: 'Add a block to organize the template.',
                   )
@@ -142,47 +151,84 @@ class CoachProgramDetailScreen extends ConsumerWidget {
                     ),
                   ),
                 SectionTitle(
-                  'Assignments',
-                  action: TextButton.icon(
-                    onPressed: () => _assign(context, ref),
-                    icon: const Icon(Icons.person_add_alt_1_rounded),
-                    label: const Text('Assign'),
-                  ),
+                  isPreset ? 'Personalized plans' : 'Plan delivery',
+                  action: isPreset
+                      ? TextButton.icon(
+                          onPressed: () => _assign(context, ref),
+                          icon: const Icon(Icons.person_add_alt_1_rounded),
+                          label: const Text('Personalize'),
+                        )
+                      : null,
                 ),
                 if (assignments.isEmpty)
-                  const EmptyPanel(
+                  EmptyPanel(
                     title: 'Not assigned yet',
-                    body:
-                        'Assign this template to an athlete when it is ready.',
+                    body: isPreset
+                        ? 'Create an athlete-specific draft when the preset is ready.'
+                        : 'This athlete plan has no delivery record.',
                   )
                 else
                   ...assignments.map(
                     (assignment) => PremiumCard(
                       padding: const EdgeInsets.all(16),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  assignment
-                                      .object('athlete')
-                                      .text('name', 'Athlete'),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                  ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      assignment
+                                          .object('athlete')
+                                          .text('name', 'Athlete'),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    Text(
+                                      assignment['published_at'] == null
+                                          ? 'Draft · starts ${assignment.text('starts_on')}'
+                                          : 'Published · starts ${assignment.text('starts_on')}',
+                                      style: const TextStyle(
+                                        color: ThroughlineColors.muted,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                Text(
-                                  'Starts ${assignment.text('starts_on')}',
-                                  style: const TextStyle(
-                                    color: ThroughlineColors.muted,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                              StatusChip(assignment.text('status', 'draft')),
+                            ],
                           ),
-                          StatusChip(assignment.text('status', 'active')),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              if (isPreset)
+                                OutlinedButton.icon(
+                                  onPressed: () =>
+                                      _openAthletePlan(context, assignment),
+                                  icon: const Icon(Icons.edit_outlined),
+                                  label: const Text('Personalize'),
+                                ),
+                              if (assignment['can_publish'] == true)
+                                FilledButton.icon(
+                                  onPressed: () =>
+                                      _publish(context, ref, assignment),
+                                  icon: const Icon(Icons.publish_rounded),
+                                  label: const Text('Publish'),
+                                ),
+                              if (assignment['published_at'] != null)
+                                OutlinedButton(
+                                  onPressed: () =>
+                                      _changeStatus(context, ref, assignment),
+                                  child: const Text('Manage status'),
+                                ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -207,6 +253,125 @@ class CoachProgramDetailScreen extends ConsumerWidget {
       ),
     );
     if (changed != null) ref.invalidate(coachProgramProvider(programId));
+  }
+
+  Future<void> _duplicate(BuildContext context, WidgetRef ref) async {
+    try {
+      final response = await ref
+          .read(apiClientProvider)
+          .post('/coach/programs/$programId/duplicate');
+      final copy = response.object('data');
+      ref.invalidate(coachProgramsProvider);
+      if (!context.mounted) return;
+      await Navigator.push<void>(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              CoachProgramDetailScreen(programId: copy['id'] as int),
+        ),
+      );
+    } on ApiFailure catch (failure) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failure.message)));
+      }
+    }
+  }
+
+  Future<void> _openAthletePlan(
+    BuildContext context,
+    JsonMap assignment,
+  ) async {
+    final planId = assignment.object('program')['id'] as int?;
+    if (planId == null) return;
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CoachProgramDetailScreen(programId: planId),
+      ),
+    );
+  }
+
+  Future<void> _publish(
+    BuildContext context,
+    WidgetRef ref,
+    JsonMap assignment,
+  ) async {
+    try {
+      await ref
+          .read(apiClientProvider)
+          .post('/coach/assignments/${assignment['id']}/publish');
+      ref.invalidate(coachProgramProvider(programId));
+      ref.invalidate(coachProgramsProvider);
+      ref.invalidate(coachScheduleProvider);
+    } on ApiFailure catch (failure) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failure.message)));
+      }
+    }
+  }
+
+  Future<void> _changeStatus(
+    BuildContext context,
+    WidgetRef ref,
+    JsonMap assignment,
+  ) async {
+    final current = assignment.text('status', 'active');
+    final status = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (current == 'active')
+              ListTile(
+                leading: const Icon(Icons.pause_circle_outline),
+                title: const Text('Pause plan'),
+                onTap: () => Navigator.pop(context, 'paused'),
+              ),
+            if (current == 'paused')
+              ListTile(
+                leading: const Icon(Icons.play_circle_outline),
+                title: const Text('Resume plan'),
+                onTap: () => Navigator.pop(context, 'active'),
+              ),
+            if (current != 'completed' && current != 'cancelled')
+              ListTile(
+                leading: const Icon(Icons.task_alt_rounded),
+                title: const Text('Complete plan'),
+                onTap: () => Navigator.pop(context, 'completed'),
+              ),
+            if (current != 'completed' && current != 'cancelled')
+              ListTile(
+                leading: const Icon(Icons.cancel_outlined),
+                title: const Text('Cancel plan'),
+                onTap: () => Navigator.pop(context, 'cancelled'),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (status == null) return;
+    try {
+      await ref
+          .read(apiClientProvider)
+          .patch(
+            '/coach/assignments/${assignment['id']}/status',
+            data: {'status': status},
+          );
+      ref.invalidate(coachProgramProvider(programId));
+      ref.invalidate(coachProgramsProvider);
+      ref.invalidate(coachScheduleProvider);
+    } on ApiFailure catch (failure) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failure.message)));
+      }
+    }
   }
 
   Future<void> _addPhase(BuildContext context, WidgetRef ref) async {
@@ -302,13 +467,22 @@ class CoachProgramDetailScreen extends ConsumerWidget {
       );
       return;
     }
-    final saved = await showModalBottomSheet<bool>(
+    final planId = await showModalBottomSheet<int>(
       context: context,
       isScrollControlled: true,
       builder: (_) =>
           _AssignmentSheet(programId: programId, athletes: athletes),
     );
-    if (saved == true) ref.invalidate(coachProgramProvider(programId));
+    if (planId == null) return;
+    ref.invalidate(coachProgramProvider(programId));
+    ref.invalidate(coachProgramsProvider);
+    if (!context.mounted) return;
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CoachProgramDetailScreen(programId: planId),
+      ),
+    );
   }
 }
 
@@ -733,7 +907,7 @@ class _AssignmentSheetState extends ConsumerState<_AssignmentSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Assign program',
+            'Create athlete plan',
             style: Theme.of(
               context,
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
@@ -763,7 +937,9 @@ class _AssignmentSheetState extends ConsumerState<_AssignmentSheet> {
           const SizedBox(height: 16),
           FilledButton(
             onPressed: _saving || _athleteId == null ? null : _save,
-            child: Text(_saving ? 'Assigning...' : 'Assign and build schedule'),
+            child: Text(
+              _saving ? 'Creating...' : 'Create draft to personalize',
+            ),
           ),
         ],
       ),
@@ -783,17 +959,18 @@ class _AssignmentSheetState extends ConsumerState<_AssignmentSheet> {
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await ref
+      final response = await ref
           .read(apiClientProvider)
           .post(
             '/coach/programs/${widget.programId}/assignments',
             data: {
               'athlete_id': _athleteId,
               'starts_on': _startsOn.toIso8601String().split('T').first,
+              'publish': false,
             },
           );
-      ref.invalidate(coachScheduleProvider);
-      if (mounted) Navigator.pop(context, true);
+      final planId = response.object('data').object('program')['id'] as int?;
+      if (mounted && planId != null) Navigator.pop(context, planId);
     } on ApiFailure catch (failure) {
       if (mounted) {
         ScaffoldMessenger.of(

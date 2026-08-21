@@ -207,7 +207,7 @@ class _WorkoutExecutionScreenState
             const SizedBox(width: 10),
             Expanded(
               child: FilledButton.icon(
-                onPressed: _saving ? null : () => _save('completed'),
+                onPressed: _saving ? null : _confirmAndComplete,
                 icon: _saving
                     ? const SizedBox.square(
                         dimension: 17,
@@ -345,7 +345,7 @@ class _WorkoutExecutionScreenState
             ),
           );
         }
-      } else {
+      } else if (failure.statusCode == null) {
         await _persistLocalDraft(payload);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -356,6 +356,13 @@ class _WorkoutExecutionScreenState
             ),
           );
         }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(failure.message),
+            backgroundColor: ThroughlineColors.danger,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -364,12 +371,48 @@ class _WorkoutExecutionScreenState
 
   JsonMap _payload(String status) => {
     'status': status,
+    'confirmed_complete': status == 'completed',
     'notes': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
     'duration_minutes': int.tryParse(_duration.text),
     'rpe': int.tryParse(_rpe.text),
     'sync_version': _syncVersion,
     'sets': _sets.map((set) => set.toJson()).toList(),
   };
+
+  Future<void> _confirmAndComplete() async {
+    if (_sets.any((set) => !set.completed)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Complete every prescribed set, or save today’s workout as a draft.',
+          ),
+          backgroundColor: ThroughlineColors.danger,
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Finish today’s training?'),
+        content: const Text(
+          'This confirms that every prescribed set is complete and updates your program progress.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep editing'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirm complete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await _save('completed');
+  }
 
   void _scheduleLocalDraft() {
     if (!_hydrated || _saving) return;

@@ -11,6 +11,7 @@ organization role.
 - GoRouter navigation
 - Dio HTTP client
 - SecureStorage for Sanctum tokens
+- LocalAuth for fingerprint and face unlock
 - Drift for offline workout drafts
 - Video Player and CachedNetworkImage for exercise media
 
@@ -39,6 +40,10 @@ flutter test
 flutter build apk --debug
 ```
 
+Production release builds require `android/key.properties` and a private
+keystore outside Git. Use `android/key.properties.example` as the field guide;
+never commit the real keystore or passwords.
+
 ## Access Rules
 
 - Athlete accounts see only their assigned programs, schedule, workouts,
@@ -48,6 +53,14 @@ flutter build apk --debug
 - Platform and organization administration remains web-only.
 - Every request sends the selected organization in `X-Organization-ID`; Laravel
   still validates authorization for every action.
+
+## Session Security
+
+- Ordinary sign-in expires after 12 hours and is cleared when the app restarts.
+- `Keep me signed in` retains an expiring 90-day device token.
+- Biometric unlock is available only with a retained session and never stores
+  the account password.
+- Password reset and explicit sign-out revoke the relevant server token.
 
 ## Offline Behavior
 

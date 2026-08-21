@@ -16,6 +16,16 @@ final athleteProgramsProvider = FutureProvider.autoDispose<JsonMap>((
   return envelope;
 });
 
+final athleteProgramProvider = FutureProvider.autoDispose.family<JsonMap, int>((
+  ref,
+  assignmentId,
+) async {
+  final envelope = await ref
+      .watch(apiClientProvider)
+      .get('/app/programs/$assignmentId');
+  return envelope.object('data');
+});
+
 typedef CalendarQuery = ({String month, String date});
 
 final athleteCalendarProvider = FutureProvider.autoDispose
@@ -102,6 +112,20 @@ final coachAthleteProvider = FutureProvider.autoDispose.family<JsonMap, int>((
       .get('/coach/athletes/$athleteId');
   return envelope.object('data');
 });
+
+final coachAthleteProgressProvider = FutureProvider.autoDispose
+    .family<JsonMap, ({int athleteId, String? from, String? to})>((
+      ref,
+      filters,
+    ) async {
+      final query = <String, dynamic>{};
+      if (filters.from != null) query['from'] = filters.from;
+      if (filters.to != null) query['to'] = filters.to;
+      final envelope = await ref
+          .watch(apiClientProvider)
+          .get('/coach/athletes/${filters.athleteId}', query: query);
+      return envelope.object('data').object('progress_summary');
+    });
 
 final coachInvitationsProvider = FutureProvider.autoDispose<JsonMap>((ref) {
   return ref

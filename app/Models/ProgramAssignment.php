@@ -11,11 +11,11 @@ class ProgramAssignment extends Model
 {
     use BelongsToOrganization;
 
-    protected $fillable = ['organization_id', 'training_program_id', 'athlete_id', 'assigned_by', 'status', 'starts_on', 'ends_on', 'timezone', 'notes'];
+    protected $fillable = ['organization_id', 'training_program_id', 'athlete_id', 'assigned_by', 'status', 'starts_on', 'ends_on', 'timezone', 'notes', 'published_at'];
 
     protected function casts(): array
     {
-        return ['starts_on' => 'date', 'ends_on' => 'date'];
+        return ['starts_on' => 'date', 'ends_on' => 'date', 'published_at' => 'datetime'];
     }
 
     public function program(): BelongsTo

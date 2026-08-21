@@ -61,6 +61,7 @@ Route::middleware(['auth', 'organization'])->group(function (): void {
         Route::get('/users/{user}', Admin\UserDetail::class)->name('users.show');
         Route::get('/coaches', Admin\CoachesTable::class)->middleware('can:coaches.manage')->name('coaches');
         Route::get('/athletes', Admin\AthletesTable::class)->middleware('can:athletes.manage')->name('athletes');
+        Route::get('/roster', Admin\RosterAssignments::class)->middleware('can:roster.assign')->name('roster');
         Route::get('/contact-submissions/export', ContactSubmissionExportController::class)->middleware('can:admin.contacts')->name('contact-submissions.export');
         Route::get('/contact-submissions', Admin\ContactSubmissionsTable::class)->middleware('can:admin.contacts')->name('contact-submissions');
         Route::get('/invitations/export', InvitationExportController::class)->middleware('can:invitations.manage')->name('invitations.export');

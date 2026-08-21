@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\NewAccessToken;
+use Laravel\Sanctum\PersonalAccessToken;
 use Throwable;
 
 class AuthController extends Controller
@@ -35,7 +37,15 @@ class AuthController extends Controller
         }
 
         $user->forceFill(['last_login_at' => now()])->save();
-        $token = $user->createToken((string) $request->string('device_name'), ['mobile'])->plainTextToken;
+        $deviceName = trim((string) $request->string('device_name'));
+        $remembered = $request->boolean('remember_me');
+        $expiresAt = now()->addMinutes((int) config(
+            $remembered ? 'mobile_sessions.remembered_lifetime_minutes' : 'mobile_sessions.standard_lifetime_minutes'
+        ));
+
+        // One live token per app installation keeps the device list accurate and limits token sprawl.
+        $user->tokens()->where('name', $deviceName)->delete();
+        $token = $user->createToken($deviceName, ['mobile'], $expiresAt);
 
         AuditLog::query()->create([
             'organization_id' => $user->current_organization_id,
@@ -49,8 +59,9 @@ class AuthController extends Controller
 
         return response()->json([
             'data' => [
-                'token' => $token,
+                'token' => $token->plainTextToken,
                 'token_type' => 'Bearer',
+                'session' => $this->sessionData($token, $remembered),
                 'user' => UserResource::make($user),
                 'organizations' => OrganizationResource::collection($user->organizations()->wherePivot('status', 'active')->get()),
             ],
@@ -61,10 +72,17 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
+        $accessToken = $request->user()->currentAccessToken();
+        $mobileToken = $accessToken instanceof PersonalAccessToken ? $accessToken : null;
+
         return response()->json([
             'data' => [
                 'user' => UserResource::make($request->user()),
                 'organizations' => OrganizationResource::collection($request->user()->organizations()->wherePivot('status', 'active')->get()),
+                'session' => [
+                    'device_name' => $mobileToken?->name,
+                    'expires_at' => $mobileToken?->expires_at?->toIso8601String(),
+                ],
             ],
             'meta' => (object) [],
             'links' => (object) [],
@@ -152,5 +170,15 @@ class AuthController extends Controller
             'meta' => (object) [],
             'links' => (object) [],
         ]);
+    }
+
+    /** @return array{device_name: string, remembered: bool, expires_at: string} */
+    private function sessionData(NewAccessToken $token, bool $remembered): array
+    {
+        return [
+            'device_name' => $token->accessToken->name,
+            'remembered' => $remembered,
+            'expires_at' => $token->accessToken->expires_at->toIso8601String(),
+        ];
     }
 }

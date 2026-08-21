@@ -8,9 +8,6 @@ use App\Models\CoachProfile;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\PlatformSetting;
-use App\Models\ProgressEntry;
-use App\Models\TrainingProgram;
-use App\Models\TrainingSession;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -19,6 +16,10 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        if (app()->environment('production')) {
+            throw new \RuntimeException('Demo accounts must never be seeded in production.');
+        }
+
         collect([
             'app_name' => 'Throughline',
             'tagline' => 'Coach performance OS',
@@ -148,67 +149,6 @@ class DatabaseSeeder extends Seeder
             'started_at' => now()->toDateString(),
         ]);
 
-        $program = TrainingProgram::query()->create([
-            'organization_id' => $organization->id,
-            'coach_id' => $coach->id,
-            'athlete_id' => $athlete->id,
-            'title' => 'Strength Foundation',
-            'goal' => 'Build repeatable strength habits',
-            'status' => 'active',
-            'starts_on' => now()->startOfWeek()->toDateString(),
-            'ends_on' => now()->addWeeks(4)->toDateString(),
-            'notes' => 'Simple base phase with clear sets and logging.',
-        ]);
-
-        foreach (range(0, 9) as $index) {
-            TrainingSession::query()->create([
-                'organization_id' => $organization->id,
-                'training_program_id' => $program->id,
-                'title' => $index % 2 === 0 ? 'Lower Strength' : 'Upper Strength',
-                'focus' => $index % 2 === 0 ? 'Squat and hinge' : 'Press and pull',
-                'scheduled_on' => now()->startOfWeek()->addDays($index)->toDateString(),
-                'status' => 'scheduled',
-                'media_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                'coach_notes' => 'Log honest reps and stop two reps before form breaks.',
-                'exercises' => [
-                    [
-                        'name' => 'Trap Bar Deadlift',
-                        'sets' => 4,
-                        'reps' => '5',
-                        'rest' => '90 sec',
-                        'load' => 'moderate',
-                        'note' => 'Smooth reps',
-                        'media_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                    ],
-                    [
-                        'name' => 'Goblet Squat',
-                        'sets' => 3,
-                        'reps' => '8',
-                        'rest' => '75 sec',
-                        'load' => 'light',
-                        'note' => 'Control depth',
-                        'media_url' => null,
-                    ],
-                    ['name' => 'Core Carry', 'sets' => 3, 'reps' => '30m', 'rest' => '60 sec', 'load' => 'steady', 'note' => 'Tall posture'],
-                ],
-            ]);
-        }
-
-        foreach (range(0, 14) as $index) {
-            ProgressEntry::query()->updateOrCreate(
-                ['athlete_id' => $athlete->id, 'logged_on' => now()->subDays($index)->toDateString()],
-                [
-                    'organization_id' => $organization->id,
-                    'weight' => 82.5 - ($index * 0.05),
-                    'calories' => 2400 + ($index * 20),
-                    'protein' => 150 + ($index % 5),
-                    'hydration' => 2800 + ($index * 30),
-                    'sleep_quality' => 7,
-                    'soreness' => 3,
-                    'energy' => 8,
-                    'notes' => 'Seeded MVP progress entry.',
-                ]
-            );
-        }
+        $this->call(DemoTrainingSeeder::class);
     }
 }

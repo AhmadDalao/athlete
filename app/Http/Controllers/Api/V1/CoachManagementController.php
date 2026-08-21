@@ -14,6 +14,7 @@ use App\Models\TrainingSession;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\InvitationDeliveryService;
+use App\Services\ProgramPersonalizationService;
 use App\Services\ProgramScheduleService;
 use App\Services\TrainingProgramManager;
 use Illuminate\Database\Eloquent\Builder;
@@ -71,6 +72,18 @@ class CoachManagementController extends Controller
         return $this->success($this->programData($program));
     }
 
+    public function duplicateProgram(
+        Request $request,
+        TrainingProgram $program,
+        ProgramPersonalizationService $personalization,
+    ): JsonResponse {
+        $this->authorizeProgram($request, $program);
+        $data = $request->validate(['title' => ['nullable', 'string', 'max:160']]);
+        $copy = $personalization->duplicatePreset($program, $request->user(), $data['title'] ?? null);
+
+        return $this->success($this->programData($copy), status: 201);
+    }
+
     public function storePhase(Request $request, TrainingProgram $program, AuditLogger $audit): JsonResponse
     {
         $this->authorizeProgram($request, $program);
@@ -116,20 +129,39 @@ class CoachManagementController extends Controller
     public function assignProgram(
         Request $request,
         TrainingProgram $program,
-        ProgramScheduleService $schedule,
+        ProgramPersonalizationService $personalization,
     ): JsonResponse {
         $this->authorizeProgram($request, $program);
         $data = $request->validate([
             'athlete_id' => ['required', 'integer', 'exists:users,id'],
             'starts_on' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'publish' => ['sometimes', 'boolean'],
         ]);
         $athlete = $this->athleteQuery($request)
             ->whereKey($data['athlete_id'])
             ->firstOrFail();
-        $assignment = $schedule->assign($program, $athlete, $request->user(), $data['starts_on'], $data['notes'] ?? null);
+        $assignment = $personalization->personalize(
+            $program,
+            $athlete,
+            $request->user(),
+            $data['starts_on'],
+            $data['notes'] ?? null,
+            $data['publish'] ?? true,
+        );
 
         return $this->success($this->assignmentData($assignment), status: 201);
+    }
+
+    public function publishAssignment(
+        Request $request,
+        ProgramAssignment $assignment,
+        ProgramScheduleService $schedule,
+    ): JsonResponse {
+        $assignment->loadMissing('program');
+        $this->authorizeProgram($request, $assignment->program);
+
+        return $this->success($this->assignmentData($schedule->publish($assignment, $request->user())));
     }
 
     public function assignmentStatus(
@@ -341,19 +373,33 @@ class CoachManagementController extends Controller
     /** @return array<string, mixed> */
     private function programData(TrainingProgram $program): array
     {
-        $program->load(['phases', 'sessions.phase', 'sessions.prescribedExercises', 'assignments.athlete']);
+        $program->load(['athlete', 'source', 'phases', 'sessions.phase', 'sessions.prescribedExercises', 'assignments.athlete']);
+        $assignments = $program->assignments;
+        if ($program->is_template) {
+            $program->load('athletePlans.assignments.athlete');
+            $assignments = $assignments->merge($program->athletePlans->flatMap->assignments);
+        }
+        $primaryAssignment = $program->is_template ? null : $assignments->first();
 
         return [
             'id' => $program->id,
+            'kind' => $program->is_template ? 'preset' : 'athlete_plan',
+            'source_program_id' => $program->source_program_id,
+            'source_title' => $program->source?->title,
+            'athlete' => $program->athlete?->only(['id', 'name', 'email']),
             'title' => $program->title,
             'goal' => $program->goal,
             'status' => $program->status,
+            'assignment_status' => $primaryAssignment?->status,
+            'publication_state' => $program->is_template ? 'preset' : ($primaryAssignment?->published_at ? 'published' : 'draft'),
+            'published_at' => $primaryAssignment?->published_at?->toIso8601String(),
+            'completion' => $program->completionStats(),
             'visibility' => $program->visibility,
             'estimated_weeks' => $program->estimated_weeks,
             'notes' => $program->notes,
             'phases' => $program->phases->map(fn ($phase): array => $phase->only(['id', 'title', 'description', 'duration_weeks', 'sort_order']))->values(),
             'sessions' => $program->sessions->map(fn (TrainingSession $session): array => $this->sessionData($session))->values(),
-            'assignments' => $program->assignments->map(fn (ProgramAssignment $assignment): array => $this->assignmentData($assignment))->values(),
+            'assignments' => $assignments->map(fn (ProgramAssignment $assignment): array => $this->assignmentData($assignment))->values(),
             'updated_at' => $program->updated_at?->toIso8601String(),
         ];
     }
@@ -395,7 +441,7 @@ class CoachManagementController extends Controller
     /** @return array<string, mixed> */
     private function assignmentData(ProgramAssignment $assignment): array
     {
-        $assignment->loadMissing('athlete');
+        $assignment->loadMissing(['athlete', 'program']);
 
         return [
             'id' => $assignment->id,
@@ -404,6 +450,14 @@ class CoachManagementController extends Controller
             'starts_on' => $assignment->starts_on?->toDateString(),
             'ends_on' => $assignment->ends_on?->toDateString(),
             'notes' => $assignment->notes,
+            'published_at' => $assignment->published_at?->toIso8601String(),
+            'can_publish' => $assignment->status === 'draft' && ! $assignment->published_at,
+            'program' => [
+                'id' => $assignment->program->id,
+                'kind' => $assignment->program->is_template ? 'preset' : 'athlete_plan',
+                'source_program_id' => $assignment->program->source_program_id,
+                'title' => $assignment->program->title,
+            ],
             'completion' => $assignment->completionStats(),
         ];
     }

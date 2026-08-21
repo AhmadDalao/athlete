@@ -79,6 +79,7 @@ class WorkoutDetail extends Component
             'setLogs.*.completed' => ['boolean'],
         ]);
 
+        $data['confirmedComplete'] = $status === 'completed';
         $execution->save($this->workout, Auth::user(), $data, $status);
         $this->workout->refresh()->load('executionLog.setLogs');
         session()->flash('status', 'Workout saved as '.$status.'.');

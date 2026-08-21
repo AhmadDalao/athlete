@@ -176,6 +176,30 @@ class MoreScreen extends ConsumerWidget {
             ),
           ),
         ],
+        const SectionTitle('Security'),
+        PremiumCard(
+          padding: EdgeInsets.zero,
+          child: SwitchListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 8,
+            ),
+            secondary: const Icon(Icons.fingerprint_rounded),
+            title: const Text(
+              'Biometric unlock',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            subtitle: Text(
+              auth.keepSignedIn
+                  ? 'Require your fingerprint or face when reopening Throughline.'
+                  : 'Sign in again with “Keep me signed in” to enable this.',
+            ),
+            value: auth.biometricEnabled,
+            onChanged: auth.keepSignedIn
+                ? (enabled) => _setBiometrics(context, ref, enabled)
+                : null,
+          ),
+        ),
         OutlinedButton.icon(
           onPressed: ref.read(authControllerProvider.notifier).logout,
           icon: const Icon(Icons.logout_rounded),
@@ -205,6 +229,25 @@ class MoreScreen extends ConsumerWidget {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _setBiometrics(
+    BuildContext context,
+    WidgetRef ref,
+    bool enabled,
+  ) async {
+    final changed = await ref
+        .read(authControllerProvider.notifier)
+        .setBiometricEnabled(enabled);
+    if (!changed && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Biometric verification was canceled or is unavailable.',
+          ),
+        ),
+      );
     }
   }
 

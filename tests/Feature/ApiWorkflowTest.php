@@ -47,6 +47,7 @@ class ApiWorkflowTest extends TestCase
             ->withHeader('X-Organization-ID', (string) $organization->id)
             ->putJson("/api/v1/app/workouts/{$workout->id}/execution", [
                 'status' => 'completed',
+                'confirmed_complete' => true,
                 'duration_minutes' => 45,
                 'rpe' => 8,
                 'sets' => [[

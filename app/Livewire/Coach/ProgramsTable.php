@@ -7,7 +7,7 @@ use App\Models\TrainingProgram;
 use App\Models\User;
 use App\Queries\Coach\ProgramQuery;
 use App\Services\AuditLogger;
-use App\Services\ProgramScheduleService;
+use App\Services\ProgramPersonalizationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -34,6 +34,8 @@ class ProgramsTable extends Component
 
     public string $listStatus = 'all';
 
+    public string $listKind = 'preset';
+
     public function boot(): void
     {
         abort_unless(Auth::user()?->can('programs.manage'), 403);
@@ -53,7 +55,12 @@ class ProgramsTable extends Component
         $this->resetPage();
     }
 
-    public function createProgram(ProgramScheduleService $schedule, AuditLogger $audit)
+    public function updatedListKind(): void
+    {
+        $this->resetPage();
+    }
+
+    public function createProgram(ProgramPersonalizationService $personalization, AuditLogger $audit)
     {
         $data = $this->validate([
             'athleteId' => ['nullable', 'exists:users,id'],
@@ -90,20 +97,24 @@ class ProgramsTable extends Component
             'duration_weeks' => $data['estimatedWeeks'],
         ]);
 
-        if ($data['athleteId'] && $program->organization_id) {
-            $schedule->assign($program, User::findOrFail($data['athleteId']), $coach, today()->toDateString());
-        }
+        $athletePlan = $data['athleteId'] && $program->organization_id
+            ? $personalization->personalize($program, User::findOrFail($data['athleteId']), $coach, today()->toDateString(), publish: false)->program
+            : null;
 
         $audit->record('program.created', 'training_program', $program->id, "Created reusable program {$program->title}.");
-        session()->flash('status', $data['athleteId'] ? 'Program created and assigned.' : 'Reusable program created.');
+        session()->flash('status', $athletePlan ? 'Preset created. Personalize the athlete plan before publishing.' : 'Reusable preset created.');
 
-        return redirect()->route('coach.programs.show', $program);
+        return redirect()->route('coach.programs.show', $athletePlan ?: $program);
     }
 
     public function render(ProgramQuery $programs)
     {
         $coachId = Auth::id();
-        $query = $programs->build(Auth::user(), ['search' => $this->search, 'status' => $this->listStatus]);
+        $query = $programs->build(Auth::user(), [
+            'search' => $this->search,
+            'status' => $this->listStatus,
+            'kind' => $this->listKind,
+        ]);
 
         return view('livewire.coach.programs-table', [
             'programs' => $this->paginateQuery($this->applySorting($query, 'updated_at')),

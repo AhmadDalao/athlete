@@ -15,6 +15,7 @@ class WorkoutExecutionRequest extends ApiFormRequest
     {
         return [
             'status' => ['required', Rule::in(['completed', 'partial', 'missed', 'skipped'])],
+            'confirmed_complete' => ['required_if:status,completed', 'boolean', 'accepted_if:status,completed'],
             'notes' => ['nullable', 'string', 'max:1500'],
             'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:600'],
             'rpe' => ['nullable', 'integer', 'min:1', 'max:10'],

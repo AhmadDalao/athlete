@@ -18,12 +18,16 @@ class ProgramAssignmentResource extends JsonResource
             'ends_on' => $this->ends_on?->toDateString(),
             'timezone' => $this->timezone,
             'notes' => $this->notes,
+            'published_at' => $this->published_at?->toIso8601String(),
             'completion' => $this->completionStats(),
+            'can_edit' => $program?->coach_id === $request->user()?->id,
             'athlete' => $this->resource->relationLoaded('athlete') && $this->athlete
                 ? new CompactUserResource($this->athlete)
                 : null,
             'program' => $program ? [
                 'id' => $program->id,
+                'kind' => $program->is_template ? 'preset' : 'athlete_plan',
+                'source_program_id' => $program->source_program_id,
                 'title' => $program->title,
                 'goal' => $program->goal,
                 'status' => $program->status,

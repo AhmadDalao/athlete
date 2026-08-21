@@ -11,7 +11,7 @@ class TrainingProgram extends Model
 {
     use BelongsToOrganization;
 
-    protected $fillable = ['organization_id', 'coach_id', 'athlete_id', 'title', 'goal', 'status', 'starts_on', 'ends_on', 'notes', 'is_template', 'visibility', 'estimated_weeks'];
+    protected $fillable = ['organization_id', 'coach_id', 'athlete_id', 'source_program_id', 'title', 'goal', 'status', 'starts_on', 'ends_on', 'notes', 'is_template', 'visibility', 'estimated_weeks'];
 
     protected function casts(): array
     {
@@ -30,6 +30,21 @@ class TrainingProgram extends Model
     public function athlete(): BelongsTo
     {
         return $this->belongsTo(User::class, 'athlete_id');
+    }
+
+    public function source(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'source_program_id');
+    }
+
+    public function derivatives(): HasMany
+    {
+        return $this->hasMany(self::class, 'source_program_id');
+    }
+
+    public function athletePlans(): HasMany
+    {
+        return $this->derivatives()->where('is_template', false);
     }
 
     public function sessions(): HasMany
@@ -52,10 +67,18 @@ class TrainingProgram extends Model
      */
     public function completionStats(): array
     {
-        $logs = $this->assignments
+        if ($this->is_template) {
+            $this->loadMissing('athletePlans.assignments.scheduledWorkouts.logs');
+            $assignments = $this->athletePlans->flatMap->assignments;
+        } else {
+            $this->loadMissing('assignments.scheduledWorkouts.logs');
+            $assignments = $this->assignments;
+        }
+
+        $logs = $assignments
             ->flatMap->scheduledWorkouts
             ->flatMap->logs;
-        $total = $this->assignments->flatMap->scheduledWorkouts->count();
+        $total = $assignments->flatMap->scheduledWorkouts->count();
         $completed = $logs->where('status', 'completed')->count();
 
         if ($total === 0 && $this->athlete_id) {

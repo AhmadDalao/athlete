@@ -30,7 +30,7 @@ class ApiClient {
     );
   }
 
-  final SecureSessionStore _sessionStore;
+  final SessionStore _sessionStore;
   final Dio _dio;
 
   Future<JsonMap> get(String path, {Map<String, dynamic>? query}) =>
@@ -71,7 +71,13 @@ class ApiClient {
   Future<JsonMap> _request(Future<Response<Object?>> Function() request) async {
     try {
       final response = await request();
-      return (response.data as Map).cast<String, dynamic>();
+      final data = response.data;
+      if (data is! Map) {
+        throw const ApiFailure(
+          'Throughline received an invalid response from the server.',
+        );
+      }
+      return data.cast<String, dynamic>();
     } on DioException catch (error) {
       throw ApiFailure.fromDio(error);
     }
@@ -97,17 +103,26 @@ class ApiFailure implements Exception {
     final rawFields = error['fields'] is Map
         ? (error['fields'] as Map).cast<String, dynamic>()
         : <String, dynamic>{};
+    final fields = rawFields.map(
+      (key, value) => MapEntry(
+        key,
+        value is List
+            ? value.map((item) => item.toString()).toList()
+            : <String>[value.toString()],
+      ),
+    );
+    final fieldMessage = fields.values
+        .expand((messages) => messages)
+        .where((message) => message.trim().isNotEmpty)
+        .firstOrNull;
 
     return ApiFailure(
-      error['message'] as String? ?? _fallbackMessage(exception),
+      fieldMessage ??
+          error['message'] as String? ??
+          _fallbackMessage(exception),
       code: error['code'] as String?,
       statusCode: response?.statusCode,
-      fields: rawFields.map(
-        (key, value) => MapEntry(
-          key,
-          (value as List? ?? const []).map((item) => item.toString()).toList(),
-        ),
-      ),
+      fields: fields,
     );
   }
 

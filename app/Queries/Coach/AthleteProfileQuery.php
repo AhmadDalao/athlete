@@ -27,8 +27,7 @@ class AthleteProfileQuery
     {
         return ProgramAssignment::query()
             ->where('athlete_id', $athleteId)
-            ->whereHas('program', fn (Builder $query) => $query->where('coach_id', $coachId))
-            ->with(['program.sessions', 'scheduledWorkouts.logs'])
+            ->with(['program.coach', 'program.sessions', 'scheduledWorkouts.logs'])
             ->withCount(['scheduledWorkouts', 'workoutLogs'])
             ->when($status !== 'all', fn (Builder $query) => $query->where('status', $status))
             ->when($search, fn (Builder $query) => $query->whereHas('program', fn (Builder $query) => $query
@@ -47,8 +46,7 @@ class AthleteProfileQuery
     ): Builder {
         return ScheduledWorkout::query()
             ->where('athlete_id', $athleteId)
-            ->where('coach_id', $coachId)
-            ->with(['session.program', 'logs', 'assignment'])
+            ->with(['coach', 'session.program', 'logs', 'assignment'])
             ->when($status !== 'all', fn (Builder $query) => $query->where('status', $status))
             ->when($from, fn (Builder $query) => $query->whereDate('scheduled_for', '>=', $from))
             ->when($to, fn (Builder $query) => $query->whereDate('scheduled_for', '<=', $to))
@@ -71,11 +69,6 @@ class AthleteProfileQuery
         return WorkoutLog::query()
             ->where('athlete_id', $athleteId)
             ->with(['session.program', 'setLogs', 'scheduledWorkout'])
-            ->where(fn (Builder $query) => $query
-                ->whereHas('scheduledWorkout', fn (Builder $query) => $query->where('coach_id', $coachId))
-                ->orWhere(fn (Builder $query) => $query
-                    ->whereNull('scheduled_workout_id')
-                    ->whereHas('session.program', fn (Builder $query) => $query->where('coach_id', $coachId))))
             ->when($status !== 'all', fn (Builder $query) => $query->where('status', $status))
             ->when($from, fn (Builder $query) => $query->whereDate('created_at', '>=', $from))
             ->when($to, fn (Builder $query) => $query->whereDate('created_at', '<=', $to))

@@ -5,9 +5,11 @@ namespace App\Livewire\Coach;
 use App\Livewire\Forms\TrainingProgramForm;
 use App\Livewire\Forms\TrainingSessionForm;
 use App\Models\Exercise;
+use App\Models\ProgramAssignment;
 use App\Models\TrainingProgram;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\ProgramPersonalizationService;
 use App\Services\ProgramScheduleService;
 use App\Services\TrainingProgramManager;
 use Illuminate\Database\Eloquent\Builder;
@@ -63,7 +65,18 @@ class ProgramDetail extends Component
     {
         $this->program = $manager->updateProgram($this->program, $this->programForm->payload());
         $this->programForm->fillFrom($this->program);
-        session()->flash('status', 'Program template updated. Existing athlete schedule dates were not changed.');
+        session()->flash('status', $this->program->is_template
+            ? 'Preset updated. Existing athlete plans were not changed.'
+            : 'Personalized athlete plan updated. Completed workout history was not changed.');
+    }
+
+    public function duplicateProgram(ProgramPersonalizationService $personalization)
+    {
+        abort_unless($this->program->is_template, 422);
+        $copy = $personalization->duplicatePreset($this->program, Auth::user());
+        session()->flash('status', 'Preset duplicated as a new draft.');
+
+        return redirect()->route('coach.programs.show', $copy);
     }
 
     public function archiveProgram(TrainingProgramManager $manager)
@@ -108,7 +121,9 @@ class ProgramDetail extends Component
     {
         $manager->createSession($this->program, $this->sessionForm->payload());
         $this->sessionForm->clear();
-        session()->flash('status', 'Template session added and active assignments synchronized.');
+        session()->flash('status', $this->program->is_template
+            ? 'Session added to the preset. Existing athlete plans were not changed.'
+            : 'Session added and the published athlete calendar was updated.');
     }
 
     public function addSessionExercise(): void
@@ -123,7 +138,7 @@ class ProgramDetail extends Component
 
     public function startEditSession(int $sessionId): void
     {
-        $session = $this->program->sessions()->whereKey($sessionId)->firstOrFail();
+        $session = $this->program->sessions()->where('status', '!=', 'cancelled')->whereKey($sessionId)->firstOrFail();
         $this->editingSessionId = $session->id;
         $this->editSessionForm->fillFrom($session);
     }
@@ -173,7 +188,9 @@ class ProgramDetail extends Component
         abort_unless($this->editingSessionId !== null, 404);
         $manager->updateSession($this->program, $this->editingSessionId, $this->editSessionForm->payload());
         $this->cancelEditSession();
-        session()->flash('status', 'Template session and open athlete schedules updated.');
+        session()->flash('status', $this->program->is_template
+            ? 'Preset session updated. Existing athlete plans were not changed.'
+            : 'Future unlogged workouts were updated. Execution history remains frozen.');
     }
 
     public function deleteSession(int $sessionId, TrainingProgramManager $manager): void
@@ -184,23 +201,38 @@ class ProgramDetail extends Component
             : 'Session deleted.');
     }
 
-    public function assignProgram(ProgramScheduleService $schedule): void
+    public function assignProgram(ProgramPersonalizationService $personalization)
     {
+        abort_unless($this->program->is_template, 422);
         $data = $this->validate([
             'assignmentAthleteId' => ['required', 'exists:users,id'],
             'assignmentStartsOn' => ['required', 'date'],
             'assignmentNotes' => ['nullable', 'string', 'max:1000'],
         ]);
         $athlete = $this->availableAthletes()->findOrFail($data['assignmentAthleteId']);
-        $schedule->assign($this->program, $athlete, Auth::user(), $data['assignmentStartsOn'], $data['assignmentNotes']);
-        $this->reset(['assignmentAthleteId', 'assignmentNotes']);
-        $this->assignmentStartsOn = today()->toDateString();
-        session()->flash('status', 'Program assigned and schedule generated.');
+        $assignment = $personalization->personalize(
+            $this->program,
+            $athlete,
+            Auth::user(),
+            $data['assignmentStartsOn'],
+            $data['assignmentNotes'],
+            false,
+        );
+        session()->flash('status', 'Athlete plan created. Personalize it, then publish the schedule.');
+
+        return redirect()->route('coach.programs.show', $assignment->program);
+    }
+
+    public function publishAssignment(int $assignmentId, ProgramScheduleService $schedule): void
+    {
+        $assignment = $this->assignmentQuery()->whereKey($assignmentId)->firstOrFail();
+        $schedule->publish($assignment, Auth::user());
+        session()->flash('status', 'Athlete plan published and calendar generated.');
     }
 
     public function setAssignmentStatus(int $assignmentId, string $status, ProgramScheduleService $schedule): void
     {
-        $assignment = $this->program->assignments()->whereKey($assignmentId)->firstOrFail();
+        $assignment = $this->assignmentQuery()->whereKey($assignmentId)->firstOrFail();
         $schedule->setAssignmentStatus($assignment, $status);
         session()->flash('status', 'Assignment status updated.');
     }
@@ -214,8 +246,8 @@ class ProgramDetail extends Component
                 ->orderBy('sort_order')
                 ->paginate(10, ['*'], 'sessionsPage'),
             'phases' => $this->program->phases()->withCount('sessions')->get(),
-            'assignments' => $this->program->assignments()
-                ->with('athlete')
+            'assignments' => $this->assignmentQuery()
+                ->with(['athlete', 'program'])
                 ->withCount(['scheduledWorkouts', 'workoutLogs'])
                 ->paginate(10, ['*'], 'assignmentsPage'),
             'athletes' => $this->availableAthletes()->orderBy('name')->get(),
@@ -233,5 +265,15 @@ class ProgramDetail extends Component
             ->whereHas('athleteAssignments', fn (Builder $query) => $query
                 ->where('coach_id', Auth::id())
                 ->where('status', 'active'));
+    }
+
+    private function assignmentQuery(): Builder
+    {
+        return ProgramAssignment::query()
+            ->whereHas('program', fn (Builder $query) => $query
+                ->where('coach_id', Auth::id())
+                ->where(fn (Builder $query) => $query
+                    ->whereKey($this->program->id)
+                    ->when($this->program->is_template, fn (Builder $query) => $query->orWhere('source_program_id', $this->program->id))));
     }
 }

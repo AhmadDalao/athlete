@@ -12,6 +12,7 @@
                 ['route' => 'admin.users', 'active' => 'admin.users*', 'icon' => 'fa-users', 'label' => 'All users', 'permission' => 'users.manage'],
                 ['route' => 'admin.coaches', 'active' => 'admin.coaches*', 'icon' => 'fa-user-tie', 'label' => 'Coaches', 'permission' => 'coaches.manage'],
                 ['route' => 'admin.athletes', 'active' => 'admin.athletes*', 'icon' => 'fa-person-running', 'label' => 'Athletes', 'permission' => 'athletes.manage'],
+                ['route' => 'admin.roster', 'active' => 'admin.roster*', 'icon' => 'fa-people-arrows', 'label' => 'Roster assignments', 'permission' => 'roster.assign'],
                 ['route' => 'admin.invitations', 'active' => 'admin.invitations*', 'icon' => 'fa-paper-plane', 'label' => 'Invitations', 'permission' => 'invitations.manage'],
             ],
             'Control' => [

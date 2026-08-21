@@ -71,6 +71,15 @@ class RebuildSmokeTest extends TestCase
             OrganizationMembership::create(['organization_id' => $organization->id, 'user_id' => $user->id, 'role' => $role, 'status' => 'active', 'joined_at' => now()]);
             $user->forceFill(['current_organization_id' => $organization->id])->saveQuietly();
         }
+        foreach ([$athlete, $otherAthlete] as $assignedAthlete) {
+            CoachAthleteAssignment::create([
+                'organization_id' => $organization->id,
+                'coach_id' => $coach->id,
+                'athlete_id' => $assignedAthlete->id,
+                'status' => 'active',
+                'started_at' => today()->toDateString(),
+            ]);
+        }
 
         $program = TrainingProgram::create([
             'organization_id' => $organization->id,
@@ -105,6 +114,13 @@ class RebuildSmokeTest extends TestCase
             OrganizationMembership::create(['organization_id' => $organization->id, 'user_id' => $user->id, 'role' => $role, 'status' => 'active', 'joined_at' => now()]);
             $user->forceFill(['current_organization_id' => $organization->id])->saveQuietly();
         }
+        CoachAthleteAssignment::create([
+            'organization_id' => $organization->id,
+            'coach_id' => $coach->id,
+            'athlete_id' => $athlete->id,
+            'status' => 'active',
+            'started_at' => today()->toDateString(),
+        ]);
 
         $program = TrainingProgram::create([
             'organization_id' => $organization->id,
@@ -163,7 +179,7 @@ class RebuildSmokeTest extends TestCase
             ->assertHasNoErrors();
 
         $this->assertDatabaseHas('workout_logs', [
-            'training_session_id' => $session->id,
+            'training_session_id' => $workout->training_session_id,
             'athlete_id' => $athlete->id,
             'status' => 'completed',
             'duration_minutes' => 48,
@@ -293,17 +309,19 @@ class RebuildSmokeTest extends TestCase
             ->call('createProgram')
             ->assertHasNoErrors();
 
-        $program = TrainingProgram::where('title', 'Speed Foundation')->firstOrFail();
+        $program = TrainingProgram::where('title', 'Speed Foundation')->where('is_template', true)->firstOrFail();
+        $athletePlan = TrainingProgram::where('source_program_id', $program->id)->firstOrFail();
 
-        $component->assertRedirect(route('coach.programs.show', $program));
+        $component->assertRedirect(route('coach.programs.show', $athletePlan));
         $this->assertSame($coach->id, $program->coach_id);
         $this->assertNull($program->athlete_id);
         $this->assertTrue($program->is_template);
         $this->assertDatabaseHas('program_assignments', [
             'organization_id' => $organization->id,
-            'training_program_id' => $program->id,
+            'training_program_id' => $athletePlan->id,
             'athlete_id' => $athlete->id,
-            'status' => 'active',
+            'status' => 'draft',
+            'published_at' => null,
         ]);
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'program.created',
