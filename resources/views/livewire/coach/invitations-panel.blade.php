@@ -22,14 +22,14 @@
         icon="fa-solid fa-paper-plane"
     >
         <div class="tl-table-wrap"><table class="table tl-table align-middle">
-            <thead><tr><th>Athlete</th><th>Status</th><th>Expires</th><th>Accept link</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Athlete</th><th>Status</th><th>Expires</th><th>Delivery</th><th>Actions</th></tr></thead>
             <tbody>
             @forelse($invitations as $invite)
                 <tr>
                     <td><strong>{{ $invite->name ?: 'No name' }}</strong><br><span class="tl-muted">{{ $invite->email }}</span></td>
                     <td><span class="tl-badge {{ $invite->status === 'pending' ? 'gold' : 'gray' }}">{{ $invite->status }}</span></td>
                     <td>{{ $invite->expires_at->format('Y-m-d') }}</td>
-                    <td><code>{{ route('invites.accept', $invite->token) }}</code></td>
+                    <td><span class="tl-badge green"><i class="fa-solid fa-lock"></i> Secure email link</span><span class="d-block tl-muted">Token hidden</span></td>
                     <td>
                         @if($invite->status === 'pending')
                             <button class="btn btn-outline-tl btn-sm" wire:click="resend({{ $invite->id }})">Resend</button>

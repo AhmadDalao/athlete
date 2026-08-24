@@ -203,6 +203,7 @@ class ProgramDetail extends Component
 
     public function assignProgram(ProgramPersonalizationService $personalization)
     {
+        abort_unless(Auth::user()?->can('programs.assign'), 403);
         abort_unless($this->program->is_template, 422);
         $data = $this->validate([
             'assignmentAthleteId' => ['required', 'exists:users,id'],
@@ -225,6 +226,7 @@ class ProgramDetail extends Component
 
     public function publishAssignment(int $assignmentId, ProgramScheduleService $schedule): void
     {
+        abort_unless(Auth::user()?->can('programs.assign'), 403);
         $assignment = $this->assignmentQuery()->whereKey($assignmentId)->firstOrFail();
         $schedule->publish($assignment, Auth::user());
         session()->flash('status', 'Athlete plan published and calendar generated.');
@@ -232,6 +234,7 @@ class ProgramDetail extends Component
 
     public function setAssignmentStatus(int $assignmentId, string $status, ProgramScheduleService $schedule): void
     {
+        abort_unless(Auth::user()?->can('programs.assign'), 403);
         $assignment = $this->assignmentQuery()->whereKey($assignmentId)->firstOrFail();
         $schedule->setAssignmentStatus($assignment, $status);
         session()->flash('status', 'Assignment status updated.');

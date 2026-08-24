@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AuthController extends Controller
@@ -21,6 +22,7 @@ class AuthController extends Controller
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
         ]);
+        $credentials['email'] = Str::lower(trim($credentials['email']));
 
         if (! Auth::attempt([...$credentials, 'status' => 'active'], $request->boolean('remember'))) {
             return back()->withErrors(['email' => 'These credentials do not match an active account.'])->onlyInput('email');

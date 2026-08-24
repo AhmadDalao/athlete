@@ -5,7 +5,9 @@
         :subtitle="$athlete->email.' · '.($athlete->primary_goal ?: 'No goal set')"
     >
         <x-slot:actions>
-            <a class="btn btn-tl" href="{{ route('coach.programs', ['athlete' => $athlete->id]) }}"><i class="fa-solid fa-plus"></i> Assign program</a>
+            @if(auth()->user()->can('programs.assign') && auth()->user()->can('programs.manage'))
+                <a class="btn btn-tl" href="{{ route('coach.programs', ['athlete' => $athlete->id]) }}"><i class="fa-solid fa-plus"></i> Assign program</a>
+            @endif
             @can('messages.send')
                 <a class="btn btn-outline-tl" href="{{ route('coach.messages', ['user' => $athlete->id]) }}"><i class="fa-regular fa-message"></i> Message</a>
             @endcan
@@ -17,9 +19,12 @@
         <div class="col-6 col-xl-3"><x-tl.metric-card icon="fa-solid fa-dumbbell" label="Programs" :value="$counts['programs']" tone="lime" /></div>
         <div class="col-6 col-xl-3"><x-tl.metric-card icon="fa-solid fa-calendar-check" label="Scheduled workouts" :value="$counts['schedule']" tone="emerald" /></div>
         <div class="col-6 col-xl-3"><x-tl.metric-card icon="fa-solid fa-clipboard-check" label="Workout logs" :value="$counts['workouts']" tone="gold" /></div>
-        <div class="col-6 col-xl-3"><x-tl.metric-card icon="fa-solid fa-chart-line" label="Progress logs" :value="$counts['progress']" tone="blue" /></div>
+        @can('progress.review')
+            <div class="col-6 col-xl-3"><x-tl.metric-card icon="fa-solid fa-chart-line" label="Progress logs" :value="$counts['progress']" tone="blue" /></div>
+        @endcan
     </div>
 
+    @can('progress.review')
     <x-tl.section-card eyebrow="Performance window" :title="$progressSummary['period']['from'].' to '.$progressSummary['period']['to']" subtitle="Use the date filters below to recalculate adherence, workload, recovery, records, and photos.">
         <div class="row g-3">
             <div class="col-6 col-xl-2"><x-tl.metric-card icon="fa-solid fa-bullseye" label="Adherence" :value="$progressSummary['adherence']['percent'].'%'" tone="lime" /></div>
@@ -37,9 +42,10 @@
             <span>{{ $progressSummary['counts']['photos'] }} progress photos</span>
         </div>
     </x-tl.section-card>
+    @endcan
 
     <nav class="tl-record-tabs mb-3" aria-label="Athlete record sections">
-        @foreach([
+        @foreach(collect([
             'programs' => ['fa-dumbbell', 'Programs'],
             'schedule' => ['fa-calendar-days', 'Schedule'],
             'workouts' => ['fa-clipboard-check', 'Workouts'],
@@ -47,7 +53,7 @@
             'photos' => ['fa-images', 'Photos'],
             'records' => ['fa-trophy', 'Records'],
             'notes' => ['fa-note-sticky', 'Coach notes'],
-        ] as $key => [$icon, $label])
+        ])->only($availableTabs) as $key => [$icon, $label])
             <button class="{{ $tab === $key ? 'active' : '' }}" type="button" wire:click="selectTab('{{ $key }}')">
                 <i class="fa-solid {{ $icon }}"></i><span>{{ $label }}</span><small>{{ $counts[$key] }}</small>
             </button>

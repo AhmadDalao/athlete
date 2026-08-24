@@ -81,9 +81,9 @@ Route::prefix('v1')->group(function (): void {
             Route::post('/programs/{program}/phases', [CoachManagementController::class, 'storePhase'])->middleware('can:programs.manage');
             Route::post('/programs/{program}/sessions', [CoachManagementController::class, 'storeSession'])->middleware('can:programs.manage');
             Route::put('/programs/{program}/sessions/{session}', [CoachManagementController::class, 'updateSession'])->middleware('can:programs.manage');
-            Route::post('/programs/{program}/assignments', [CoachManagementController::class, 'assignProgram'])->middleware('can:programs.manage');
-            Route::post('/assignments/{assignment}/publish', [CoachManagementController::class, 'publishAssignment'])->middleware('can:programs.manage');
-            Route::patch('/assignments/{assignment}/status', [CoachManagementController::class, 'assignmentStatus'])->middleware('can:programs.manage');
+            Route::post('/programs/{program}/assignments', [CoachManagementController::class, 'assignProgram'])->middleware('can:programs.assign');
+            Route::post('/assignments/{assignment}/publish', [CoachManagementController::class, 'publishAssignment'])->middleware('can:programs.assign');
+            Route::patch('/assignments/{assignment}/status', [CoachManagementController::class, 'assignmentStatus'])->middleware('can:programs.assign');
             Route::get('/schedule', [CoachAppController::class, 'schedule'])->middleware('can:schedule.manage');
             Route::patch('/schedule/{workout}/reschedule', [CoachManagementController::class, 'reschedule'])->middleware('can:schedule.manage');
             Route::get('/exercises', [CoachManagementController::class, 'exercises'])->middleware('can:exercises.manage');

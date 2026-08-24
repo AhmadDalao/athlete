@@ -8,6 +8,7 @@ class AppUser {
     required this.platformRole,
     required this.organizationRole,
     required this.theme,
+    this.permissions = const [],
     this.avatarUrl,
     this.phone,
     this.bio,
@@ -21,6 +22,9 @@ class AppUser {
     platformRole: json['platform_role'] as String? ?? '',
     organizationRole: json['organization_role'] as String?,
     theme: json['theme_preference'] as String? ?? 'system',
+    permissions: (json['permissions'] as List? ?? const [])
+        .map((permission) => permission.toString())
+        .toList(growable: false),
     avatarUrl: json['avatar_url'] as String?,
     phone: json['phone'] as String?,
     bio: json['bio'] as String?,
@@ -33,6 +37,7 @@ class AppUser {
   final String platformRole;
   final String? organizationRole;
   final String theme;
+  final List<String> permissions;
   final String? avatarUrl;
   final String? phone;
   final String? bio;
@@ -41,6 +46,7 @@ class AppUser {
   bool get isAthlete => organizationRole == 'athlete';
   bool get isCoach => organizationRole == 'coach';
   bool get supportsMobile => isAthlete || isCoach;
+  bool can(String permission) => permissions.contains(permission);
 }
 
 class AppOrganization {

@@ -29,48 +29,58 @@ class _RoleHomeShellState extends ConsumerState<RoleHomeShell> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
-    final notificationEnvelope = ref.watch(notificationsProvider).asData?.value;
-    final unreadNotifications =
-        notificationEnvelope?.object('meta')['unread'] as int? ?? 0;
     final user = auth.user;
     if (user == null) return const SizedBox.shrink();
     if (!user.supportsMobile) return _UnsupportedRole(userName: user.name);
 
+    final canReadNotifications = user.can('notifications.read');
+    final notificationEnvelope = canReadNotifications
+        ? ref.watch(notificationsProvider).asData?.value
+        : null;
+    final unreadNotifications =
+        notificationEnvelope?.object('meta')['unread'] as int? ?? 0;
+
     final coach = user.isCoach;
     final pages = coach
-        ? const [
-            CoachHomeScreen(),
-            CoachRosterScreen(),
-            CoachProgramsScreen(),
-            CoachScheduleScreen(),
-            MessagesScreen(),
-            MoreScreen(),
+        ? <Widget>[
+            const CoachHomeScreen(),
+            if (user.can('athletes.view')) const CoachRosterScreen(),
+            if (user.can('programs.manage')) const CoachProgramsScreen(),
+            if (user.can('schedule.manage')) const CoachScheduleScreen(),
+            if (user.can('messages.read')) const MessagesScreen(),
+            const MoreScreen(),
           ]
-        : const [
-            AthleteHomeScreen(),
-            AthleteCalendarScreen(),
-            AthleteProgramsScreen(),
-            ProgressScreen(),
-            MessagesScreen(),
-            MoreScreen(),
+        : <Widget>[
+            const AthleteHomeScreen(),
+            const AthleteCalendarScreen(),
+            const AthleteProgramsScreen(),
+            const ProgressScreen(),
+            if (user.can('messages.read')) const MessagesScreen(),
+            const MoreScreen(),
           ];
     final destinations = coach
-        ? const [
-            _Destination(Icons.home_rounded, 'Home'),
-            _Destination(Icons.groups_2_rounded, 'Roster'),
-            _Destination(Icons.fitness_center_rounded, 'Programs'),
-            _Destination(Icons.calendar_month_rounded, 'Schedule'),
-            _Destination(Icons.forum_rounded, 'Messages'),
-            _Destination(Icons.menu_rounded, 'More'),
+        ? <_Destination>[
+            const _Destination(Icons.home_rounded, 'Home'),
+            if (user.can('athletes.view'))
+              const _Destination(Icons.groups_2_rounded, 'Roster'),
+            if (user.can('programs.manage'))
+              const _Destination(Icons.fitness_center_rounded, 'Programs'),
+            if (user.can('schedule.manage'))
+              const _Destination(Icons.calendar_month_rounded, 'Schedule'),
+            if (user.can('messages.read'))
+              const _Destination(Icons.forum_rounded, 'Messages'),
+            const _Destination(Icons.menu_rounded, 'More'),
           ]
-        : const [
-            _Destination(Icons.home_rounded, 'Home'),
-            _Destination(Icons.calendar_month_rounded, 'Schedule'),
-            _Destination(Icons.fitness_center_rounded, 'Workouts'),
-            _Destination(Icons.query_stats_rounded, 'Progress'),
-            _Destination(Icons.forum_rounded, 'Messages'),
-            _Destination(Icons.menu_rounded, 'More'),
+        : <_Destination>[
+            const _Destination(Icons.home_rounded, 'Home'),
+            const _Destination(Icons.calendar_month_rounded, 'Schedule'),
+            const _Destination(Icons.fitness_center_rounded, 'Workouts'),
+            const _Destination(Icons.query_stats_rounded, 'Progress'),
+            if (user.can('messages.read'))
+              const _Destination(Icons.forum_rounded, 'Messages'),
+            const _Destination(Icons.menu_rounded, 'More'),
           ];
+    final selectedIndex = _index < pages.length ? _index : 0;
     AppOrganization? activeOrganization;
     for (final organization in auth.organizations) {
       if (organization.id == auth.activeOrganizationId) {
@@ -90,19 +100,20 @@ class _RoleHomeShellState extends ConsumerState<RoleHomeShell> {
         ),
         title: const ThroughlineMark(compact: true),
         actions: [
-          IconButton(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-            ),
-            icon: Badge(
-              isLabelVisible: unreadNotifications > 0,
-              label: Text(
-                unreadNotifications > 99 ? '99+' : '$unreadNotifications',
+          if (canReadNotifications)
+            IconButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
               ),
-              child: const Icon(Icons.notifications_none_rounded),
+              icon: Badge(
+                isLabelVisible: unreadNotifications > 0,
+                label: Text(
+                  unreadNotifications > 99 ? '99+' : '$unreadNotifications',
+                ),
+                child: const Icon(Icons.notifications_none_rounded),
+              ),
+              tooltip: 'Notifications',
             ),
-            tooltip: 'Notifications',
-          ),
           if (activeOrganization != null)
             Padding(
               padding: const EdgeInsets.only(right: 14),
@@ -121,22 +132,26 @@ class _RoleHomeShellState extends ConsumerState<RoleHomeShell> {
         ],
       ),
       drawer: _AppDrawer(
-        currentIndex: _index,
+        currentIndex: selectedIndex,
         destinations: destinations,
         onSelect: (value) {
           setState(() => _index = value);
           Navigator.of(context).pop();
         },
-        onNotifications: () {
-          Navigator.of(context).pop();
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-          );
-        },
+        onNotifications: canReadNotifications
+            ? () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const NotificationsScreen(),
+                  ),
+                );
+              }
+            : null,
       ),
-      body: IndexedStack(index: _index, children: pages),
+      body: IndexedStack(index: selectedIndex, children: pages),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
+        selectedIndex: selectedIndex,
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         onDestinationSelected: (value) => setState(() => _index = value),
         destinations: [
@@ -162,7 +177,7 @@ class _AppDrawer extends ConsumerWidget {
   final int currentIndex;
   final List<_Destination> destinations;
   final ValueChanged<int> onSelect;
-  final VoidCallback onNotifications;
+  final VoidCallback? onNotifications;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -212,18 +227,20 @@ class _AppDrawer extends ConsumerWidget {
                       ),
                       onTap: () => onSelect(index),
                     ),
-                  const Divider(height: 24),
-                  ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                  if (onNotifications != null) ...[
+                    const Divider(height: 24),
+                    ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      leading: const Icon(Icons.notifications_none_rounded),
+                      title: const Text(
+                        'Notifications',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      onTap: onNotifications,
                     ),
-                    leading: const Icon(Icons.notifications_none_rounded),
-                    title: const Text(
-                      'Notifications',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    onTap: onNotifications,
-                  ),
+                  ],
                 ],
               ),
             ),

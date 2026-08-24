@@ -8,6 +8,7 @@ import 'package:throughline_mobile/src/core/models/session_models.dart';
 import 'package:throughline_mobile/src/core/providers.dart';
 import 'package:throughline_mobile/src/core/theme/app_theme.dart';
 import 'package:throughline_mobile/src/core/widgets/throughline_widgets.dart';
+import 'package:throughline_mobile/src/features/auth/auth_controller.dart';
 import 'package:throughline_mobile/src/features/coach/coach_program_detail_screen.dart';
 
 class CoachAthleteDetailScreen extends ConsumerWidget {
@@ -17,6 +18,10 @@ class CoachAthleteDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authControllerProvider).user;
+    final canManagePrograms = user?.can('programs.manage') == true;
+    final canManageNotes = user?.can('athletes.notes') == true;
+    final canReviewProgress = user?.can('progress.review') == true;
     final result = ref.watch(coachAthleteProvider(athleteId));
     return Scaffold(
       appBar: AppBar(title: const Text('Athlete review')),
@@ -58,10 +63,11 @@ class CoachAthleteDetailScreen extends ConsumerWidget {
                   title: athlete.text('name', 'Athlete'),
                   body: athlete.text('email'),
                 ),
-                _ProgressSummaryPanel(
-                  athleteId: athleteId,
-                  initialSummary: summary,
-                ),
+                if (canReviewProgress)
+                  _ProgressSummaryPanel(
+                    athleteId: athleteId,
+                    initialSummary: summary,
+                  ),
                 PremiumCard(
                   accent: ThroughlineColors.lime,
                   child: Wrap(
@@ -87,25 +93,30 @@ class CoachAthleteDetailScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: () => _addNote(context, ref, athlete),
-                        icon: const Icon(Icons.note_add_outlined),
-                        label: const Text('Add note'),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _uploadPhoto(context, ref, athlete),
-                        icon: const Icon(Icons.add_a_photo_outlined),
-                        label: const Text('Add photo'),
-                      ),
-                    ),
-                  ],
-                ),
+                if (canManageNotes || canReviewProgress)
+                  Row(
+                    children: [
+                      if (canManageNotes)
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: () => _addNote(context, ref, athlete),
+                            icon: const Icon(Icons.note_add_outlined),
+                            label: const Text('Add note'),
+                          ),
+                        ),
+                      if (canManageNotes && canReviewProgress)
+                        const SizedBox(width: 10),
+                      if (canReviewProgress)
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () =>
+                                _uploadPhoto(context, ref, athlete),
+                            icon: const Icon(Icons.add_a_photo_outlined),
+                            label: const Text('Add photo'),
+                          ),
+                        ),
+                    ],
+                  ),
                 const SectionTitle('Assigned programs'),
                 if (programs.isEmpty)
                   const EmptyPanel(
@@ -140,7 +151,8 @@ class CoachAthleteDetailScreen extends ConsumerWidget {
                             ),
                           ),
                           StatusChip(assignment.text('status', 'active')),
-                          if (assignment['can_edit'] == true)
+                          if (canManagePrograms &&
+                              assignment['can_edit'] == true)
                             IconButton(
                               onPressed: () => Navigator.push<void>(
                                 context,
@@ -226,14 +238,14 @@ class CoachAthleteDetailScreen extends ConsumerWidget {
                       ),
                     );
                   }),
-                const SectionTitle('Recent progress'),
-                if (progress.isEmpty)
+                if (canReviewProgress) const SectionTitle('Recent progress'),
+                if (canReviewProgress && progress.isEmpty)
                   const EmptyPanel(
                     title: 'No check-ins yet',
                     body:
                         'Progress entries appear here after the athlete logs them.',
                   )
-                else
+                else if (canReviewProgress)
                   ...progress
                       .take(10)
                       .map(
@@ -267,14 +279,14 @@ class CoachAthleteDetailScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
-                const SectionTitle('Coach notes'),
-                if (notes.isEmpty)
+                if (canManageNotes) const SectionTitle('Coach notes'),
+                if (canManageNotes && notes.isEmpty)
                   const EmptyPanel(
                     title: 'No coach notes',
                     body: 'Private review notes stay attached to this athlete.',
                     icon: Icons.sticky_note_2_outlined,
                   )
-                else
+                else if (canManageNotes)
                   ...notes.map(
                     (note) => PremiumCard(
                       padding: const EdgeInsets.all(16),
@@ -340,15 +352,15 @@ class CoachAthleteDetailScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                const SectionTitle('Progress photos'),
-                if (photos.isEmpty)
+                if (canReviewProgress) const SectionTitle('Progress photos'),
+                if (canReviewProgress && photos.isEmpty)
                   const EmptyPanel(
                     title: 'No progress photos',
                     body:
                         'Athlete and coach uploads appear here with permission controls.',
                     icon: Icons.photo_library_outlined,
                   )
-                else
+                else if (canReviewProgress)
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -405,14 +417,14 @@ class CoachAthleteDetailScreen extends ConsumerWidget {
                       );
                     },
                   ),
-                const SectionTitle('Personal records'),
-                if (records.isEmpty)
+                if (canReviewProgress) const SectionTitle('Personal records'),
+                if (canReviewProgress && records.isEmpty)
                   const EmptyPanel(
                     title: 'No personal records',
                     body: 'Verified strength records will appear here.',
                     icon: Icons.emoji_events_outlined,
                   )
-                else
+                else if (canReviewProgress)
                   ...records.map(
                     (record) => PremiumCard(
                       padding: const EdgeInsets.all(16),

@@ -28,7 +28,8 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): JsonResponse
     {
-        $user = User::query()->where('email', (string) $request->string('email'))->first();
+        $email = Str::lower(trim((string) $request->string('email')));
+        $user = User::query()->where('email', $email)->first();
 
         if (! $user || $user->status !== 'active' || ! Hash::check((string) $request->string('password'), $user->password)) {
             throw ValidationException::withMessages([
@@ -67,7 +68,7 @@ class AuthController extends Controller
             ],
             'meta' => (object) [],
             'links' => (object) [],
-        ]);
+        ])->withHeaders($this->privateAuthHeaders());
     }
 
     public function me(Request $request): JsonResponse
@@ -86,7 +87,7 @@ class AuthController extends Controller
             ],
             'meta' => (object) [],
             'links' => (object) [],
-        ]);
+        ])->withHeaders($this->privateAuthHeaders());
     }
 
     public function logout(Request $request): JsonResponse
@@ -179,6 +180,15 @@ class AuthController extends Controller
             'device_name' => $token->accessToken->name,
             'remembered' => $remembered,
             'expires_at' => $token->accessToken->expires_at->toIso8601String(),
+        ];
+    }
+
+    /** @return array<string, string> */
+    private function privateAuthHeaders(): array
+    {
+        return [
+            'Cache-Control' => 'no-store, private',
+            'Pragma' => 'no-cache',
         ];
     }
 }

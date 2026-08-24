@@ -102,7 +102,8 @@ class MoreScreen extends ConsumerWidget {
             ],
           ),
         ),
-        if (auth.user?.isCoach == true) ...[
+        if (auth.user?.isCoach == true &&
+            auth.user?.can('invitations.manage') == true) ...[
           const SectionTitle('Coach tools'),
           PremiumCard(
             padding: EdgeInsets.zero,

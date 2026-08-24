@@ -178,27 +178,32 @@ class AthleteDetail extends Component
     {
         $this->authorizeAthlete();
         $coachId = (int) Auth::id();
+        $canReviewProgress = Auth::user()->can('progress.review');
+        $canManageNotes = Auth::user()->can('athletes.notes');
         $query = $this->activeQuery($coachId);
         $records = $this->paginate($query);
 
         return view('livewire.coach.athlete-detail', [
             'assignment' => $this->athlete->athleteAssignments()->with('coach')->where('coach_id', $coachId)->first(),
             'records' => $records,
-            'progressSummary' => $progressSummary->forCoach(
-                Auth::user(),
-                $this->athlete,
-                $this->from ?: null,
-                $this->to ?: null,
-            ),
+            'progressSummary' => $canReviewProgress
+                ? $progressSummary->forCoach(
+                    Auth::user(),
+                    $this->athlete,
+                    $this->from ?: null,
+                    $this->to ?: null,
+                )
+                : null,
             'counts' => [
                 'programs' => AthleteProfileQuery::assignments($coachId, $this->athlete->id)->count(),
                 'schedule' => AthleteProfileQuery::schedule($coachId, $this->athlete->id)->count(),
                 'workouts' => AthleteProfileQuery::workoutLogs($coachId, $this->athlete->id)->count(),
-                'progress' => AthleteProfileQuery::progress($this->athlete->id)->count(),
-                'photos' => AthleteProfileQuery::photos($this->athlete->id)->count(),
-                'records' => AthleteProfileQuery::records($this->athlete->id)->count(),
-                'notes' => AthleteProfileQuery::notes($coachId, $this->athlete->id)->count(),
+                'progress' => $canReviewProgress ? AthleteProfileQuery::progress($this->athlete->id)->count() : null,
+                'photos' => $canReviewProgress ? AthleteProfileQuery::photos($this->athlete->id)->count() : null,
+                'records' => $canReviewProgress ? AthleteProfileQuery::records($this->athlete->id)->count() : null,
+                'notes' => $canManageNotes ? AthleteProfileQuery::notes($coachId, $this->athlete->id)->count() : null,
             ],
+            'availableTabs' => $this->tabs(),
         ])->layout('layouts.app', ['title' => $this->athlete->name]);
     }
 
@@ -243,6 +248,16 @@ class AthleteDetail extends Component
     /** @return list<string> */
     private function tabs(): array
     {
-        return ['programs', 'schedule', 'workouts', 'progress', 'photos', 'records', 'notes'];
+        $tabs = ['programs', 'schedule', 'workouts'];
+
+        if (Auth::user()?->can('progress.review')) {
+            array_push($tabs, 'progress', 'photos', 'records');
+        }
+
+        if (Auth::user()?->can('athletes.notes')) {
+            $tabs[] = 'notes';
+        }
+
+        return $tabs;
     }
 }

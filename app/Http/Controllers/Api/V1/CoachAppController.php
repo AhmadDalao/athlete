@@ -27,20 +27,31 @@ class CoachAppController extends Controller
     public function home(Request $request): JsonResponse
     {
         $coach = $request->user();
-        $athletes = $this->athleteQuery($coach)->limit(8)->get();
-        $schedule = $this->scheduleQuery($coach)
-            ->whereDate('scheduled_for', '>=', today())
-            ->whereDate('scheduled_for', '<=', today()->addDays(7))
-            ->limit(10)
-            ->get();
+        $canViewAthletes = $coach->can('athletes.view');
+        $canManagePrograms = $coach->can('programs.manage');
+        $canManageSchedule = $coach->can('schedule.manage');
+        $athletes = $canViewAthletes
+            ? $this->athleteQuery($coach)->limit(8)->get()
+            : collect();
+        $schedule = $canManageSchedule
+            ? $this->scheduleQuery($coach)
+                ->whereDate('scheduled_for', '>=', today())
+                ->whereDate('scheduled_for', '<=', today()->addDays(7))
+                ->limit(10)
+                ->get()
+            : collect();
 
         return $this->success([
             'coach' => $coach->only(['id', 'name', 'email', 'primary_goal']),
             'summary' => [
-                'active_athletes' => $this->athleteQuery($coach)->count(),
-                'active_programs' => TrainingProgram::query()->where('coach_id', $coach->id)->where('status', 'active')->count(),
-                'workouts_this_week' => $schedule->count(),
-                'pending_reviews' => ScheduledWorkout::query()->where('coach_id', $coach->id)->where('status', 'partial')->count(),
+                'active_athletes' => $canViewAthletes ? $this->athleteQuery($coach)->count() : null,
+                'active_programs' => $canManagePrograms
+                    ? TrainingProgram::query()->where('coach_id', $coach->id)->where('status', 'active')->count()
+                    : null,
+                'workouts_this_week' => $canManageSchedule ? $schedule->count() : null,
+                'pending_reviews' => $coach->can('progress.review')
+                    ? ScheduledWorkout::query()->where('coach_id', $coach->id)->where('status', 'partial')->count()
+                    : null,
             ],
             'athletes' => CompactUserResource::collection($athletes),
             'schedule' => WorkoutResource::collection($schedule),
@@ -65,20 +76,31 @@ class CoachAppController extends Controller
         AthleteProgressSummaryService $progressSummary,
     ): JsonResponse {
         abort_unless($this->athleteQuery($request->user())->whereKey($athlete->id)->exists(), 403);
+        $coach = $request->user();
+        $canReviewProgress = $coach->can('progress.review');
+        $canManageNotes = $coach->can('athletes.notes');
         $assignments = ProgramAssignment::query()
             ->where('athlete_id', $athlete->id)
             ->with(['athlete', 'program.coach', 'program.phases', 'scheduledWorkouts.session.prescribedExercises', 'scheduledWorkouts.executionLog.setLogs'])
             ->latest('starts_on')
             ->get();
-        $progress = ProgressEntry::query()->where('athlete_id', $athlete->id)->latest('logged_on')->limit(30)->get();
-        $notes = AthleteProfileQuery::notes($request->user()->id, $athlete->id)->limit(30)->get();
-        $photos = AthleteProfileQuery::photos($athlete->id)
-            ->where(fn (Builder $query) => $query
-                ->where('visibility', '!=', 'private')
-                ->orWhere('uploaded_by', $request->user()->id))
-            ->limit(30)
-            ->get();
-        $records = AthleteProfileQuery::records($athlete->id)->limit(30)->get();
+        $progress = $canReviewProgress
+            ? ProgressEntry::query()->where('athlete_id', $athlete->id)->latest('logged_on')->limit(30)->get()
+            : collect();
+        $notes = $canManageNotes
+            ? AthleteProfileQuery::notes($coach->id, $athlete->id)->limit(30)->get()
+            : collect();
+        $photos = $canReviewProgress
+            ? AthleteProfileQuery::photos($athlete->id)
+                ->where(fn (Builder $query) => $query
+                    ->where('visibility', '!=', 'private')
+                    ->orWhere('uploaded_by', $coach->id))
+                ->limit(30)
+                ->get()
+            : collect();
+        $records = $canReviewProgress
+            ? AthleteProfileQuery::records($athlete->id)->limit(30)->get()
+            : collect();
 
         return $this->success([
             'athlete' => new CompactUserResource($athlete),
@@ -100,15 +122,23 @@ class CoachAppController extends Controller
                 'visibility' => $note->visibility,
                 'is_pinned' => $note->is_pinned,
                 'coach' => $note->coach?->only(['id', 'name', 'email']),
-                'can_edit' => $note->coach_id === $request->user()->id,
+                'can_edit' => $note->coach_id === $coach->id,
                 'created_at' => $note->created_at?->toIso8601String(),
             ]),
-            'progress_summary' => $progressSummary->forCoach(
-                $request->user(),
-                $athlete,
-                $request->query('from'),
-                $request->query('to'),
-            ),
+            'progress_summary' => $canReviewProgress
+                ? $progressSummary->forCoach(
+                    $coach,
+                    $athlete,
+                    $request->query('from'),
+                    $request->query('to'),
+                )
+                : null,
+            'capabilities' => [
+                'assign_programs' => $coach->can('programs.assign'),
+                'manage_programs' => $coach->can('programs.manage'),
+                'manage_notes' => $canManageNotes,
+                'review_progress' => $canReviewProgress,
+            ],
         ]);
     }
 

@@ -4,6 +4,7 @@ import 'package:throughline_mobile/src/core/data/app_data_providers.dart';
 import 'package:throughline_mobile/src/core/models/session_models.dart';
 import 'package:throughline_mobile/src/core/theme/app_theme.dart';
 import 'package:throughline_mobile/src/core/widgets/throughline_widgets.dart';
+import 'package:throughline_mobile/src/features/auth/auth_controller.dart';
 import 'package:throughline_mobile/src/features/coach/coach_program_detail_screen.dart';
 import 'package:throughline_mobile/src/features/coach/coach_program_editor_screen.dart';
 
@@ -21,6 +22,8 @@ class _CoachProgramsScreenState extends ConsumerState<CoachProgramsScreen> {
   @override
   Widget build(BuildContext context) {
     final result = ref.watch(coachProgramsProvider);
+    final canManagePrograms =
+        ref.watch(authControllerProvider).user?.can('programs.manage') ?? false;
     return result.when(
       loading: () => const LoadingPanel(),
       error: (error, _) => ContentColumn(
@@ -45,11 +48,13 @@ class _CoachProgramsScreenState extends ConsumerState<CoachProgramsScreen> {
                 title: 'Build once. Personalize safely.',
                 body:
                     'Presets remain reusable. Every athlete plan is an isolated copy you edit before publishing.',
-                action: FilledButton.icon(
-                  onPressed: () => _createProgram(context, ref),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('New program'),
-                ),
+                action: canManagePrograms
+                    ? FilledButton.icon(
+                        onPressed: () => _createProgram(context, ref),
+                        icon: const Icon(Icons.add_rounded),
+                        label: const Text('New program'),
+                      )
+                    : null,
               ),
               SegmentedButton<String>(
                 segments: const [

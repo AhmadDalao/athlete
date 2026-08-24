@@ -22,6 +22,7 @@ class UserResource extends JsonResource
             'primary_goal' => $this->primary_goal,
             'platform_role' => $this->role,
             'organization_role' => $membership?->role,
+            'permissions' => $this->effectivePermissions(),
             'current_organization_id' => $this->current_organization_id,
             'theme_preference' => $this->theme_preference,
             'avatar_url' => $this->avatar_path ? asset('storage/'.$this->avatar_path) : null,

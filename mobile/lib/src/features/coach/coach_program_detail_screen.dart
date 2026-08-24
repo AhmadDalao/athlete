@@ -6,6 +6,7 @@ import 'package:throughline_mobile/src/core/network/api_client.dart';
 import 'package:throughline_mobile/src/core/providers.dart';
 import 'package:throughline_mobile/src/core/theme/app_theme.dart';
 import 'package:throughline_mobile/src/core/widgets/throughline_widgets.dart';
+import 'package:throughline_mobile/src/features/auth/auth_controller.dart';
 import 'package:throughline_mobile/src/features/coach/coach_program_editor_screen.dart';
 
 class CoachProgramDetailScreen extends ConsumerWidget {
@@ -16,6 +17,8 @@ class CoachProgramDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final result = ref.watch(coachProgramProvider(programId));
+    final canAssignPrograms =
+        ref.watch(authControllerProvider).user?.can('programs.assign') ?? false;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Program builder'),
@@ -152,7 +155,7 @@ class CoachProgramDetailScreen extends ConsumerWidget {
                   ),
                 SectionTitle(
                   isPreset ? 'Personalized plans' : 'Plan delivery',
-                  action: isPreset
+                  action: isPreset && canAssignPrograms
                       ? TextButton.icon(
                           onPressed: () => _assign(context, ref),
                           icon: const Icon(Icons.person_add_alt_1_rounded),
@@ -214,14 +217,16 @@ class CoachProgramDetailScreen extends ConsumerWidget {
                                   icon: const Icon(Icons.edit_outlined),
                                   label: const Text('Personalize'),
                                 ),
-                              if (assignment['can_publish'] == true)
+                              if (canAssignPrograms &&
+                                  assignment['can_publish'] == true)
                                 FilledButton.icon(
                                   onPressed: () =>
                                       _publish(context, ref, assignment),
                                   icon: const Icon(Icons.publish_rounded),
                                   label: const Text('Publish'),
                                 ),
-                              if (assignment['published_at'] != null)
+                              if (canAssignPrograms &&
+                                  assignment['published_at'] != null)
                                 OutlinedButton(
                                   onPressed: () =>
                                       _changeStatus(context, ref, assignment),

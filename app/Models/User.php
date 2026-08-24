@@ -249,6 +249,55 @@ class User extends Authenticatable
         return $this->permissions()->where('permission', $permission)->exists();
     }
 
+    /** @return list<string> */
+    public function effectivePermissions(): array
+    {
+        $catalog = PermissionCatalog::all();
+
+        if ($this->isPlatformOwner()) {
+            return $catalog;
+        }
+
+        if ($this->isPlatformAdmin()) {
+            $permissions = array_fill_keys(PermissionCatalog::defaultsForRole($this->role), true);
+
+            foreach ($this->permissions()->pluck('permission') as $permission) {
+                $permissions[$permission] = true;
+            }
+
+            return array_values(array_filter($catalog, fn (string $permission): bool => isset($permissions[$permission])));
+        }
+
+        $membership = $this->activeOrganizationMembership();
+
+        if ($membership) {
+            $defaults = $membership->isOwner()
+                ? array_values(array_filter($catalog, fn (string $permission): bool => ! PermissionCatalog::isPlatformOnly($permission)))
+                : PermissionCatalog::defaultsForOrganizationRole($membership->role);
+            $permissions = array_fill_keys($defaults, true);
+
+            if (! $membership->isOwner()) {
+                foreach ($membership->permissionOverrides as $override) {
+                    if ($override->allowed) {
+                        $permissions[$override->permission] = true;
+                    } else {
+                        unset($permissions[$override->permission]);
+                    }
+                }
+            }
+
+            return array_values(array_filter($catalog, fn (string $permission): bool => isset($permissions[$permission])));
+        }
+
+        $permissions = array_fill_keys(PermissionCatalog::defaultsForRole($this->role), true);
+
+        foreach ($this->permissions()->pluck('permission') as $permission) {
+            $permissions[$permission] = true;
+        }
+
+        return array_values(array_filter($catalog, fn (string $permission): bool => isset($permissions[$permission])));
+    }
+
     public function syncDefaultPermissions(): void
     {
         $defaults = PermissionCatalog::defaultsForRole($this->role);

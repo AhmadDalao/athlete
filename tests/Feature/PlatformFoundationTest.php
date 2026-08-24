@@ -19,18 +19,32 @@ class PlatformFoundationTest extends TestCase
         [$organization, $user] = $this->athleteInOrganization('North Team');
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => $user->email,
+            'email' => strtoupper($user->email),
             'password' => 'password',
             'device_name' => 'Android test phone',
         ]);
 
         $response->assertOk()
+            ->assertHeader('Cache-Control', 'no-store, private')
             ->assertJsonPath('data.user.id', $user->id)
             ->assertJsonPath('data.user.current_organization_id', $organization->id)
+            ->assertJsonPath('data.user.permissions.0', 'athlete.access')
             ->assertJsonPath('data.organizations.0.id', $organization->id)
             ->assertJsonStructure(['data' => ['token', 'token_type', 'user', 'organizations']]);
 
         $this->assertDatabaseCount('personal_access_tokens', 1);
+    }
+
+    public function test_web_login_normalizes_email_and_redirects_to_the_role_workspace(): void
+    {
+        [, $athlete] = $this->athleteInOrganization('Login Team');
+
+        $this->post(route('login.store'), [
+            'email' => '  '.strtoupper($athlete->email).'  ',
+            'password' => 'password',
+        ])->assertRedirect(route('app.home'));
+
+        $this->assertAuthenticatedAs($athlete);
     }
 
     public function test_organization_context_prevents_cross_organization_progress_leaks(): void
